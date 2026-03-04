@@ -1,3 +1,9 @@
+interface WindowState {
+  isMaximized: boolean;
+  isFullscreen: boolean;
+  isFocused: boolean;
+}
+
 interface IElectronAPI {
   platform: string;
   arch: string;
@@ -5,6 +11,32 @@ interface IElectronAPI {
     get: (key: string) => Promise<any>;
     set: (key: string, value: any) => Promise<void>;
     remove: (key: string) => Promise<void>;
+  };
+  api: {
+    fetch: (options: {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+    }) => Promise<ApiResponse>;
+    stream: (options: {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+      requestId: string;
+    }) => Promise<ApiStreamResponse>;
+    cancelStream: (requestId: string) => Promise<boolean>;
+    onStreamData: (
+      requestId: string,
+      callback: (chunk: string) => void,
+    ) => () => void;
+    onStreamDone: (requestId: string, callback: () => void) => () => void;
+    onStreamError: (
+      requestId: string,
+      callback: (error: string) => void,
+    ) => () => void;
+    onStreamAbort: (requestId: string, callback: () => void) => () => void;
   };
   window: {
     minimize: () => void;

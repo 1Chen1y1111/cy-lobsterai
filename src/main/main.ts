@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage, session } from "electron";
+import { app, BrowserWindow, ipcMain, nativeImage, session } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -37,12 +37,84 @@ const getAppIconPath = (): string | undefined => {
 let mainWindow: BrowserWindow | null = null;
 
 // 确保应用程序只有一个实例
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = isDev ? true : app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
 } else {
   console.log(666);
+
+  // Window control IPC handlers
+  ipcMain.on("window-minimize", () => {
+    mainWindow?.minimize();
+  });
+
+  ipcMain.on("window-maximize", () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+
+  ipcMain.on("window-close", () => {
+    mainWindow?.close();
+  });
+
+  ipcMain.handle("window:isMaximized", () => {
+    return mainWindow?.isMaximized() ?? false;
+  });
+
+  // API 代理处理程序 - 解决 CORS 问题
+  ipcMain.handle(
+    "api:fetch",
+    async (
+      _event,
+      options: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body?: string;
+      },
+    ) => {
+      try {
+        const response = await session.defaultSession.fetch(options.url, {
+          method: options.method,
+          headers: options.headers,
+          body: options.body,
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        let data: string | object;
+
+        if (contentType.includes("text/event-stream")) {
+          // SSE 流式响应，返回完整的文本
+          data = await response.text();
+        } else if (contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+
+        return {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          data,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          status: 0,
+          statusText: error instanceof Error ? error.message : "Network error",
+          headers: {},
+          data: null,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+  );
 
   app.on("second-instance", (_event, commandLine, workingDirectory) => {
     console.log("[Main] second-instance event", {

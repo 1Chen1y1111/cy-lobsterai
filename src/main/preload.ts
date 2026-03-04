@@ -2,6 +2,61 @@ import { ipcRenderer, contextBridge } from "electron";
 
 // --------- 暴露安全的 API 到渲染进程 ---------
 contextBridge.exposeInMainWorld("electron", {
+  platform: process.platform,
+  api: {
+    // 普通 API 请求（非流式）
+    fetch: (options: {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+    }) => ipcRenderer.invoke("api:fetch", options),
+
+    // 流式 API 请求
+    stream: (options: {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+      requestId: string;
+    }) => ipcRenderer.invoke("api:stream", options),
+
+    // 取消流式请求
+    cancelStream: (requestId: string) =>
+      ipcRenderer.invoke("api:stream:cancel", requestId),
+
+    // 监听流式数据
+    onStreamData: (requestId: string, callback: (chunk: string) => void) => {
+      const handler = (_event: any, chunk: string) => callback(chunk);
+      ipcRenderer.on(`api:stream:${requestId}:data`, handler);
+      return () =>
+        ipcRenderer.removeListener(`api:stream:${requestId}:data`, handler);
+    },
+
+    // 监听流式完成
+    onStreamDone: (requestId: string, callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on(`api:stream:${requestId}:done`, handler);
+      return () =>
+        ipcRenderer.removeListener(`api:stream:${requestId}:done`, handler);
+    },
+
+    // 监听流式错误
+    onStreamError: (requestId: string, callback: (error: string) => void) => {
+      const handler = (_event: any, error: string) => callback(error);
+      ipcRenderer.on(`api:stream:${requestId}:error`, handler);
+      return () =>
+        ipcRenderer.removeListener(`api:stream:${requestId}:error`, handler);
+    },
+
+    // 监听流式取消
+    onStreamAbort: (requestId: string, callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on(`api:stream:${requestId}:abort`, handler);
+      return () =>
+        ipcRenderer.removeListener(`api:stream:${requestId}:abort`, handler);
+    },
+  },
   ipcRenderer: {
     send: (channel: string, ...args: any[]) => {
       ipcRenderer.send(channel, ...args);
@@ -10,6 +65,32 @@ contextBridge.exposeInMainWorld("electron", {
       const handler = (_event: any, ...args: any[]) => func(...args);
       ipcRenderer.on(channel, handler);
       return () => ipcRenderer.removeListener(channel, handler);
+    },
+  },
+  window: {
+    minimize: () => ipcRenderer.send("window-minimize"),
+    toggleMaximize: () => ipcRenderer.send("window-maximize"),
+    close: () => ipcRenderer.send("window-close"),
+    isMaximized: () => ipcRenderer.invoke("window:isMaximized"),
+    showSystemMenu: (position: { x: number; y: number }) =>
+      ipcRenderer.send("window:showSystemMenu", position),
+    onStateChanged: (
+      callback: (state: {
+        isMaximized: boolean;
+        isFullscreen: boolean;
+        isFocused: boolean;
+      }) => void,
+    ) => {
+      const handler = (
+        _event: any,
+        state: {
+          isMaximized: boolean;
+          isFullscreen: boolean;
+          isFocused: boolean;
+        },
+      ) => callback(state);
+      ipcRenderer.on("window:state-changed", handler);
+      return () => ipcRenderer.removeListener("window:state-changed", handler);
     },
   },
 });

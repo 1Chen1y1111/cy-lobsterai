@@ -4,16 +4,22 @@ import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 import Settings, { SettingsOpenOptions } from "./components/Settings";
 import { i18nService } from "./services/i18n";
 import { configService } from "./services/config";
+import Toast from "./components/Toast";
+import Sidebar from "./components/Sidebar";
+import { CoworkView } from "./components/cowork";
 
 const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsOptions, setSettingsOptions] = useState<SettingsOpenOptions>(
     {},
   );
+  const [mainView, setMainView] = useState<
+    "cowork" | "skills" | "scheduledTasks"
+  >("cowork");
   const [isInitialized, setIsInitialized] = useState(false);
-  const [initError, setInitError] = useState<string | null>(
-    "initializationError",
-  );
+  const [initError, setInitError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const hasInitialized = useRef(false);
@@ -56,6 +62,10 @@ const App: React.FC = () => {
   const handleCloseSettings = () => {
     setShowSettings(false);
   };
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
 
   const isOverlayActive = showSettings || showUpdateModal;
 
@@ -116,6 +126,44 @@ const App: React.FC = () => {
       </div>
     );
   }
+
+  return (
+    <div className="h-screen overflow-hidden flex flex-col dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      )}
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <Sidebar
+          activeView={mainView}
+          onShowSettings={handleShowSettings}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
+        />
+
+        <div
+          className={`flex-1 min-w-0 py-1.5 pr-1.5 ${isSidebarCollapsed ? "pl-1.5" : ""}`}
+        >
+          <div className="h-full rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden">
+            <CoworkView
+              onRequestAppSettings={handleShowSettings}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 设置窗口显示在所有主内容之上，但不影响主界面的交互 */}
+      {showSettings && (
+        <Settings
+          onClose={handleCloseSettings}
+          initialTab={settingsOptions.initialTab}
+          notice={settingsOptions.notice}
+        />
+      )}
+    </div>
+  );
 };
 
 export default App;

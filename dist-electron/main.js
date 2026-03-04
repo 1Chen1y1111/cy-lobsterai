@@ -19,11 +19,64 @@ const getAppIconPath = () => {
   return process.platform === "win32" ? path.join(basePath, "tray-icon.ico") : path.join(basePath, "tray-icon.png");
 };
 let mainWindow = null;
-const gotTheLock = electron.app.requestSingleInstanceLock();
+const gotTheLock = isDev ? true : electron.app.requestSingleInstanceLock();
 if (!gotTheLock) {
   electron.app.quit();
 } else {
   console.log(666);
+  electron.ipcMain.on("window-minimize", () => {
+    mainWindow == null ? void 0 : mainWindow.minimize();
+  });
+  electron.ipcMain.on("window-maximize", () => {
+    if (mainWindow == null ? void 0 : mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow == null ? void 0 : mainWindow.maximize();
+    }
+  });
+  electron.ipcMain.on("window-close", () => {
+    mainWindow == null ? void 0 : mainWindow.close();
+  });
+  electron.ipcMain.handle("window:isMaximized", () => {
+    return (mainWindow == null ? void 0 : mainWindow.isMaximized()) ?? false;
+  });
+  electron.ipcMain.handle(
+    "api:fetch",
+    async (_event, options) => {
+      try {
+        const response = await electron.session.defaultSession.fetch(options.url, {
+          method: options.method,
+          headers: options.headers,
+          body: options.body
+        });
+        const contentType = response.headers.get("content-type") || "";
+        let data;
+        if (contentType.includes("text/event-stream")) {
+          data = await response.text();
+        } else if (contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+        return {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          data
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          status: 0,
+          statusText: error instanceof Error ? error.message : "Network error",
+          headers: {},
+          data: null,
+          error: error instanceof Error ? error.message : "Unknown error"
+        };
+      }
+    }
+  );
   electron.app.on("second-instance", (_event, commandLine, workingDirectory) => {
     console.log("[Main] second-instance event", {
       commandLine,
