@@ -9,18 +9,16 @@ import { cpRecursiveSync } from "./fsCompat";
 import { appendPythonRuntimeToEnv } from "./libs/pythonRuntime";
 
 /**
- * 解析 macOS/Linux 用户登录 shell 的 PATH。
- *
- * 背景：
- * - 打包后的 Electron 在 macOS 下通常不会继承用户 shell profile。
- * - 如果不主动解析，`node/npm` 可能不在 PATH 中，导致技能脚本无法运行。
+ * Resolve the user's login shell PATH on macOS/Linux.
+ * Packaged Electron apps on macOS don't inherit the user's shell profile,
+ * so node/npm won't be in PATH unless we resolve it explicitly.
  */
 function resolveUserShellPath(): string | null {
   if (process.platform === "win32") return null;
 
   try {
     const shell = process.env.SHELL || "/bin/bash";
-    // 使用 login + interactive shell，确保 profile 被加载后再输出 PATH。
+    // Use login-interactive shell to source profile, then print PATH
     const result = execSync(`${shell} -ilc 'echo __PATH__=$PATH'`, {
       encoding: "utf-8",
       timeout: 5000,
@@ -35,13 +33,13 @@ function resolveUserShellPath(): string | null {
 }
 
 /**
- * 检查给定环境变量下某个命令是否可执行。
+ * Check if a command exists in the given environment.
  */
 function hasCommand(command: string, env: NodeJS.ProcessEnv): boolean {
   const isWin = process.platform === "win32";
   const checker = isWin ? "where" : "which";
-  // Windows 下使用 shell: true，让 cmd.exe 参与 PATH 解析，
-  // 可规避 env 中 PATH/Path 并存时的解析异常。
+  // On Windows, use shell: true so cmd.exe resolves PATH correctly
+  // (avoids issues with duplicated PATH/Path keys in env)
   const result = spawnSync(checker, [command], {
     stdio: "pipe",
     env,
@@ -57,12 +55,10 @@ function hasCommand(command: string, env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * 统一 Windows 环境变量对象中的 PATH 键名。
- *
- * 说明：
- * - Windows 环境变量名大小写不敏感，但 JS 对象键大小写敏感。
- * - 展开 `process.env` 后可能同时出现 `Path` 与 `PATH`。
- * - 这里合并后统一写回 `PATH`，避免子进程读取异常。
+ * Normalize the PATH key in an env object on Windows.
+ * Windows env vars are case-insensitive, but JS objects are case-sensitive.
+ * After spreading process.env, the key might be "Path" or "PATH".
+ * We normalize to "PATH" to avoid issues with duplicate keys.
  */
 function normalizePathKey(env: Record<string, string | undefined>): void {
   if (process.platform !== "win32") return;
@@ -70,7 +66,7 @@ function normalizePathKey(env: Record<string, string | undefined>): void {
   const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
   if (pathKeys.length <= 1) return;
 
-  // 合并所有 PATH 类键的值（`;` 分隔），并按目录去重。
+  // Merge all PATH-like values (separated by ;), then remove duplicates
   const seen = new Set<string>();
   const merged: string[] = [];
   for (const key of pathKeys) {
@@ -92,11 +88,9 @@ function normalizePathKey(env: Record<string, string | undefined>): void {
 }
 
 /**
- * 从 Windows 注册表读取最新系统 PATH（机器级 + 用户级）。
- *
- * 背景：
- * - 从开始菜单/资源管理器启动的 Electron 进程可能拿到“过期 PATH”。
- * - 某些工具安装后，Explorer 未重启前，`process.env.PATH` 可能缺项。
+ * Resolve the latest Windows system PATH from the registry.
+ * When an Electron app is launched from Start Menu or Explorer,
+ * process.env.PATH may be stale (missing tools installed after Explorer started).
  */
 function resolveWindowsRegistryPath(): string | null {
   if (process.platform !== "win32") return null;
@@ -127,26 +121,24 @@ function resolveWindowsRegistryPath(): string | null {
 }
 
 /**
- * 构建技能脚本执行环境。
- *
- * 目标：
- * - 在打包态尽量恢复用户真实可用的 PATH（跨平台差异处理）。
- * - 注入运行技能脚本所需的额外环境变量（例如 Electron/ Python 运行时）。
+ * Build an environment for spawning skill scripts.
+ * Merges the user's shell PATH with the current process environment.
  */
 function buildSkillEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
 
-  // 先统一 PATH 键名，避免后续拼接出现 PATH/Path 双键。
+  // Normalize PATH key casing on Windows to avoid duplicate PATH/Path issues
   normalizePathKey(env);
 
   if (app.isPackaged) {
-    // 确保 HOME 存在（npm 查找配置依赖此变量）。
+    // Ensure HOME is set (crucial for npm to find its config)
     if (!env.HOME) {
       env.HOME = app.getPath("home");
     }
 
     if (process.platform === "win32") {
-      // Windows 下合并注册表 PATH，补齐应用启动后新增安装的工具路径。
+      // On Windows, merge the latest PATH from the registry to pick up
+      // tools installed after the Electron app (or Explorer) was started.
       const registryPath = resolveWindowsRegistryPath();
       if (registryPath) {
         const currentPath = env.PATH || "";
@@ -177,7 +169,7 @@ function buildSkillEnv(): Record<string, string | undefined> {
         }
       }
 
-      // 兜底追加常见 Windows Node.js 安装路径。
+      // Append common Windows Node.js installation paths as fallback
       const commonWinPaths = [
         "C:\\Program Files\\nodejs",
         "C:\\Program Files (x86)\\nodejs",
@@ -200,13 +192,13 @@ function buildSkillEnv(): Record<string, string | undefined> {
           : missingPaths.join(";");
       }
     } else {
-      // macOS/Linux：优先解析用户 shell PATH，确保能找到 node/npm。
+      // Resolve user's shell PATH to find npm/node (macOS/Linux)
       const userPath = resolveUserShellPath();
       if (userPath) {
         env.PATH = userPath;
         console.log("[skills] Resolved user shell PATH for skill scripts");
       } else {
-        // 兜底追加常见 Node 安装路径。
+        // Fallback: append common node installation paths
         const commonPaths = [
           "/usr/local/bin",
           "/opt/homebrew/bin",
@@ -220,11 +212,12 @@ function buildSkillEnv(): Record<string, string | undefined> {
     }
   }
 
-  // 暴露 Electron 可执行路径：系统未安装 Node 时，可用 ELECTRON_RUN_AS_NODE 执行脚本。
+  // Expose Electron executable so skill scripts can run JS with ELECTRON_RUN_AS_NODE
+  // even when system Node.js is not installed.
   env.LOBSTERAI_ELECTRON_PATH = process.execPath;
   appendPythonRuntimeToEnv(env);
 
-  // Python 运行时注入后再次规范 PATH 键名，避免重复键。
+  // Re-normalize after appendPythonRuntimeToEnv may have added a PATH key
   normalizePathKey(env);
 
   return env;
@@ -283,9 +276,6 @@ const CLAUDE_SKILLS_SUBDIR = "skills";
 
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
-/**
- * 解析 SKILL.md 的 YAML frontmatter 与正文。
- */
 const parseFrontmatter = (
   raw: string,
 ): { frontmatter: Record<string, unknown>; content: string } => {
@@ -338,8 +328,9 @@ const isZipFile = (filePath: string): boolean =>
   path.extname(filePath).toLowerCase() === ".zip";
 
 /**
- * 比较两个 semver 风格版本号（如 1.0.0 vs 1.0.1）。
- * 返回：a>b 为 1，a<b 为 -1，相等为 0。
+ * Compare two semver-like version strings (e.g. "1.0.0" vs "1.0.1").
+ * Returns 1 if a > b, -1 if a < b, 0 if equal.
+ * Non-numeric segments are treated as 0.
  */
 const compareVersions = (a: string, b: string): number => {
   const pa = a.split(".").map((s) => parseInt(s, 10) || 0);
@@ -523,9 +514,6 @@ type SkillScriptRunResult = {
   spawnErrorCode?: string;
 };
 
-/**
- * 带超时保护执行脚本命令，收集 stdout/stderr 与退出状态。
- */
 const runScriptWithTimeout = (options: {
   command: string;
   args: string[];
@@ -601,10 +589,6 @@ const runScriptWithTimeout = (options: {
     });
   });
 
-/**
- * 安全删除临时目录/文件。
- * Windows 下启用重试，降低文件句柄占用导致的删除失败概率。
- */
 const cleanupPathSafely = (targetPath: string | null): void => {
   if (!targetPath) return;
   try {
@@ -623,11 +607,6 @@ const cleanupPathSafely = (targetPath: string | null): void => {
   }
 };
 
-/**
- * 列出 root 下可识别的技能目录：
- * - 若 root 自身含 SKILL.md，返回 [root]
- * - 否则返回其一级子目录中含 SKILL.md 的目录
- */
 const listSkillDirs = (root: string): string[] => {
   if (!fs.existsSync(root)) return [];
   const skillFile = path.join(root, SKILL_FILE_NAME);
@@ -651,13 +630,6 @@ const listSkillDirs = (root: string): string[] => {
     });
 };
 
-/**
- * 从来源路径收集技能目录，按“最可能命中”的顺序尝试：
- * 1. 来源自身是技能目录
- * 2. 来源/SKILLs 下的技能目录
- * 3. 来源一级子目录中的技能目录
- * 4. 递归扫描（排除 .git/node_modules）
- */
 const collectSkillDirsFromSource = (source: string): string[] => {
   const resolved = path.resolve(source);
   if (fs.existsSync(path.join(resolved, SKILL_FILE_NAME))) {
@@ -680,9 +652,6 @@ const collectSkillDirsFromSource = (source: string): string[] => {
   return collectSkillDirsRecursively(resolved);
 };
 
-/**
- * 广度优先递归扫描技能目录。
- */
 const collectSkillDirsRecursively = (root: string): string[] => {
   const resolvedRoot = path.resolve(root);
   if (!fs.existsSync(resolvedRoot)) return [];
@@ -752,9 +721,6 @@ const extractErrorMessage = (error: unknown): string => {
   return String(error);
 };
 
-/**
- * 从 GitHub SSH/HTTPS 仓库地址提取 owner/repo。
- */
 const parseGithubRepoSource = (repoUrl: string): GithubRepoSource | null => {
   const trimmed = repoUrl.trim();
 
@@ -795,10 +761,6 @@ const parseGithubRepoSource = (repoUrl: string): GithubRepoSource | null => {
   }
 };
 
-/**
- * 下载 GitHub 仓库归档（zip）并解压，返回可用源码根目录。
- * 用于 git clone 失败时的兜底下载方案。
- */
 const downloadGithubArchive = async (
   source: GithubRepoSource,
   tempRoot: string,
@@ -887,9 +849,58 @@ const downloadGithubArchive = async (
   return extractRoot;
 };
 
-/**
- * 规范化 GitHub 子路径，拒绝 "."/".." 以避免路径穿越。
- */
+const isRemoteZipUrl = (source: string): boolean => {
+  try {
+    const url = new URL(source);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.pathname.toLowerCase().endsWith(".zip")
+    );
+  } catch {
+    return false;
+  }
+};
+
+const downloadZipUrl = async (
+  zipUrl: string,
+  tempRoot: string,
+): Promise<string> => {
+  const response = await session.defaultSession.fetch(zipUrl, {
+    method: "GET",
+    headers: { "User-Agent": "LobsterAI Skill Downloader" },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Download failed (${response.status} ${response.statusText})`,
+    );
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const zipPath = path.join(tempRoot, "remote-skill.zip");
+  const extractRoot = path.join(tempRoot, "remote-skill");
+  fs.writeFileSync(zipPath, buffer);
+  fs.mkdirSync(extractRoot, { recursive: true });
+  await extractZip(zipPath, { dir: extractRoot });
+
+  const extractedDirs = fs
+    .readdirSync(extractRoot)
+    .map((entry) => path.join(extractRoot, entry))
+    .filter((entryPath) => {
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+  if (extractedDirs.length === 1) {
+    return extractedDirs[0];
+  }
+
+  return extractRoot;
+};
+
 const normalizeGithubSubpath = (value: string): string | null => {
   const trimmed = value.trim().replace(/^\/+|\/+$/g, "");
   if (!trimmed) return null;
@@ -909,9 +920,6 @@ const normalizeGithubSubpath = (value: string): string | null => {
   return segments.join("/");
 };
 
-/**
- * 解析 GitHub tree/blob URL，映射为可 clone 的仓库信息 + 子路径 + ref。
- */
 const parseGithubTreeOrBlobUrl = (
   source: string,
 ): NormalizedGitSource | null => {
@@ -948,10 +956,6 @@ const parseGithubTreeOrBlobUrl = (
   }
 };
 
-/**
- * 针对 web-search 技能的完整性探测。
- * 通过关键文件与关键字符串判断该技能是否处于“已损坏需修复”状态。
- */
 const isWebSearchSkillBroken = (skillRoot: string): boolean => {
   const startServerScript = path.join(skillRoot, "scripts", "start-server.sh");
   const searchScript = path.join(skillRoot, "scripts", "search.sh");
@@ -1008,31 +1012,18 @@ const isWebSearchSkillBroken = (skillRoot: string): boolean => {
   return false;
 };
 
-/**
- * 技能管理核心类（主进程）。
- *
- * 主要职责：
- * - 发现/解析技能目录并生成技能清单。
- * - 管理技能启停状态与配置（.env、skills_state）。
- * - 安装/下载技能并与内置技能做同步修复。
- * - 文件监听变化并通过 IPC 广播给渲染进程。
- * - 提供邮箱技能连通性测试能力。
- */
 export class SkillManager {
   private watchers: fs.FSWatcher[] = [];
   private notifyTimer: NodeJS.Timeout | null = null;
 
   constructor(private getStore: () => SqliteStore) {}
 
-  /**
-   * 返回用户技能根目录（userData/SKILLs）。
-   */
   getSkillsRoot(): string {
     return path.resolve(app.getPath("userData"), SKILLS_DIR_NAME);
   }
 
   /**
-   * 确保用户技能根目录存在，不存在则创建。
+   * 确保目录存在
    */
   ensureSkillsRoot(): string {
     const root = this.getSkillsRoot();
@@ -1043,13 +1034,7 @@ export class SkillManager {
   }
 
   /**
-   * 将应用内置技能同步到用户目录。
-   *
-   * 规则：
-   * - 仅打包态执行。
-   * - 新技能直接复制。
-   * - 已存在技能按版本/健康检查决定是否修复覆盖。
-   * - clean copy 时保留用户 `.env` 配置。
+   * 同步技能
    */
   syncBundledSkillsToUserData(): void {
     if (!app.isPackaged) {
@@ -1064,6 +1049,7 @@ export class SkillManager {
       "[skills] syncBundledSkillsToUserData: bundledRoot =",
       bundledRoot,
     );
+
     if (
       !bundledRoot ||
       bundledRoot === userRoot ||
@@ -1076,6 +1062,7 @@ export class SkillManager {
     }
 
     try {
+      // 获取所有内置技能目录
       const bundledSkillDirs = listSkillDirs(bundledRoot);
       console.log(
         "[skills] syncBundledSkillsToUserData: found",
@@ -1087,12 +1074,13 @@ export class SkillManager {
         const targetDir = path.join(userRoot, id);
         const targetExists = fs.existsSync(targetDir);
 
-        // 判断是否需要修复或升级。
+        // Check if skill needs repair
         let shouldRepair = false;
         let needsCleanCopy = false;
         if (targetExists) {
-          // 版本升级：内置版本更高时触发 clean copy。
+          // Version-based update: if bundled has a version and it's newer, force update
           const bundledVer = this.getSkillVersion(dir);
+          // 版本比较更新
           if (
             bundledVer &&
             compareVersions(
@@ -1103,11 +1091,11 @@ export class SkillManager {
             shouldRepair = true;
             needsCleanCopy = true;
           }
-          // web-search 使用专用损坏检测逻辑。
+          // web-search has specific broken checks
           else if (id === "web-search" && isWebSearchSkillBroken(targetDir)) {
             shouldRepair = true;
           }
-          // 通用健康检查：依赖缺失则修复。
+          // Generic check: if bundled has node_modules but target doesn't, repair it
           else if (!this.isSkillRuntimeHealthy(targetDir, dir)) {
             shouldRepair = true;
           }
@@ -1119,24 +1107,26 @@ export class SkillManager {
             `[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`,
           );
 
-          // clean copy 前备份 .env，避免覆盖用户密钥配置。
+          // Preserve .env file before clean copy
           let envBackup: Buffer | null = null;
           const envPath = path.join(targetDir, ".env");
           if (needsCleanCopy && fs.existsSync(envPath)) {
             envBackup = fs.readFileSync(envPath);
           }
 
-          // clean copy 前先删除旧目录，清理历史残留文件。
+          // Version-based update: delete target dir first to remove stale files
+          // (e.g. old .py scripts, __pycache__, leftover package-lock.json)
           if (needsCleanCopy) {
             fs.rmSync(targetDir, { recursive: true, force: true });
           }
 
+          // 将内置技能复制到用户目录
           cpRecursiveSync(dir, targetDir, {
             dereference: true,
             force: shouldRepair,
           });
 
-          // 覆盖后恢复 .env。
+          // Restore .env file after clean copy
           if (envBackup !== null) {
             fs.writeFileSync(envPath, envBackup);
           }
@@ -1171,8 +1161,8 @@ export class SkillManager {
   }
 
   /**
-   * 判断技能运行时是否健康。
-   * 当内置技能含依赖但用户目录缺依赖时，返回 false 触发修复。
+   * Check if a skill's runtime is healthy by comparing with bundled version.
+   * Returns false if bundled has dependencies but target doesn't.
    */
   private isSkillRuntimeHealthy(
     targetDir: string,
@@ -1182,17 +1172,17 @@ export class SkillManager {
     const targetNodeModules = path.join(targetDir, "node_modules");
     const targetPackageJson = path.join(targetDir, "package.json");
 
-    // 无 package.json 视为无依赖技能。
+    // If target has no package.json, it's a simple skill (no deps needed)
     if (!fs.existsSync(targetPackageJson)) {
       return true;
     }
 
-    // 内置版本无 node_modules 时，无需依赖修复。
+    // If bundled doesn't have node_modules, no deps to sync
     if (!fs.existsSync(bundledNodeModules)) {
       return true;
     }
 
-    // 内置有依赖、目标无依赖，判定为不健康。
+    // If bundled has node_modules but target doesn't, needs repair
     if (!fs.existsSync(targetNodeModules)) {
       return false;
     }
@@ -1200,9 +1190,6 @@ export class SkillManager {
     return true;
   }
 
-  /**
-   * 读取技能版本号（frontmatter.version）。
-   */
   private getSkillVersion(skillDir: string): string {
     try {
       const raw = fs.readFileSync(path.join(skillDir, SKILL_FILE_NAME), "utf8");
@@ -1217,10 +1204,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 合并内置 skills.config.json 到用户配置。
-   * 仅补齐“用户配置中不存在”的技能默认项，不覆盖用户已有设置。
-   */
   private mergeSkillsConfig(bundledPath: string, targetPath: string): void {
     try {
       const bundled = JSON.parse(fs.readFileSync(bundledPath, "utf-8"));
@@ -1234,7 +1217,7 @@ export class SkillManager {
         }
       }
       if (changed) {
-        // 先写临时文件再 rename，降低写入中断导致配置损坏风险。
+        // Write to temp file first, then rename for atomic update
         const tmpPath = targetPath + ".tmp";
         fs.writeFileSync(
           tmpPath,
@@ -1252,18 +1235,12 @@ export class SkillManager {
   }
 
   /**
-   * 聚合并返回技能列表。
-   *
-   * 数据来源优先级：
-   * 1. 用户目录（最高）
-   * 2. Claude 技能目录
-   * 3. 应用内置目录（最低）
-   *
-   * 最终按 defaults.order + 名称排序。
+   * 获取所有可用技能
    */
   listSkills(): SkillRecord[] {
     const primaryRoot = this.ensureSkillsRoot();
     const state = this.loadSkillStateMap();
+    // 从用户目录、Claude目录、内置目录获取技能
     const roots = this.getSkillRoots(primaryRoot);
     const orderedRoots = roots
       .filter((root) => root !== primaryRoot)
@@ -1298,9 +1275,6 @@ export class SkillManager {
     return skills;
   }
 
-  /**
-   * 生成给模型的技能自动路由提示词（仅包含启用且有 prompt 的技能）。
-   */
   buildAutoRoutingPrompt(): string | null {
     const skills = this.listSkills();
     const enabled = skills.filter((s) => s.enabled && s.prompt);
@@ -1330,9 +1304,6 @@ export class SkillManager {
     ].join("\n");
   }
 
-  /**
-   * 设置技能启用状态并广播变化。
-   */
   setSkillEnabled(id: string, enabled: boolean): SkillRecord[] {
     const state = this.loadSkillStateMap();
     state[id] = { enabled };
@@ -1341,9 +1312,6 @@ export class SkillManager {
     return this.listSkills();
   }
 
-  /**
-   * 删除用户技能目录（内置技能禁止删除）。
-   */
   deleteSkill(id: string): SkillRecord[] {
     const root = this.ensureSkillsRoot();
     if (id !== path.basename(id)) {
@@ -1367,15 +1335,6 @@ export class SkillManager {
     return this.listSkills();
   }
 
-  /**
-   * 下载/导入技能来源并安装到用户技能目录。
-   *
-   * 支持来源：
-   * - 本地目录、zip、SKILL.md 文件
-   * - GitHub owner/repo
-   * - Git 仓库 URL
-   * - GitHub tree/blob URL（含子路径）
-   */
   async downloadSkill(
     source: string,
   ): Promise<{ success: boolean; skills?: SkillRecord[]; error?: string }> {
@@ -1408,6 +1367,12 @@ export class SkillManager {
             };
           }
         }
+      } else if (isRemoteZipUrl(trimmed)) {
+        const tempRoot = fs.mkdtempSync(
+          path.join(app.getPath("temp"), "lobsterai-skill-zip-"),
+        );
+        cleanupPath = tempRoot;
+        localSource = await downloadZipUrl(trimmed, tempRoot);
       } else {
         const normalized = this.normalizeGitSource(trimmed);
         if (!normalized) {
@@ -1531,9 +1496,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 启动技能目录监听（根目录 + 各技能目录）。
-   */
   startWatching(): void {
     this.stopWatching();
     const primaryRoot = this.ensureSkillsRoot();
@@ -1559,9 +1521,6 @@ export class SkillManager {
     });
   }
 
-  /**
-   * 停止并清理所有目录监听与防抖定时器。
-   */
   stopWatching(): void {
     this.watchers.forEach((watcher) => watcher.close());
     this.watchers = [];
@@ -1571,17 +1530,11 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 工作目录变化时重建监听并通知前端刷新技能列表。
-   */
   handleWorkingDirectoryChange(): void {
     this.startWatching();
     this.notifySkillsChanged();
   }
 
-  /**
-   * 技能目录变更通知防抖，避免高频 fs.watch 事件导致频繁刷新。
-   */
   private scheduleNotify(): void {
     if (this.notifyTimer) {
       clearTimeout(this.notifyTimer);
@@ -1592,9 +1545,6 @@ export class SkillManager {
     }, WATCH_DEBOUNCE_MS);
   }
 
-  /**
-   * 向所有渲染窗口广播 `skills:changed` 事件。
-   */
   private notifySkillsChanged(): void {
     BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
@@ -1603,9 +1553,6 @@ export class SkillManager {
     });
   }
 
-  /**
-   * 解析技能目录，构造 SkillRecord。
-   */
   private parseSkillDir(
     dir: string,
     state: SkillStateMap,
@@ -1656,9 +1603,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 获取内置技能 id 集合。
-   */
   private listBuiltInSkillIds(): Set<string> {
     const builtInRoot = this.getBundledSkillsRoot();
     if (!builtInRoot || !fs.existsSync(builtInRoot)) {
@@ -1672,8 +1616,7 @@ export class SkillManager {
   }
 
   /**
-   * 读取技能启停状态映射。
-   * 兼容旧结构（SkillRecord[]）并自动迁移为新结构（SkillStateMap）。
+   * 加载技能状态
    */
   private loadSkillStateMap(): SkillStateMap {
     const store = this.getStore();
@@ -1692,22 +1635,17 @@ export class SkillManager {
     return raw ?? {};
   }
 
-  /**
-   * 持久化技能启停状态映射。
-   */
   private saveSkillStateMap(map: SkillStateMap): void {
     this.getStore().set(SKILL_STATE_KEY, map);
   }
 
-  /**
-   * 读取并合并各 root 下 skills.config.json 默认配置。
-   */
   private loadSkillsDefaults(
     roots: string[],
   ): Record<string, SkillDefaultConfig> {
     const merged: Record<string, SkillDefaultConfig> = {};
 
-    // 反向加载再合并：高优先级 root（用户目录）可覆盖低优先级默认项。
+    // Load from roots in reverse order so higher priority roots override lower ones
+    // roots[0] is user directory (highest priority), roots[1] is app-bundled (lower priority)
     const reversedRoots = [...roots].reverse();
 
     for (const root of reversedRoots) {
@@ -1734,9 +1672,6 @@ export class SkillManager {
     return merged;
   }
 
-  /**
-   * 按优先级返回技能根目录列表。
-   */
   private getSkillRoots(primaryRoot?: string): string[] {
     const resolvedPrimary = primaryRoot ?? this.getSkillsRoot();
     const roots: string[] = [resolvedPrimary];
@@ -1758,12 +1693,9 @@ export class SkillManager {
     return path.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR);
   }
 
-  /**
-   * 返回应用内置技能目录路径。
-   */
   private getBundledSkillsRoot(): string {
     if (app.isPackaged) {
-      // 生产环境优先读取 Resources/SKILLs。
+      // In production, bundled SKILLs should be in Resources/SKILLs.
       const resourcesRoot = path.resolve(
         process.resourcesPath,
         SKILLS_DIR_NAME,
@@ -1772,18 +1704,16 @@ export class SkillManager {
         return resourcesRoot;
       }
 
-      // 兼容旧包结构：SKILLs 位于 app.asar 内。
+      // Fallback for older packages where SKILLs are inside app.asar.
       return path.resolve(app.getAppPath(), SKILLS_DIR_NAME);
     }
 
-    // 开发环境下，基于项目根目录读取 SKILLs。
+    // In development, use the project root (parent of dist-electron).
+    // __dirname is dist-electron/, so we need to go up one level to get to project root
     const projectRoot = path.resolve(__dirname, "..");
     return path.resolve(projectRoot, SKILLS_DIR_NAME);
   }
 
-  /**
-   * 读取技能目录下 `.env` 配置并解析为键值对。
-   */
   getSkillConfig(skillId: string): {
     success: boolean;
     config?: Record<string, string>;
@@ -1818,9 +1748,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 将技能配置写入 `.env` 文件（整文件覆盖写入）。
-   */
   setSkillConfig(
     skillId: string,
     config: Record<string, string>,
@@ -1844,9 +1771,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 尝试从内置资源修复指定技能目录（主要用于补齐 node_modules）。
-   */
   private repairSkillFromBundled(skillId: string, skillPath: string): boolean {
     if (!app.isPackaged) return false;
 
@@ -1860,7 +1784,7 @@ export class SkillManager {
       return false;
     }
 
-    // 仅当内置技能包含 node_modules 时才执行修复。
+    // Check if bundled version has node_modules
     const bundledNodeModules = path.join(bundledPath, "node_modules");
     if (!fs.existsSync(bundledNodeModules)) {
       console.log(
@@ -1888,15 +1812,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 确保技能依赖可用。
-   *
-   * 策略：
-   * 1. 已有 node_modules -> 直接通过
-   * 2. 无 package.json -> 无依赖，直接通过
-   * 3. 尝试从内置资源修复
-   * 4. 最后回退到 npm install
-   */
   private ensureSkillDependencies(skillDir: string): {
     success: boolean;
     error?: string;
@@ -1914,13 +1829,13 @@ export class SkillManager {
     );
     console.log(`[skills]   skillDir: ${skillDir}`);
 
-    // 目录中已有 node_modules，视为依赖可用。
+    // If node_modules exists, assume dependencies are installed
     if (fs.existsSync(nodeModulesPath)) {
       console.log(`[skills] Dependencies already installed for ${skillId}`);
       return { success: true };
     }
 
-    // 无 package.json，说明技能本身无 npm 依赖。
+    // If no package.json, nothing to install
     if (!fs.existsSync(packageJsonPath)) {
       console.log(
         `[skills] No package.json found for ${skillId}, skipping install`,
@@ -1928,7 +1843,7 @@ export class SkillManager {
       return { success: true };
     }
 
-    // 优先使用内置资源修复，避免依赖本机 npm。
+    // Try to repair from bundled resources first (works without npm)
     if (this.repairSkillFromBundled(skillId, skillDir)) {
       if (fs.existsSync(nodeModulesPath)) {
         console.log(
@@ -1938,7 +1853,7 @@ export class SkillManager {
       }
     }
 
-    // 构建脚本执行环境（打包态 PATH 修复很关键）。
+    // Build environment with user's shell PATH (crucial for packaged apps)
     const env = buildSkillEnv() as NodeJS.ProcessEnv;
     const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
     console.log(`[skills]   PATH keys in env: ${JSON.stringify(pathKeys)}`);
@@ -1946,7 +1861,7 @@ export class SkillManager {
       `[skills]   PATH (first 300 chars): ${env.PATH?.substring(0, 300)}`,
     );
 
-    // 检查 npm 可执行性。
+    // Check if npm is available
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     if (!hasCommand(npmCommand, env) && !hasCommand("npm", env)) {
       const errorMsg =
@@ -1957,12 +1872,12 @@ export class SkillManager {
 
     console.log(`[skills] npm is available`);
 
-    // 回退执行 npm install 安装依赖。
+    // Try to install dependencies
     console.log(`[skills] Installing dependencies for ${skillId}...`);
     console.log(`[skills]   Working directory: ${skillDir}`);
 
     try {
-      // Windows 下使用 shell: true 以正确解析 npm.cmd。
+      // On Windows, use shell: true so cmd.exe resolves npm.cmd correctly
       const isWin = process.platform === "win32";
       const result = spawnSync("npm", ["install"], {
         cwd: skillDir,
@@ -1997,7 +1912,7 @@ export class SkillManager {
         };
       }
 
-      // 额外校验 node_modules 是否已生成。
+      // Verify node_modules was created
       if (!fs.existsSync(nodeModulesPath)) {
         const errorMsg =
           "npm install appeared to succeed but node_modules was not created";
@@ -2033,7 +1948,7 @@ export class SkillManager {
     try {
       const skillDir = this.resolveSkillDir(skillId);
 
-      // 执行连通性脚本前先确保依赖可用。
+      // Ensure dependencies are installed before running scripts
       const depsResult = this.ensureSkillDependencies(skillDir);
       if (!depsResult.success) {
         console.error(
@@ -2056,7 +1971,7 @@ export class SkillManager {
         };
       }
 
-      // 日志脱敏，避免明文密码输出到控制台。
+      // Mask password for logging
       const safeConfig = { ...config };
       if (safeConfig.IMAP_PASS) safeConfig.IMAP_PASS = "***";
       if (safeConfig.SMTP_PASS) safeConfig.SMTP_PASS = "***";
@@ -2160,9 +2075,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 根据 skillId 解析技能目录绝对路径。
-   */
   private resolveSkillDir(skillId: string): string {
     const skills = this.listSkills();
     const skill = skills.find((s) => s.id === skillId);
@@ -2172,11 +2084,6 @@ export class SkillManager {
     return path.dirname(skill.skillPath);
   }
 
-  /**
-   * 生成脚本运行时候选：
-   * - 开发态优先 `node`
-   * - 始终回退到 `electron + ELECTRON_RUN_AS_NODE=1`
-   */
   private getScriptRuntimeCandidates(): Array<{
     command: string;
     extraEnv?: NodeJS.ProcessEnv;
@@ -2193,10 +2100,6 @@ export class SkillManager {
     return candidates;
   }
 
-  /**
-   * 在候选运行时中依次尝试执行技能脚本。
-   * 若出现 ENOENT（运行时不存在）则自动尝试下一个候选。
-   */
   private async runSkillScriptWithEnv(
     skillDir: string,
     scriptPath: string,
@@ -2206,7 +2109,7 @@ export class SkillManager {
   ): Promise<SkillScriptRunResult> {
     let lastResult: SkillScriptRunResult | null = null;
 
-    // 先构建基础环境，再叠加运行时变量与调用方覆盖变量。
+    // Build base environment with user's shell PATH
     const baseEnv = buildSkillEnv();
 
     for (const runtime of this.getScriptRuntimeCandidates()) {
@@ -2243,9 +2146,6 @@ export class SkillManager {
     );
   }
 
-  /**
-   * 尝试把脚本 stdout 解析为 JSON，并提取 message 字段。
-   */
   private parseScriptMessage(stdout: string): string | null {
     if (!stdout) {
       return null;
@@ -2266,9 +2166,6 @@ export class SkillManager {
     }
   }
 
-  /**
-   * 获取输出文本最后一条非空行，便于错误提示兜底展示。
-   */
   private getLastOutputLine(text: string): string {
     return (
       text
@@ -2279,9 +2176,6 @@ export class SkillManager {
     );
   }
 
-  /**
-   * 将脚本执行结果转换为前端可展示的连通性检查项。
-   */
   private buildEmailConnectivityCheck(
     code: EmailConnectivityCheckCode,
     result: SkillScriptRunResult,
@@ -2313,9 +2207,6 @@ export class SkillManager {
     };
   }
 
-  /**
-   * 规范化技能来源字符串，统一输出可 clone 的仓库描述。
-   */
   private normalizeGitSource(source: string): NormalizedGitSource | null {
     const githubTreeOrBlob = parseGithubTreeOrBlobUrl(source);
     if (githubTreeOrBlob) {

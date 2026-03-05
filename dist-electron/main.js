@@ -18,6 +18,7 @@ const require$$1$2 = require("zlib");
 const require$$4 = require("events");
 const crypto = require("crypto");
 const initSqlJs = require("sql.js");
+const node_crypto = require("node:crypto");
 const APP_NAME = "CyLobsterAI";
 const DB_FILENAME = "cylobsterai.sqlite";
 /*! js-yaml 4.1.1 https://github.com/nodeca/js-yaml @license MIT */
@@ -5065,7 +5066,7 @@ class Extractor {
     return mode;
   }
 }
-var extractZip = async function(zipPath, opts) {
+var extractZip$1 = async function(zipPath, opts) {
   debug("creating target directory", opts.dir);
   if (!path.isAbsolute(opts.dir)) {
     throw new Error("Target directory is expected to be absolute");
@@ -5074,7 +5075,7 @@ var extractZip = async function(zipPath, opts) {
   opts.dir = await fs.realpath(opts.dir);
   return new Extractor(zipPath, opts).extract();
 };
-const extractZip$1 = /* @__PURE__ */ getDefaultExportFromCjs(extractZip);
+const extractZip = /* @__PURE__ */ getDefaultExportFromCjs(extractZip$1);
 function cpRecursiveSync(src2, dest, opts = {}) {
   const { dereference = false, force = false } = opts;
   const stat = dereference ? fs$4.statSync(src2) : fs$4.lstatSync(src2);
@@ -5747,7 +5748,43 @@ const downloadGithubArchive = async (source, tempRoot, ref) => {
   const extractRoot = path$1.join(tempRoot, "github-archive");
   fs$4.writeFileSync(zipPath, buffer);
   fs$4.mkdirSync(extractRoot, { recursive: true });
-  await extractZip$1(zipPath, { dir: extractRoot });
+  await extractZip(zipPath, { dir: extractRoot });
+  const extractedDirs = fs$4.readdirSync(extractRoot).map((entry) => path$1.join(extractRoot, entry)).filter((entryPath) => {
+    try {
+      return fs$4.statSync(entryPath).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+  if (extractedDirs.length === 1) {
+    return extractedDirs[0];
+  }
+  return extractRoot;
+};
+const isRemoteZipUrl = (source) => {
+  try {
+    const url = new URL(source);
+    return (url.protocol === "http:" || url.protocol === "https:") && url.pathname.toLowerCase().endsWith(".zip");
+  } catch {
+    return false;
+  }
+};
+const downloadZipUrl = async (zipUrl, tempRoot) => {
+  const response = await electron.session.defaultSession.fetch(zipUrl, {
+    method: "GET",
+    headers: { "User-Agent": "LobsterAI Skill Downloader" }
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Download failed (${response.status} ${response.statusText})`
+    );
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const zipPath = path$1.join(tempRoot, "remote-skill.zip");
+  const extractRoot = path$1.join(tempRoot, "remote-skill");
+  fs$4.writeFileSync(zipPath, buffer);
+  fs$4.mkdirSync(extractRoot, { recursive: true });
+  await extractZip(zipPath, { dir: extractRoot });
   const extractedDirs = fs$4.readdirSync(extractRoot).map((entry) => path$1.join(extractRoot, entry)).filter((entryPath) => {
     try {
       return fs$4.statSync(entryPath).isDirectory();
@@ -5859,14 +5896,11 @@ class SkillManager {
     __publicField(this, "notifyTimer", null);
     this.getStore = getStore2;
   }
-  /**
-   * 返回用户技能根目录（userData/SKILLs）。
-   */
   getSkillsRoot() {
     return path$1.resolve(electron.app.getPath("userData"), SKILLS_DIR_NAME);
   }
   /**
-   * 确保用户技能根目录存在，不存在则创建。
+   * 确保目录存在
    */
   ensureSkillsRoot() {
     const root = this.getSkillsRoot();
@@ -5876,13 +5910,7 @@ class SkillManager {
     return root;
   }
   /**
-   * 将应用内置技能同步到用户目录。
-   *
-   * 规则：
-   * - 仅打包态执行。
-   * - 新技能直接复制。
-   * - 已存在技能按版本/健康检查决定是否修复覆盖。
-   * - clean copy 时保留用户 `.env` 配置。
+   * 同步技能
    */
   syncBundledSkillsToUserData() {
     if (!electron.app.isPackaged) {
@@ -5977,8 +6005,8 @@ class SkillManager {
     }
   }
   /**
-   * 判断技能运行时是否健康。
-   * 当内置技能含依赖但用户目录缺依赖时，返回 false 触发修复。
+   * Check if a skill's runtime is healthy by comparing with bundled version.
+   * Returns false if bundled has dependencies but target doesn't.
    */
   isSkillRuntimeHealthy(targetDir, bundledDir) {
     const bundledNodeModules = path$1.join(bundledDir, "node_modules");
@@ -5995,9 +6023,6 @@ class SkillManager {
     }
     return true;
   }
-  /**
-   * 读取技能版本号（frontmatter.version）。
-   */
   getSkillVersion(skillDir) {
     try {
       const raw = fs$4.readFileSync(path$1.join(skillDir, SKILL_FILE_NAME), "utf8");
@@ -6007,10 +6032,6 @@ class SkillManager {
       return "";
     }
   }
-  /**
-   * 合并内置 skills.config.json 到用户配置。
-   * 仅补齐“用户配置中不存在”的技能默认项，不覆盖用户已有设置。
-   */
   mergeSkillsConfig(bundledPath, targetPath) {
     try {
       const bundled = JSON.parse(fs$4.readFileSync(bundledPath, "utf-8"));
@@ -6040,14 +6061,7 @@ class SkillManager {
     }
   }
   /**
-   * 聚合并返回技能列表。
-   *
-   * 数据来源优先级：
-   * 1. 用户目录（最高）
-   * 2. Claude 技能目录
-   * 3. 应用内置目录（最低）
-   *
-   * 最终按 defaults.order + 名称排序。
+   * 获取所有可用技能
    */
   listSkills() {
     const primaryRoot = this.ensureSkillsRoot();
@@ -6081,9 +6095,6 @@ class SkillManager {
     });
     return skills;
   }
-  /**
-   * 生成给模型的技能自动路由提示词（仅包含启用且有 prompt 的技能）。
-   */
   buildAutoRoutingPrompt() {
     const skills = this.listSkills();
     const enabled = skills.filter((s) => s.enabled && s.prompt);
@@ -6107,9 +6118,6 @@ class SkillManager {
       "</available_skills>"
     ].join("\n");
   }
-  /**
-   * 设置技能启用状态并广播变化。
-   */
   setSkillEnabled(id, enabled) {
     const state = this.loadSkillStateMap();
     state[id] = { enabled };
@@ -6117,9 +6125,6 @@ class SkillManager {
     this.notifySkillsChanged();
     return this.listSkills();
   }
-  /**
-   * 删除用户技能目录（内置技能禁止删除）。
-   */
   deleteSkill(id) {
     const root = this.ensureSkillsRoot();
     if (id !== path$1.basename(id)) {
@@ -6140,15 +6145,6 @@ class SkillManager {
     this.notifySkillsChanged();
     return this.listSkills();
   }
-  /**
-   * 下载/导入技能来源并安装到用户技能目录。
-   *
-   * 支持来源：
-   * - 本地目录、zip、SKILL.md 文件
-   * - GitHub owner/repo
-   * - Git 仓库 URL
-   * - GitHub tree/blob URL（含子路径）
-   */
   async downloadSkill(source) {
     let cleanupPath = null;
     try {
@@ -6165,7 +6161,7 @@ class SkillManager {
             const tempRoot = fs$4.mkdtempSync(
               path$1.join(electron.app.getPath("temp"), "lobsterai-skill-zip-")
             );
-            await extractZip$1(localSource, { dir: tempRoot });
+            await extractZip(localSource, { dir: tempRoot });
             localSource = tempRoot;
             cleanupPath = tempRoot;
           } else if (path$1.basename(localSource) === SKILL_FILE_NAME) {
@@ -6177,6 +6173,12 @@ class SkillManager {
             };
           }
         }
+      } else if (isRemoteZipUrl(trimmed)) {
+        const tempRoot = fs$4.mkdtempSync(
+          path$1.join(electron.app.getPath("temp"), "lobsterai-skill-zip-")
+        );
+        cleanupPath = tempRoot;
+        localSource = await downloadZipUrl(trimmed, tempRoot);
       } else {
         const normalized = this.normalizeGitSource(trimmed);
         if (!normalized) {
@@ -6291,9 +6293,6 @@ class SkillManager {
       };
     }
   }
-  /**
-   * 启动技能目录监听（根目录 + 各技能目录）。
-   */
   startWatching() {
     this.stopWatching();
     const primaryRoot = this.ensureSkillsRoot();
@@ -6316,9 +6315,6 @@ class SkillManager {
       });
     });
   }
-  /**
-   * 停止并清理所有目录监听与防抖定时器。
-   */
   stopWatching() {
     this.watchers.forEach((watcher) => watcher.close());
     this.watchers = [];
@@ -6327,16 +6323,10 @@ class SkillManager {
       this.notifyTimer = null;
     }
   }
-  /**
-   * 工作目录变化时重建监听并通知前端刷新技能列表。
-   */
   handleWorkingDirectoryChange() {
     this.startWatching();
     this.notifySkillsChanged();
   }
-  /**
-   * 技能目录变更通知防抖，避免高频 fs.watch 事件导致频繁刷新。
-   */
   scheduleNotify() {
     if (this.notifyTimer) {
       clearTimeout(this.notifyTimer);
@@ -6346,9 +6336,6 @@ class SkillManager {
       this.notifySkillsChanged();
     }, WATCH_DEBOUNCE_MS);
   }
-  /**
-   * 向所有渲染窗口广播 `skills:changed` 事件。
-   */
   notifySkillsChanged() {
     electron.BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
@@ -6356,9 +6343,6 @@ class SkillManager {
       }
     });
   }
-  /**
-   * 解析技能目录，构造 SkillRecord。
-   */
   parseSkillDir(dir, state, defaults, isBuiltIn) {
     var _a, _b;
     const skillFile = path$1.join(dir, SKILL_FILE_NAME);
@@ -6392,9 +6376,6 @@ class SkillManager {
       return null;
     }
   }
-  /**
-   * 获取内置技能 id 集合。
-   */
   listBuiltInSkillIds() {
     const builtInRoot = this.getBundledSkillsRoot();
     if (!builtInRoot || !fs$4.existsSync(builtInRoot)) {
@@ -6406,8 +6387,7 @@ class SkillManager {
     return this.listBuiltInSkillIds().has(id);
   }
   /**
-   * 读取技能启停状态映射。
-   * 兼容旧结构（SkillRecord[]）并自动迁移为新结构（SkillStateMap）。
+   * 加载技能状态
    */
   loadSkillStateMap() {
     const store2 = this.getStore();
@@ -6422,15 +6402,9 @@ class SkillManager {
     }
     return raw ?? {};
   }
-  /**
-   * 持久化技能启停状态映射。
-   */
   saveSkillStateMap(map2) {
     this.getStore().set(SKILL_STATE_KEY, map2);
   }
-  /**
-   * 读取并合并各 root 下 skills.config.json 默认配置。
-   */
   loadSkillsDefaults(roots) {
     const merged = {};
     const reversedRoots = [...roots].reverse();
@@ -6455,9 +6429,6 @@ class SkillManager {
     }
     return merged;
   }
-  /**
-   * 按优先级返回技能根目录列表。
-   */
   getSkillRoots(primaryRoot) {
     const resolvedPrimary = primaryRoot ?? this.getSkillsRoot();
     const roots = [resolvedPrimary];
@@ -6475,9 +6446,6 @@ class SkillManager {
     const homeDir = electron.app.getPath("home");
     return path$1.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR);
   }
-  /**
-   * 返回应用内置技能目录路径。
-   */
   getBundledSkillsRoot() {
     if (electron.app.isPackaged) {
       const resourcesRoot = path$1.resolve(
@@ -6492,9 +6460,6 @@ class SkillManager {
     const projectRoot = path$1.resolve(__dirname, "..");
     return path$1.resolve(projectRoot, SKILLS_DIR_NAME);
   }
-  /**
-   * 读取技能目录下 `.env` 配置并解析为键值对。
-   */
   getSkillConfig(skillId) {
     try {
       const skillDir = this.resolveSkillDir(skillId);
@@ -6521,9 +6486,6 @@ class SkillManager {
       };
     }
   }
-  /**
-   * 将技能配置写入 `.env` 文件（整文件覆盖写入）。
-   */
   setSkillConfig(skillId, config) {
     try {
       const skillDir = this.resolveSkillDir(skillId);
@@ -6538,9 +6500,6 @@ class SkillManager {
       };
     }
   }
-  /**
-   * 尝试从内置资源修复指定技能目录（主要用于补齐 node_modules）。
-   */
   repairSkillFromBundled(skillId, skillPath) {
     if (!electron.app.isPackaged) return false;
     const bundledRoot = this.getBundledSkillsRoot();
@@ -6576,15 +6535,6 @@ class SkillManager {
       return false;
     }
   }
-  /**
-   * 确保技能依赖可用。
-   *
-   * 策略：
-   * 1. 已有 node_modules -> 直接通过
-   * 2. 无 package.json -> 无依赖，直接通过
-   * 3. 尝试从内置资源修复
-   * 4. 最后回退到 npm install
-   */
   ensureSkillDependencies(skillDir) {
     var _a;
     const nodeModulesPath = path$1.join(skillDir, "node_modules");
@@ -6798,9 +6748,6 @@ class SkillManager {
       };
     }
   }
-  /**
-   * 根据 skillId 解析技能目录绝对路径。
-   */
   resolveSkillDir(skillId) {
     const skills = this.listSkills();
     const skill = skills.find((s) => s.id === skillId);
@@ -6809,11 +6756,6 @@ class SkillManager {
     }
     return path$1.dirname(skill.skillPath);
   }
-  /**
-   * 生成脚本运行时候选：
-   * - 开发态优先 `node`
-   * - 始终回退到 `electron + ELECTRON_RUN_AS_NODE=1`
-   */
   getScriptRuntimeCandidates() {
     const candidates = [];
     if (!electron.app.isPackaged) {
@@ -6825,10 +6767,6 @@ class SkillManager {
     });
     return candidates;
   }
-  /**
-   * 在候选运行时中依次尝试执行技能脚本。
-   * 若出现 ENOENT（运行时不存在）则自动尝试下一个候选。
-   */
   async runSkillScriptWithEnv(skillDir, scriptPath, scriptArgs, envOverrides, timeoutMs) {
     let lastResult = null;
     const baseEnv = buildSkillEnv();
@@ -6861,9 +6799,6 @@ class SkillManager {
       error: "Failed to run skill script"
     };
   }
-  /**
-   * 尝试把脚本 stdout 解析为 JSON，并提取 message 字段。
-   */
   parseScriptMessage(stdout) {
     if (!stdout) {
       return null;
@@ -6878,15 +6813,9 @@ class SkillManager {
       return null;
     }
   }
-  /**
-   * 获取输出文本最后一条非空行，便于错误提示兜底展示。
-   */
   getLastOutputLine(text) {
     return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(-1)[0] || "";
   }
-  /**
-   * 将脚本执行结果转换为前端可展示的连通性检查项。
-   */
   buildEmailConnectivityCheck(code, result) {
     const label = code === "imap_connection" ? "IMAP" : "SMTP";
     if (result.success) {
@@ -6906,9 +6835,6 @@ class SkillManager {
       durationMs: result.durationMs
     };
   }
-  /**
-   * 规范化技能来源字符串，统一输出可 clone 的仓库描述。
-   */
   normalizeGitSource(source) {
     const githubTreeOrBlob = parseGithubTreeOrBlobUrl(source);
     if (githubTreeOrBlob) {
@@ -6934,10 +6860,7 @@ class SkillManager {
 }
 const USER_MEMORIES_MIGRATION_KEY = "userMemories.migration.v1.completed";
 function loadWasmBinary() {
-  const wasmPath = electron.app.isPackaged ? path$1.join(
-    process.resourcesPath,
-    "app.asar.unpacked/node_modules/sql.js/dist/sql-wasm.wasm"
-  ) : path$1.join(electron.app.getAppPath(), "node_modules/sql.js/dist/sql-wasm.wasm");
+  const wasmPath = electron.app.isPackaged ? path$1.join(process.resourcesPath, "app.asar.unpacked/node_modules/sql.js/dist/sql-wasm.wasm") : path$1.join(electron.app.getAppPath(), "node_modules/sql.js/dist/sql-wasm.wasm");
   const buf = fs$4.readFileSync(wasmPath);
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
@@ -7126,21 +7049,15 @@ const _SqliteStore = class _SqliteStore {
       const colsResult = this.db.exec("PRAGMA table_info(cowork_sessions);");
       const columns = ((_a = colsResult[0]) == null ? void 0 : _a.values.map((row) => row[1])) || [];
       if (!columns.includes("execution_mode")) {
-        this.db.run(
-          "ALTER TABLE cowork_sessions ADD COLUMN execution_mode TEXT;"
-        );
+        this.db.run("ALTER TABLE cowork_sessions ADD COLUMN execution_mode TEXT;");
         this.save();
       }
       if (!columns.includes("pinned")) {
-        this.db.run(
-          "ALTER TABLE cowork_sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;"
-        );
+        this.db.run("ALTER TABLE cowork_sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;");
         this.save();
       }
       if (!columns.includes("active_skill_ids")) {
-        this.db.run(
-          "ALTER TABLE cowork_sessions ADD COLUMN active_skill_ids TEXT;"
-        );
+        this.db.run("ALTER TABLE cowork_sessions ADD COLUMN active_skill_ids TEXT;");
         this.save();
       }
       const msgColsResult = this.db.exec("PRAGMA table_info(cowork_messages);");
@@ -7163,9 +7080,7 @@ const _SqliteStore = class _SqliteStore {
     } catch {
     }
     try {
-      this.db.run(
-        "UPDATE cowork_sessions SET pinned = 0 WHERE pinned IS NULL;"
-      );
+      this.db.run("UPDATE cowork_sessions SET pinned = 0 WHERE pinned IS NULL;");
     } catch {
     }
     try {
@@ -7421,10 +7336,491 @@ const _SqliteStore = class _SqliteStore {
       oldValue
     });
   }
+  // Expose database for cowork operations
+  getDatabase() {
+    return this.db;
+  }
+  // Expose save method for external use (e.g., CoworkStore)
+  getSaveFunction() {
+    return () => this.save();
+  }
 };
 // 进程级 sql.js 初始化缓存，避免重复加载 wasm。
 __publicField(_SqliteStore, "sqlPromise", null);
 let SqliteStore = _SqliteStore;
+const byteToHex = [];
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 256).toString(16).slice(1));
+}
+function unsafeStringify(arr, offset = 0) {
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+}
+const rnds8Pool = new Uint8Array(256);
+let poolPtr = rnds8Pool.length;
+function rng() {
+  if (poolPtr > rnds8Pool.length - 16) {
+    node_crypto.randomFillSync(rnds8Pool);
+    poolPtr = 0;
+  }
+  return rnds8Pool.slice(poolPtr, poolPtr += 16);
+}
+const native = { randomUUID: node_crypto.randomUUID };
+function _v4(options, buf, offset) {
+  var _a;
+  options = options || {};
+  const rnds = options.random ?? ((_a = options.rng) == null ? void 0 : _a.call(options)) ?? rng();
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  rnds[6] = rnds[6] & 15 | 64;
+  rnds[8] = rnds[8] & 63 | 128;
+  return unsafeStringify(rnds);
+}
+function v4(options, buf, offset) {
+  if (native.randomUUID && true && !options) {
+    return native.randomUUID();
+  }
+  return _v4(options);
+}
+const CHINESE_QUESTION_PREFIX_RE = /^(?:请问|问下|问一下|是否|能否|可否|为什么|为何|怎么|如何|谁|什么|哪(?:里|儿|个)?|几|多少|要不要|会不会|是不是|能不能|可不可以|行不行|对不对|好不好)/u;
+const ENGLISH_QUESTION_PREFIX_RE = /^(?:what|who|why|how|when|where|which|is|are|am|do|does|did|can|could|would|will|should)\b/i;
+const QUESTION_INLINE_RE = /(是不是|能不能|可不可以|要不要|会不会|有没有|对不对|好不好)/i;
+const QUESTION_SUFFIX_RE = /(吗|么|呢|嘛)\s*$/u;
+function normalizeText(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+function isQuestionLikeMemoryText(text) {
+  const normalized = normalizeText(text).replace(/[。！!]+$/g, "").trim();
+  if (!normalized) return false;
+  if (/[？?]\s*$/.test(normalized)) return true;
+  if (CHINESE_QUESTION_PREFIX_RE.test(normalized)) return true;
+  if (ENGLISH_QUESTION_PREFIX_RE.test(normalized)) return true;
+  if (QUESTION_INLINE_RE.test(normalized)) return true;
+  if (QUESTION_SUFFIX_RE.test(normalized)) return true;
+  return false;
+}
+const MEMORY_NEAR_DUPLICATE_MIN_SCORE = 0.82;
+const MEMORY_PROCEDURAL_TEXT_RE = /(执行以下命令|run\s+(?:the\s+)?following\s+command|\b(?:cd|npm|pnpm|yarn|node|python|bash|sh|git|curl|wget)\b|\$[A-Z_][A-Z0-9_]*|&&|--[a-z0-9-]+|\/tmp\/|\.sh\b|\.bat\b|\.ps1\b)/i;
+const MEMORY_ASSISTANT_STYLE_TEXT_RE = /^(?:使用|use)\s+[A-Za-z0-9._-]+\s*(?:技能|skill)/i;
+function shouldAutoDeleteMemoryText(text) {
+  const normalized = normalizeMemoryText(text);
+  if (!normalized) return false;
+  return MEMORY_ASSISTANT_STYLE_TEXT_RE.test(normalized) || MEMORY_PROCEDURAL_TEXT_RE.test(normalized) || isQuestionLikeMemoryText(normalized);
+}
+function normalizeMemoryText(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+function truncate(value, maxChars) {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars - 1)}…`;
+}
+function buildMemoryFingerprint(text) {
+  const key = normalizeMemoryMatchKey(text);
+  return crypto.createHash("sha1").update(key).digest("hex");
+}
+function normalizeMemoryMatchKey(value) {
+  return normalizeMemoryText(value).toLowerCase().replace(/[\u0000-\u001f]/g, " ").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+}
+function normalizeMemorySemanticKey(value) {
+  const key = normalizeMemoryMatchKey(value);
+  if (!key) return "";
+  return key.replace(/^(?:the user|user|i am|i m|i|my|me)\s+/i, "").replace(/^(?:该用户|这个用户|用户|本人|我的|我们|咱们|咱|我|你的|你)\s*/u, "").replace(/\s+/g, " ").trim();
+}
+function scoreMemorySimilarity(left, right) {
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  const compactLeft = left.replace(/\s+/g, "");
+  const compactRight = right.replace(/\s+/g, "");
+  if (compactLeft && compactLeft === compactRight) {
+    return 1;
+  }
+  let phraseScore = 0;
+  if (compactLeft && compactRight && (compactLeft.includes(compactRight) || compactRight.includes(compactLeft))) {
+    phraseScore = Math.min(compactLeft.length, compactRight.length) / Math.max(compactLeft.length, compactRight.length);
+  }
+  return Math.max(phraseScore, scoreTokenOverlap(left, right), scoreCharacterBigramDice(left, right));
+}
+function scoreTokenOverlap(left, right) {
+  const leftMap = buildTokenFrequencyMap(left);
+  const rightMap = buildTokenFrequencyMap(right);
+  if (leftMap.size === 0 || rightMap.size === 0) return 0;
+  let leftCount = 0;
+  let rightCount = 0;
+  let intersection = 0;
+  for (const count of leftMap.values()) leftCount += count;
+  for (const count of rightMap.values()) rightCount += count;
+  for (const [token, leftValue] of leftMap.entries()) {
+    intersection += Math.min(leftValue, rightMap.get(token) || 0);
+  }
+  const denominator = Math.min(leftCount, rightCount);
+  if (denominator <= 0) return 0;
+  return intersection / denominator;
+}
+function scoreCharacterBigramDice(left, right) {
+  const leftMap = buildCharacterBigramMap(left);
+  const rightMap = buildCharacterBigramMap(right);
+  if (leftMap.size === 0 || rightMap.size === 0) return 0;
+  let leftCount = 0;
+  let rightCount = 0;
+  let intersection = 0;
+  for (const count of leftMap.values()) leftCount += count;
+  for (const count of rightMap.values()) rightCount += count;
+  for (const [gram, leftValue] of leftMap.entries()) {
+    intersection += Math.min(leftValue, rightMap.get(gram) || 0);
+  }
+  const denominator = leftCount + rightCount;
+  if (denominator <= 0) return 0;
+  return 2 * intersection / denominator;
+}
+function buildCharacterBigramMap(value) {
+  const compact = value.replace(/\s+/g, "").trim();
+  if (!compact) return /* @__PURE__ */ new Map();
+  if (compact.length <= 1) return /* @__PURE__ */ new Map([[compact, 1]]);
+  const map2 = /* @__PURE__ */ new Map();
+  for (let index = 0; index < compact.length - 1; index += 1) {
+    const gram = compact.slice(index, index + 2);
+    map2.set(gram, (map2.get(gram) || 0) + 1);
+  }
+  return map2;
+}
+function buildTokenFrequencyMap(value) {
+  const tokens = value.split(/\s+/g).map((token) => token.trim()).filter(Boolean);
+  const map2 = /* @__PURE__ */ new Map();
+  for (const token of tokens) {
+    map2.set(token, (map2.get(token) || 0) + 1);
+  }
+  return map2;
+}
+function choosePreferredMemoryText(currentText, incomingText) {
+  const normalizedCurrent = truncate(normalizeMemoryText(currentText), 360);
+  const normalizedIncoming = truncate(normalizeMemoryText(incomingText), 360);
+  if (!normalizedCurrent) return normalizedIncoming;
+  if (!normalizedIncoming) return normalizedCurrent;
+  const currentScore = scoreMemoryTextQuality(normalizedCurrent);
+  const incomingScore = scoreMemoryTextQuality(normalizedIncoming);
+  if (incomingScore > currentScore + 1) return normalizedIncoming;
+  if (currentScore > incomingScore + 1) return normalizedCurrent;
+  return normalizedIncoming.length >= normalizedCurrent.length ? normalizedIncoming : normalizedCurrent;
+}
+function scoreMemoryTextQuality(value) {
+  const normalized = normalizeMemoryText(value);
+  if (!normalized) return 0;
+  let score = normalized.length;
+  if (/^(?:该用户|这个用户|用户)\s*/u.test(normalized)) {
+    score -= 12;
+  }
+  if (/^(?:the user|user)\b/i.test(normalized)) {
+    score -= 12;
+  }
+  if (/^(?:我|我的|我是|我有|我会|我喜欢|我偏好)/u.test(normalized)) {
+    score += 4;
+  }
+  if (/^(?:i|i am|i'm|my)\b/i.test(normalized)) {
+    score += 4;
+  }
+  return score;
+}
+class CoworkStore {
+  constructor(db, saveDb) {
+    __publicField(this, "db");
+    __publicField(this, "saveDb");
+    this.db = db;
+    this.saveDb = saveDb;
+  }
+  getOne(sql, params = []) {
+    var _a;
+    const result = this.db.exec(sql, params);
+    if (!((_a = result[0]) == null ? void 0 : _a.values[0])) return void 0;
+    const columns = result[0].columns;
+    const values = result[0].values[0];
+    const row = {};
+    columns.forEach((col, i) => {
+      row[col] = values[i];
+    });
+    return row;
+  }
+  getAll(sql, params = []) {
+    var _a;
+    const result = this.db.exec(sql, params);
+    if (!((_a = result[0]) == null ? void 0 : _a.values)) return [];
+    const columns = result[0].columns;
+    return result[0].values.map((values) => {
+      const row = {};
+      columns.forEach((col, i) => {
+        row[col] = values[i];
+      });
+      return row;
+    });
+  }
+  mapMemoryRow(row) {
+    return {
+      id: row.id,
+      text: row.text,
+      confidence: Number.isFinite(Number(row.confidence)) ? Number(row.confidence) : 0.7,
+      isExplicit: Boolean(row.is_explicit),
+      status: row.status === "stale" || row.status === "deleted" ? row.status : "created",
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+      lastUsedAt: row.last_used_at === null ? null : Number(row.last_used_at)
+    };
+  }
+  addMemorySource(memoryId, source) {
+    const now = Date.now();
+    this.db.run(
+      `
+      INSERT INTO user_memory_sources (id, memory_id, session_id, message_id, role, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, 1, ?)
+    `,
+      [v4(), memoryId, (source == null ? void 0 : source.sessionId) || null, (source == null ? void 0 : source.messageId) || null, (source == null ? void 0 : source.role) || "system", now]
+    );
+  }
+  createOrReviveUserMemory(input) {
+    const normalizedText = truncate(normalizeMemoryText(input.text), 360);
+    if (!normalizedText) {
+      throw new Error("Memory text is required");
+    }
+    const now = Date.now();
+    const fingerprint = buildMemoryFingerprint(normalizedText);
+    const confidence = Math.max(0, Math.min(1, Number.isFinite(input.confidence) ? Number(input.confidence) : 0.75));
+    const explicitFlag = input.isExplicit ? 1 : 0;
+    let existing = this.getOne(
+      `
+      SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      FROM user_memories
+      WHERE fingerprint = ? AND status != 'deleted'
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `,
+      [fingerprint]
+    );
+    if (!existing) {
+      const incomingSemanticKey = normalizeMemorySemanticKey(normalizedText);
+      if (incomingSemanticKey) {
+        const candidates = this.getAll(`
+          SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+          FROM user_memories
+          WHERE status != 'deleted'
+          ORDER BY updated_at DESC
+          LIMIT 200
+        `);
+        let bestCandidate = null;
+        let bestScore = 0;
+        for (const candidate of candidates) {
+          const candidateSemanticKey = normalizeMemorySemanticKey(candidate.text);
+          if (!candidateSemanticKey) continue;
+          const score = scoreMemorySimilarity(candidateSemanticKey, incomingSemanticKey);
+          if (score <= bestScore) continue;
+          bestScore = score;
+          bestCandidate = candidate;
+        }
+        if (bestCandidate && bestScore >= MEMORY_NEAR_DUPLICATE_MIN_SCORE) {
+          existing = bestCandidate;
+        }
+      }
+    }
+    if (existing) {
+      const mergedText = choosePreferredMemoryText(existing.text, normalizedText);
+      const mergedExplicit = existing.is_explicit ? 1 : explicitFlag;
+      const mergedConfidence = Math.max(Number(existing.confidence) || 0, confidence);
+      this.db.run(
+        `
+        UPDATE user_memories
+        SET text = ?, fingerprint = ?, confidence = ?, is_explicit = ?, status = 'created', updated_at = ?
+        WHERE id = ?
+      `,
+        [mergedText, buildMemoryFingerprint(mergedText), mergedConfidence, mergedExplicit, now, existing.id]
+      );
+      this.addMemorySource(existing.id, input.source);
+      const memory2 = this.getOne(
+        `
+        SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+        FROM user_memories
+        WHERE id = ?
+      `,
+        [existing.id]
+      );
+      if (!memory2) {
+        throw new Error("Failed to reload updated memory");
+      }
+      return { memory: this.mapMemoryRow(memory2), created: false, updated: true };
+    }
+    const id = v4();
+    this.db.run(
+      `
+      INSERT INTO user_memories (
+        id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      ) VALUES (?, ?, ?, ?, ?, 'created', ?, ?, NULL)
+    `,
+      [id, normalizedText, fingerprint, confidence, explicitFlag, now, now]
+    );
+    this.addMemorySource(id, input.source);
+    const memory = this.getOne(
+      `
+      SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      FROM user_memories
+      WHERE id = ?
+    `,
+      [id]
+    );
+    if (!memory) {
+      throw new Error("Failed to load created memory");
+    }
+    return { memory: this.mapMemoryRow(memory), created: true, updated: false };
+  }
+  createUserMemory(input) {
+    const result = this.createOrReviveUserMemory(input);
+    this.saveDb();
+    return result.memory;
+  }
+  updateUserMemory(input) {
+    const current = this.getOne(
+      `
+      SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      FROM user_memories
+      WHERE id = ?
+    `,
+      [input.id]
+    );
+    if (!current) return null;
+    const now = Date.now();
+    const nextText = input.text !== void 0 ? truncate(normalizeMemoryText(input.text), 360) : current.text;
+    if (!nextText) {
+      throw new Error("Memory text is required");
+    }
+    const nextConfidence = input.confidence !== void 0 ? Math.max(0, Math.min(1, Number(input.confidence))) : Number(current.confidence);
+    const nextStatus = input.status && (input.status === "created" || input.status === "stale" || input.status === "deleted") ? input.status : current.status;
+    const nextExplicit = input.isExplicit !== void 0 ? input.isExplicit ? 1 : 0 : current.is_explicit;
+    this.db.run(
+      `
+      UPDATE user_memories
+      SET text = ?, fingerprint = ?, confidence = ?, is_explicit = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `,
+      [nextText, buildMemoryFingerprint(nextText), nextConfidence, nextExplicit, nextStatus, now, input.id]
+    );
+    const updated = this.getOne(
+      `
+      SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      FROM user_memories
+      WHERE id = ?
+    `,
+      [input.id]
+    );
+    this.saveDb();
+    return updated ? this.mapMemoryRow(updated) : null;
+  }
+  deleteUserMemory(id) {
+    var _a, _b;
+    const now = Date.now();
+    this.db.run(
+      `
+      UPDATE user_memories
+      SET status = 'deleted', updated_at = ?
+      WHERE id = ?
+    `,
+      [now, id]
+    );
+    this.db.run(
+      `
+      UPDATE user_memory_sources
+      SET is_active = 0
+      WHERE memory_id = ?
+    `,
+      [id]
+    );
+    this.saveDb();
+    return (((_b = (_a = this.db).getRowsModified) == null ? void 0 : _b.call(_a)) || 0) > 0;
+  }
+  listUserMemories(options = {}) {
+    const query = normalizeMemoryText(options.query || "");
+    const includeDeleted = Boolean(options.includeDeleted);
+    const status = options.status || "all";
+    const limit = Math.max(1, Math.min(200, Math.floor(options.limit ?? 200)));
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const clauses = [];
+    const params = [];
+    if (!includeDeleted && status === "all") {
+      clauses.push(`status != 'deleted'`);
+    }
+    if (status !== "all") {
+      clauses.push("status = ?");
+      params.push(status);
+    }
+    if (query) {
+      clauses.push("LOWER(text) LIKE ?");
+      params.push(`%${query.toLowerCase()}%`);
+    }
+    const whereClause = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
+    const rows = this.getAll(
+      `
+      SELECT id, text, fingerprint, confidence, is_explicit, status, created_at, updated_at, last_used_at
+      FROM user_memories
+      ${whereClause}
+      ORDER BY updated_at DESC
+      LIMIT ? OFFSET ?
+    `,
+      [...params, limit, offset]
+    );
+    return rows.map((row) => this.mapMemoryRow(row));
+  }
+  getUserMemoryStats() {
+    const rows = this.getAll(`
+      SELECT status, is_explicit, COUNT(*) AS count
+      FROM user_memories
+      GROUP BY status, is_explicit
+    `);
+    const stats = {
+      total: 0,
+      created: 0,
+      stale: 0,
+      deleted: 0,
+      explicit: 0,
+      implicit: 0
+    };
+    for (const row of rows) {
+      const count = Number(row.count) || 0;
+      stats.total += count;
+      if (row.status === "created") stats.created += count;
+      if (row.status === "stale") stats.stale += count;
+      if (row.status === "deleted") stats.deleted += count;
+      if (row.is_explicit) stats.explicit += count;
+      else stats.implicit += count;
+    }
+    return stats;
+  }
+  autoDeleteNonPersonalMemories() {
+    const rows = this.getAll(`SELECT id, text FROM user_memories WHERE status = 'created'`);
+    if (rows.length === 0) return 0;
+    const now = Date.now();
+    let deleted = 0;
+    for (const row of rows) {
+      if (!shouldAutoDeleteMemoryText(row.text)) {
+        continue;
+      }
+      this.db.run(
+        `
+        UPDATE user_memories
+        SET status = 'deleted', updated_at = ?
+        WHERE id = ?
+      `,
+        [now, row.id]
+      );
+      this.db.run(
+        `
+        UPDATE user_memory_sources
+        SET is_active = 0
+        WHERE memory_id = ?
+      `,
+        [row.id]
+      );
+      deleted += 1;
+    }
+    if (deleted > 0) {
+      this.saveDb();
+    }
+    return deleted;
+  }
+}
 electron.app.name = APP_NAME;
 electron.app.setName(APP_NAME);
 const isDev = process.env.NODE_ENV === "development";
@@ -7434,14 +7830,14 @@ const isWindows = process.platform === "win32";
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || "http://localhost:5176";
 const PRELOAD_PATH = electron.app.isPackaged ? path$2.join(__dirname, "preload.js") : path$2.join(__dirname, "../dist-electron/preload.js");
 const getAppIconPath = () => {
-  if (process.platform !== "win32" && process.platform !== "linux")
-    return void 0;
+  if (process.platform !== "win32" && process.platform !== "linux") return void 0;
   const basePath = electron.app.isPackaged ? path$2.join(process.resourcesPath, "tray") : path$2.join(__dirname, "..", "resources", "tray");
   return process.platform === "win32" ? path$2.join(basePath, "tray-icon.ico") : path$2.join(basePath, "tray-icon.png");
 };
 let mainWindow = null;
 const gotTheLock = isDev ? true : electron.app.requestSingleInstanceLock();
 let store = null;
+let coworkStore = null;
 let skillManager = null;
 let storeInitPromise = null;
 const initStore = async () => {
@@ -7451,12 +7847,7 @@ const initStore = async () => {
     }
     storeInitPromise = Promise.race([
       SqliteStore.create(electron.app.getPath("userData")),
-      new Promise(
-        (_, reject) => setTimeout(
-          () => reject(new Error("Store initialization timed out after 15s")),
-          15e3
-        )
-      )
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Store initialization timed out after 15s")), 15e3))
     ]);
   }
   return storeInitPromise;
@@ -7466,6 +7857,17 @@ const getStore = () => {
     throw new Error("Store not initialized. Call initStore() first.");
   }
   return store;
+};
+const getCoworkStore = () => {
+  if (!coworkStore) {
+    const sqliteStore = getStore();
+    coworkStore = new CoworkStore(sqliteStore.getDatabase(), sqliteStore.getSaveFunction());
+    const cleaned = coworkStore.autoDeleteNonPersonalMemories();
+    if (cleaned > 0) {
+      console.info(`[cowork-memory] Auto-deleted ${cleaned} non-personal/procedural memories`);
+    }
+  }
+  return coworkStore;
 };
 const getSkillManager = () => {
   if (!skillManager) {
@@ -7506,18 +7908,12 @@ if (!gotTheLock) {
   electron.ipcMain.handle("skills:getConfig", (_event, skillId) => {
     return getSkillManager().getSkillConfig(skillId);
   });
-  electron.ipcMain.handle(
-    "skills:setConfig",
-    (_event, skillId, config) => {
-      return getSkillManager().setSkillConfig(skillId, config);
-    }
-  );
-  electron.ipcMain.handle(
-    "skills:testEmailConnectivity",
-    async (_event, skillId, config) => {
-      return getSkillManager().testEmailConnectivity(skillId, config);
-    }
-  );
+  electron.ipcMain.handle("skills:setConfig", (_event, skillId, config) => {
+    return getSkillManager().setSkillConfig(skillId, config);
+  });
+  electron.ipcMain.handle("skills:testEmailConnectivity", async (_event, skillId, config) => {
+    return getSkillManager().testEmailConnectivity(skillId, config);
+  });
   electron.ipcMain.handle(
     "api:fetch",
     async (_event, options) => {
@@ -7551,6 +7947,93 @@ if (!gotTheLock) {
           headers: {},
           data: null,
           error: error instanceof Error ? error.message : "Unknown error"
+        };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "cowork:memory:createEntry",
+    async (_event, input) => {
+      try {
+        const entry = getCoworkStore().createUserMemory({
+          text: input.text,
+          confidence: input.confidence,
+          isExplicit: input == null ? void 0 : input.isExplicit
+        });
+        return { success: true, entry };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to create memory entry"
+        };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "cowork:memory:updateEntry",
+    async (_event, input) => {
+      try {
+        const entry = getCoworkStore().updateUserMemory({
+          id: input.id,
+          text: input.text,
+          confidence: input.confidence,
+          status: input.status,
+          isExplicit: input.isExplicit
+        });
+        if (!entry) {
+          return { success: false, error: "Memory entry not found" };
+        }
+        return { success: true, entry };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to update memory entry"
+        };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "cowork:memory:listEntries",
+    async (_event, input) => {
+      var _a;
+      try {
+        const entries = getCoworkStore().listUserMemories({
+          query: ((_a = input == null ? void 0 : input.query) == null ? void 0 : _a.trim()) || void 0,
+          status: (input == null ? void 0 : input.status) || "all",
+          includeDeleted: Boolean(input == null ? void 0 : input.includeDeleted),
+          limit: input == null ? void 0 : input.limit,
+          offset: input == null ? void 0 : input.offset
+        });
+        return { success: true, entries };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to list memory entries"
+        };
+      }
+    }
+  );
+  electron.ipcMain.handle("cowork:memory:getStats", async () => {
+    try {
+      const stats = getCoworkStore().getUserMemoryStats();
+      return { success: true, stats };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to get memory stats"
+      };
+    }
+  });
+  electron.ipcMain.handle(
+    "cowork:memory:deleteEntry",
+    async (_event, input) => {
+      try {
+        const success = getCoworkStore().deleteUserMemory(input.id);
+        return success ? { success: true } : { success: false, error: "Memory entry not found" };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to delete memory entry"
         };
       }
     }
@@ -7647,16 +8130,12 @@ if (!gotTheLock) {
           console.error("Failed to load URL:", err);
           retryCount++;
           if (retryCount < maxRetries) {
-            console.log(
-              `Retrying to load URL (${retryCount}/${maxRetries})...`
-            );
+            console.log(`Retrying to load URL (${retryCount}/${maxRetries})...`);
             setTimeout(tryLoadURL, 3e3);
           } else {
             console.error("Failed to load URL after maximum retries");
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.loadFile(
-                path$2.join(__dirname, "../resources/error.html")
-              );
+              mainWindow.loadFile(path$2.join(__dirname, "../resources/error.html"));
             }
           }
         });
@@ -7683,6 +8162,14 @@ if (!gotTheLock) {
       }
     });
   };
+  const manager = getSkillManager();
+  console.log("[Main] initApp: getSkillManager done");
+  try {
+    manager.syncBundledSkillsToUserData();
+    console.log("[Main] initApp: syncBundledSkillsToUserData done");
+  } catch (error) {
+    console.error("[Main] initApp: syncBundledSkillsToUserData failed:", error);
+  }
   const initApp = async () => {
     console.log('app.getPath("userData")', electron.app.getPath("userData"));
     console.log("[Main] initApp: waiting for app.whenReady()");
