@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { i18nService, LanguageType } from '@/services/i18n'
 
@@ -21,6 +21,10 @@ import ModelSettings from './model/ModelSettings'
 import EmailSkillSettings from './skills/EmailSkillSettings'
 import CoworkMemorySettings from './cowork/CoworkMemorySettings'
 import CoworkSandboxSettings from './cowork/CoworkSandboxSettings'
+import ShortcutsSettings from './shortcuts/ShortcutsSettings'
+import AboutSettings from './about/AboutSettings'
+import { configService } from '@/services/config'
+import { themeService } from '@/services/theme'
 
 export type TabType = 'general' | 'model' | 'coworkSandbox' | 'coworkMemory' | 'shortcuts' | 'im' | 'email' | 'about'
 
@@ -39,9 +43,12 @@ const Settings: React.FC<SettingsProps> = ({ initialTab, notice, onClose }) => {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [noticeMessage, setNoticeMessage] = useState<string | null>(notice ?? null)
-  const contentRef = useRef<HTMLDivElement>(null)
 
   const [language, setLanguage] = useState<LanguageType>('zh')
+
+  const contentRef = useRef<HTMLDivElement>(null)
+  const initialThemeRef = useRef<'light' | 'dark' | 'system'>(themeService.getTheme())
+  const initialLanguageRef = useRef<LanguageType>(i18nService.getLanguage())
 
   // 渲染标签页
   const sidebarTabs: { key: TabType; label: string; icon: React.ReactNode }[] = useMemo(
@@ -111,6 +118,12 @@ const Settings: React.FC<SettingsProps> = ({ initialTab, notice, onClose }) => {
       case 'coworkSandbox':
         return <CoworkSandboxSettings />
 
+      case 'shortcuts':
+        return <ShortcutsSettings />
+
+      case 'about':
+        return <AboutSettings language={language} setError={setError} setNoticeMessage={setNoticeMessage} />
+
       default:
         return null
     }
@@ -132,6 +145,18 @@ const Settings: React.FC<SettingsProps> = ({ initialTab, notice, onClose }) => {
     setActiveTab(tab)
   }
 
+  useEffect(() => {
+    try {
+      const config = configService.getConfig()
+
+      initialThemeRef.current = config.theme
+      initialLanguageRef.current = config.language
+      setLanguage(config.language)
+    } catch (error) {
+      setError('Failed to load settings')
+    }
+  }, [])
+
   return (
     <div className="fixed inset-0 z-50 modal-backdrop flex items-center justify-center" onClick={onClose}>
       <div
@@ -141,7 +166,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab, notice, onClose }) => {
         {/* Left sidebar */}
         <div className="w-[220px] shrink-0 flex flex-col dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted border-r dark:border-claude-darkBorder border-claude-border rounded-l-2xl overflow-y-auto">
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">settings</h2>
+            <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">{i18nService.t('settings')}</h2>
           </div>
           <nav className="flex flex-col gap-0.5 px-3 pb-4">
             {sidebarTabs.map((tab) => (

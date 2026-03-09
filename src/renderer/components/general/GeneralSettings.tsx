@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ThemedSelect from '../ui/ThemedSelect'
 import { i18nService, LanguageType } from '@/services/i18n'
 import { themeService } from '@/services/theme'
 import LightAppearance from '../icons/appearance/LightAppearance'
 import DarkAppearance from '../icons/appearance/DarkAppearance'
 import SystemAppearance from '../icons/appearance/SystemAppearance'
+import { configService } from '@/services/config'
 
 interface GeneralSettingsProps {
   language: LanguageType
@@ -17,6 +18,24 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ language, setLanguage
   const [useSystemProxy, setUseSystemProxy] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [isUpdatingAutoLaunch, setIsUpdatingAutoLaunch] = useState(false)
+
+  useEffect(() => {
+    const config = configService.getConfig()
+
+    setTheme(config.theme)
+    setLanguage(config.language)
+    setUseSystemProxy(config.useSystemProxy ?? false)
+
+    // Load auto-launch setting
+    window.electron.autoLaunch
+      .get()
+      .then(({ enabled }) => {
+        setAutoLaunchState(enabled)
+      })
+      .catch((err) => {
+        console.error('Failed to load auto-launch setting:', err)
+      })
+  }, [])
 
   return (
     <div className="space-y-8">

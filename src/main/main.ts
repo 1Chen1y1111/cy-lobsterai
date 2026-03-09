@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage, session } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -7,6 +7,10 @@ import { SkillManager } from './skillManager'
 import { SqliteStore } from './sqliteStore'
 import { CoworkStore } from './coworkStore'
 import { ensureSandboxReady, getSandboxStatus } from './libs/coworkSandboxRuntime'
+import { getLogFilePath } from './logger'
+import { exportLogsZip } from './libs/logExport'
+import { getCoworkLogPath } from './libs/coworkLogger'
+import { getAutoLaunchEnabled, setAutoLaunchEnabled } from './autoLaunchManager'
 
 // 设置应用程序名称
 app.name = APP_NAME
@@ -18,6 +22,58 @@ const isLinux = process.platform === 'linux'
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || 'http://localhost:5176'
+
+const safeDecodeURIComponent = (value: string): string => {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+const normalizeWindowsShellPath = (inputPath: string): string => {
+  if (!isWindows) return inputPath
+
+  const trimmed = inputPath.trim()
+  if (!trimmed) return inputPath
+
+  let normalized = trimmed
+  if (/^file:\/\//i.test(normalized)) {
+    normalized = safeDecodeURIComponent(normalized.replace(/^file:\/\//i, ''))
+  }
+
+  if (/^\/[A-Za-z]:/.test(normalized)) {
+    normalized = normalized.slice(1)
+  }
+
+  const unixDriveMatch = normalized.match(/^[/\\]([A-Za-z])[/\\](.+)$/)
+  if (unixDriveMatch) {
+    const drive = unixDriveMatch[1].toUpperCase()
+    const rest = unixDriveMatch[2].replace(/[/\\]+/g, '\\')
+    return `${drive}:\\${rest}`
+  }
+
+  if (/^[A-Za-z]:[/\\]/.test(normalized)) {
+    const drive = normalized[0].toUpperCase()
+    const rest = normalized.slice(1).replace(/\//g, '\\')
+    return `${drive}${rest}`
+  }
+
+  return normalized
+}
+
+const padTwoDigits = (value: number): string => value.toString().padStart(2, '0')
+
+const buildLogExportFileName = (): string => {
+  const now = new Date()
+  const datePart = `${now.getFullYear()}${padTwoDigits(now.getMonth() + 1)}${padTwoDigits(now.getDate())}`
+  const timePart = `${padTwoDigits(now.getHours())}${padTwoDigits(now.getMinutes())}${padTwoDigits(now.getSeconds())}`
+  return `lobsterai-logs-${datePart}-${timePart}.zip`
+}
+
+const ensureZipFileName = (value: string): string => {
+  return value.toLowerCase().endsWith('.zip') ? value : `${value}.zip`
+}
 
 // 获取正确的预加载脚本路径
 const PRELOAD_PATH = app.isPackaged ? path.join(__dirname, 'preload.js') : path.join(__dirname, '../dist-electron/preload.js')
@@ -315,6 +371,124 @@ if (!gotTheLock) {
       error: result.ok ? undefined : 'error' in result ? result.error : undefined
     }
   })
+
+  /* ------------------- Shell IPC handlers ------------------- */
+  // 打开文件/文件夹
+  ipcMain.handle('shell:openPath', async (_event, filePath: string) => {
+    try {
+      const normalizedPath = normalizeWindowsShellPath(filePath)
+      const result = await shell.openPath(normalizedPath)
+      if (result) {
+        // 如果返回非空字符串，表示打开失败
+        return { success: false, error: result }
+      }
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  // 在文件管理器中显示
+  ipcMain.handle('shell:showItemInFolder', async (_event, filePath: string) => {
+    try {
+      const normalizedPath = normalizeWindowsShellPath(filePath)
+      shell.showItemInFolder(normalizedPath)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  // 打开外部链接
+  ipcMain.handle('shell:openExternal', async (_event, url: string) => {
+    try {
+      await shell.openExternal(url)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  /* ------------------- log IPC handlers ------------------- */
+
+  ipcMain.handle('log:getPath', () => {
+    return getLogFilePath()
+  })
+
+  ipcMain.handle('log:openFolder', () => {
+    const logPath = getLogFilePath()
+    if (logPath) {
+      shell.showItemInFolder(logPath)
+    }
+  })
+
+  ipcMain.handle('log:exportZip', async (event) => {
+    try {
+      const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+      const saveOptions = {
+        title: 'Export Logs',
+        defaultPath: path.join(app.getPath('downloads'), buildLogExportFileName()),
+        filters: [{ name: 'Zip Archive', extensions: ['zip'] }]
+      }
+
+      const saveResult = ownerWindow ? await dialog.showSaveDialog(ownerWindow, saveOptions) : await dialog.showSaveDialog(saveOptions)
+
+      if (saveResult.canceled || !saveResult.filePath) {
+        return { success: true, canceled: true }
+      }
+
+      const outputPath = ensureZipFileName(saveResult.filePath)
+      const archiveResult = await exportLogsZip({
+        outputPath,
+        entries: [
+          { archiveName: 'main.log', filePath: getLogFilePath() },
+          { archiveName: 'cowork.log', filePath: getCoworkLogPath() }
+        ]
+      })
+
+      return {
+        success: true,
+        canceled: false,
+        path: outputPath,
+        missingEntries: archiveResult.missingEntries
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to export logs'
+      }
+    }
+  })
+
+  /* ------------------- Auto-launch IPC handlers ------------------- */
+  // Use SQLite store as the source of truth for UI state, because
+  // app.getLoginItemSettings() returns unreliable values on macOS and
+  // requires matching args on Windows.
+  ipcMain.handle('app:getAutoLaunch', () => {
+    const stored = getStore().get<boolean>('auto_launch_enabled')
+    // Fall back to OS API if SQLite has no record yet (e.g. upgraded from older version)
+    const enabled = stored ?? getAutoLaunchEnabled()
+    return { enabled }
+  })
+
+  ipcMain.handle('app:setAutoLaunch', (_event, enabled: unknown) => {
+    if (typeof enabled !== 'boolean') {
+      return { success: false, error: 'Invalid parameter: enabled must be boolean' }
+    }
+    try {
+      setAutoLaunchEnabled(enabled)
+      getStore().set('auto_launch_enabled', enabled)
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to set auto-launch'
+      }
+    }
+  })
+
+  ipcMain.handle('app:getVersion', () => app.getVersion())
+  ipcMain.handle('app:getSystemLocale', () => app.getLocale())
 
   app.on('second-instance', (_event, commandLine, workingDirectory) => {
     console.log('[Main] second-instance event', {

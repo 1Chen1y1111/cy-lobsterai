@@ -16,10 +16,11 @@ import {
   CustomProviderIcon
 } from '../icons/providers'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { decryptSecret, decryptWithPassword, EncryptedPayload, encryptWithPassword, PasswordEncryptedPayload } from '@/services/encryption'
 import { APP_ID, EXPORT_FORMAT_TYPE, EXPORT_PASSWORD } from '@/constants/app'
 import { i18nService, LanguageType } from '@/services/i18n'
+import { configService } from '@/services/config'
 
 const providerKeys = [
   'openai',
@@ -973,6 +974,163 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ language, setError, setNo
       handleSaveNewModel()
     }
   }
+
+  useEffect(() => {
+    const config = configService.getConfig()
+
+    // Set up providers based on saved config
+    if (config.api) {
+      // For backward compatibility with older config
+      // Initialize active provider based on baseUrl
+      const normalizedApiBaseUrl = config.api.baseUrl.toLowerCase()
+      if (normalizedApiBaseUrl.includes('openai')) {
+        setActiveProvider('openai')
+        setProviders((prev) => ({
+          ...prev,
+          openai: {
+            ...prev.openai,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('deepseek')) {
+        setActiveProvider('deepseek')
+        setProviders((prev) => ({
+          ...prev,
+          deepseek: {
+            ...prev.deepseek,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('moonshot.ai') || normalizedApiBaseUrl.includes('moonshot.cn')) {
+        setActiveProvider('moonshot')
+        setProviders((prev) => ({
+          ...prev,
+          moonshot: {
+            ...prev.moonshot,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('bigmodel.cn')) {
+        setActiveProvider('zhipu')
+        setProviders((prev) => ({
+          ...prev,
+          zhipu: {
+            ...prev.zhipu,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('minimax')) {
+        setActiveProvider('minimax')
+        setProviders((prev) => ({
+          ...prev,
+          minimax: {
+            ...prev.minimax,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('dashscope')) {
+        setActiveProvider('qwen')
+        setProviders((prev) => ({
+          ...prev,
+          qwen: {
+            ...prev.qwen,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('openrouter.ai')) {
+        setActiveProvider('openrouter')
+        setProviders((prev) => ({
+          ...prev,
+          openrouter: {
+            ...prev.openrouter,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('googleapis')) {
+        setActiveProvider('gemini')
+        setProviders((prev) => ({
+          ...prev,
+          gemini: {
+            ...prev.gemini,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('anthropic')) {
+        setActiveProvider('anthropic')
+        setProviders((prev) => ({
+          ...prev,
+          anthropic: {
+            ...prev.anthropic,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      } else if (normalizedApiBaseUrl.includes('ollama') || normalizedApiBaseUrl.includes('11434')) {
+        setActiveProvider('ollama')
+        setProviders((prev) => ({
+          ...prev,
+          ollama: {
+            ...prev.ollama,
+            enabled: true,
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl
+          }
+        }))
+      }
+    }
+
+    // Load provider-specific configurations if available
+    // 合并已保存的配置和默认配置，确保新添加的 provider 能被显示
+    if (config.providers) {
+      setProviders((prev) => {
+        const merged = {
+          ...prev, // 保留默认的 providers（包括新添加的 anthropic）
+          ...config.providers // 覆盖已保存的配置
+        }
+
+        // After merging, find the first enabled provider to set as activeProvider
+        // This ensures we don't use stale activeProvider from old config.api.baseUrl
+        const firstEnabledProvider = providerKeys.find((providerKey) => merged[providerKey]?.enabled)
+        if (firstEnabledProvider) {
+          setActiveProvider(firstEnabledProvider)
+        }
+
+        return Object.fromEntries(
+          Object.entries(merged).map(([providerKey, providerConfig]) => {
+            const models = providerConfig.models?.map((model) => ({
+              ...model,
+              supportsImage: model.supportsImage ?? false
+            }))
+            return [
+              providerKey,
+              {
+                ...providerConfig,
+                apiFormat: getEffectiveApiFormat(providerKey, (providerConfig as ProviderConfig).apiFormat),
+                models
+              }
+            ]
+          })
+        ) as ProvidersConfig
+      })
+    }
+  }, [])
 
   return (
     <>

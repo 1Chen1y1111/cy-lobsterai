@@ -2,24 +2,27 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-const electron = require("electron");
-const path$2 = require("node:path");
-const fs$5 = require("node:fs");
-const os = require("node:os");
-const child_process = require("child_process");
-const fs$4 = require("fs");
-const path$1 = require("path");
+var _a;
+const require$$0$1 = require("electron");
+const path$8 = require("node:path");
+const fs$b = require("node:fs");
+const os$4 = require("node:os");
+const require$$0$2 = require("child_process");
+const fs$a = require("fs");
+const path$7 = require("path");
 const require$$1 = require("tty");
-const require$$1$1 = require("util");
-const require$$0 = require("os");
-const require$$0$1 = require("buffer");
+const require$$1$2 = require("util");
+const require$$1$1 = require("os");
+const require$$0 = require("buffer");
 const require$$6 = require("stream");
-const require$$1$2 = require("zlib");
+const require$$1$3 = require("zlib");
 const require$$4 = require("events");
 const crypto = require("crypto");
 const initSqlJs = require("sql.js");
 const node_crypto = require("node:crypto");
 const promises = require("stream/promises");
+const require$$0$3 = require("http");
+const require$$1$4 = require("https");
 const APP_NAME = "CyLobsterAI";
 const DB_FILENAME = "cylobsterai.sqlite";
 /*! js-yaml 4.1.1 https://github.com/nodeca/js-yaml @license MIT */
@@ -35,11 +38,11 @@ function toArray(sequence) {
   return [sequence];
 }
 function extend(target, source) {
-  var index, length, key, sourceKeys;
+  var index2, length, key, sourceKeys;
   if (source) {
     sourceKeys = Object.keys(source);
-    for (index = 0, length = sourceKeys.length; index < length; index += 1) {
-      key = sourceKeys[index];
+    for (index2 = 0, length = sourceKeys.length; index2 < length; index2 += 1) {
+      key = sourceKeys[index2];
       target[key] = source[key];
     }
   }
@@ -191,9 +194,9 @@ var YAML_NODE_KINDS = [
 function compileStyleAliases(map2) {
   var result = {};
   if (map2 !== null) {
-    Object.keys(map2).forEach(function(style) {
-      map2[style].forEach(function(alias) {
-        result[String(alias)] = style;
+    Object.keys(map2).forEach(function(style2) {
+      map2[style2].forEach(function(alias) {
+        result[String(alias)] = style2;
       });
     });
   }
@@ -252,7 +255,7 @@ function compileMap() {
       mapping: [],
       fallback: []
     }
-  }, index, length;
+  }, index2, length;
   function collectType(type2) {
     if (type2.multi) {
       result.multi[type2.kind].push(type2);
@@ -261,8 +264,8 @@ function compileMap() {
       result[type2.kind][type2.tag] = result["fallback"][type2.tag] = type2;
     }
   }
-  for (index = 0, length = arguments.length; index < length; index += 1) {
-    arguments[index].forEach(collectType);
+  for (index2 = 0, length = arguments.length; index2 < length; index2 += 1) {
+    arguments[index2].forEach(collectType);
   }
   return result;
 }
@@ -340,8 +343,8 @@ function resolveYamlNull(data) {
 function constructYamlNull() {
   return null;
 }
-function isNull(object) {
-  return object === null;
+function isNull(object2) {
+  return object2 === null;
 }
 var _null = new type("tag:yaml.org,2002:null", {
   kind: "scalar",
@@ -375,8 +378,8 @@ function resolveYamlBoolean(data) {
 function constructYamlBoolean(data) {
   return data === "true" || data === "True" || data === "TRUE";
 }
-function isBoolean(object) {
-  return Object.prototype.toString.call(object) === "[object Boolean]";
+function isBoolean(object2) {
+  return Object.prototype.toString.call(object2) === "[object Boolean]";
 }
 var bool = new type("tag:yaml.org,2002:bool", {
   kind: "scalar",
@@ -384,14 +387,14 @@ var bool = new type("tag:yaml.org,2002:bool", {
   construct: constructYamlBoolean,
   predicate: isBoolean,
   represent: {
-    lowercase: function(object) {
-      return object ? "true" : "false";
+    lowercase: function(object2) {
+      return object2 ? "true" : "false";
     },
-    uppercase: function(object) {
-      return object ? "TRUE" : "FALSE";
+    uppercase: function(object2) {
+      return object2 ? "TRUE" : "FALSE";
     },
-    camelcase: function(object) {
-      return object ? "True" : "False";
+    camelcase: function(object2) {
+      return object2 ? "True" : "False";
     }
   },
   defaultStyle: "lowercase"
@@ -407,19 +410,19 @@ function isDecCode(c) {
 }
 function resolveYamlInteger(data) {
   if (data === null) return false;
-  var max = data.length, index = 0, hasDigits = false, ch;
+  var max = data.length, index2 = 0, hasDigits = false, ch;
   if (!max) return false;
-  ch = data[index];
+  ch = data[index2];
   if (ch === "-" || ch === "+") {
-    ch = data[++index];
+    ch = data[++index2];
   }
   if (ch === "0") {
-    if (index + 1 === max) return true;
-    ch = data[++index];
+    if (index2 + 1 === max) return true;
+    ch = data[++index2];
     if (ch === "b") {
-      index++;
-      for (; index < max; index++) {
-        ch = data[index];
+      index2++;
+      for (; index2 < max; index2++) {
+        ch = data[index2];
         if (ch === "_") continue;
         if (ch !== "0" && ch !== "1") return false;
         hasDigits = true;
@@ -427,31 +430,31 @@ function resolveYamlInteger(data) {
       return hasDigits && ch !== "_";
     }
     if (ch === "x") {
-      index++;
-      for (; index < max; index++) {
-        ch = data[index];
+      index2++;
+      for (; index2 < max; index2++) {
+        ch = data[index2];
         if (ch === "_") continue;
-        if (!isHexCode(data.charCodeAt(index))) return false;
+        if (!isHexCode(data.charCodeAt(index2))) return false;
         hasDigits = true;
       }
       return hasDigits && ch !== "_";
     }
     if (ch === "o") {
-      index++;
-      for (; index < max; index++) {
-        ch = data[index];
+      index2++;
+      for (; index2 < max; index2++) {
+        ch = data[index2];
         if (ch === "_") continue;
-        if (!isOctCode(data.charCodeAt(index))) return false;
+        if (!isOctCode(data.charCodeAt(index2))) return false;
         hasDigits = true;
       }
       return hasDigits && ch !== "_";
     }
   }
   if (ch === "_") return false;
-  for (; index < max; index++) {
-    ch = data[index];
+  for (; index2 < max; index2++) {
+    ch = data[index2];
     if (ch === "_") continue;
-    if (!isDecCode(data.charCodeAt(index))) {
+    if (!isDecCode(data.charCodeAt(index2))) {
       return false;
     }
     hasDigits = true;
@@ -478,8 +481,8 @@ function constructYamlInteger(data) {
   }
   return sign * parseInt(value, 10);
 }
-function isInteger(object) {
-  return Object.prototype.toString.call(object) === "[object Number]" && (object % 1 === 0 && !common$1.isNegativeZero(object));
+function isInteger(object2) {
+  return Object.prototype.toString.call(object2) === "[object Number]" && (object2 % 1 === 0 && !common$1.isNegativeZero(object2));
 }
 var int = new type("tag:yaml.org,2002:int", {
   kind: "scalar",
@@ -537,10 +540,10 @@ function constructYamlFloat(data) {
   return sign * parseFloat(value, 10);
 }
 var SCIENTIFIC_WITHOUT_DOT = /^[-+]?[0-9]+e/;
-function representYamlFloat(object, style) {
+function representYamlFloat(object2, style2) {
   var res;
-  if (isNaN(object)) {
-    switch (style) {
+  if (isNaN(object2)) {
+    switch (style2) {
       case "lowercase":
         return ".nan";
       case "uppercase":
@@ -548,8 +551,8 @@ function representYamlFloat(object, style) {
       case "camelcase":
         return ".NaN";
     }
-  } else if (Number.POSITIVE_INFINITY === object) {
-    switch (style) {
+  } else if (Number.POSITIVE_INFINITY === object2) {
+    switch (style2) {
       case "lowercase":
         return ".inf";
       case "uppercase":
@@ -557,8 +560,8 @@ function representYamlFloat(object, style) {
       case "camelcase":
         return ".Inf";
     }
-  } else if (Number.NEGATIVE_INFINITY === object) {
-    switch (style) {
+  } else if (Number.NEGATIVE_INFINITY === object2) {
+    switch (style2) {
       case "lowercase":
         return "-.inf";
       case "uppercase":
@@ -566,14 +569,14 @@ function representYamlFloat(object, style) {
       case "camelcase":
         return "-.Inf";
     }
-  } else if (common$1.isNegativeZero(object)) {
+  } else if (common$1.isNegativeZero(object2)) {
     return "-0.0";
   }
-  res = object.toString(10);
+  res = object2.toString(10);
   return SCIENTIFIC_WITHOUT_DOT.test(res) ? res.replace("e", ".e") : res;
 }
-function isFloat(object) {
-  return Object.prototype.toString.call(object) === "[object Number]" && (object % 1 !== 0 || common$1.isNegativeZero(object));
+function isFloat(object2) {
+  return Object.prototype.toString.call(object2) === "[object Number]" && (object2 % 1 !== 0 || common$1.isNegativeZero(object2));
 }
 var float = new type("tag:yaml.org,2002:float", {
   kind: "scalar",
@@ -635,8 +638,8 @@ function constructYamlTimestamp(data) {
   if (delta) date.setTime(date.getTime() - delta);
   return date;
 }
-function representYamlTimestamp(object) {
-  return object.toISOString();
+function representYamlTimestamp(object2) {
+  return object2.toISOString();
 }
 var timestamp = new type("tag:yaml.org,2002:timestamp", {
   kind: "scalar",
@@ -687,8 +690,8 @@ function constructYamlBinary(data) {
   }
   return new Uint8Array(result);
 }
-function representYamlBinary(object) {
-  var result = "", bits = 0, idx, tail, max = object.length, map2 = BASE64_MAP;
+function representYamlBinary(object2) {
+  var result = "", bits = 0, idx, tail, max = object2.length, map2 = BASE64_MAP;
   for (idx = 0; idx < max; idx++) {
     if (idx % 3 === 0 && idx) {
       result += map2[bits >> 18 & 63];
@@ -696,7 +699,7 @@ function representYamlBinary(object) {
       result += map2[bits >> 6 & 63];
       result += map2[bits & 63];
     }
-    bits = (bits << 8) + object[idx];
+    bits = (bits << 8) + object2[idx];
   }
   tail = max % 3;
   if (tail === 0) {
@@ -731,9 +734,9 @@ var _hasOwnProperty$3 = Object.prototype.hasOwnProperty;
 var _toString$2 = Object.prototype.toString;
 function resolveYamlOmap(data) {
   if (data === null) return true;
-  var objectKeys = [], index, length, pair, pairKey, pairHasKey, object = data;
-  for (index = 0, length = object.length; index < length; index += 1) {
-    pair = object[index];
+  var objectKeys = [], index2, length, pair, pairKey, pairHasKey, object2 = data;
+  for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+    pair = object2[index2];
     pairHasKey = false;
     if (_toString$2.call(pair) !== "[object Object]") return false;
     for (pairKey in pair) {
@@ -759,25 +762,25 @@ var omap = new type("tag:yaml.org,2002:omap", {
 var _toString$1 = Object.prototype.toString;
 function resolveYamlPairs(data) {
   if (data === null) return true;
-  var index, length, pair, keys, result, object = data;
-  result = new Array(object.length);
-  for (index = 0, length = object.length; index < length; index += 1) {
-    pair = object[index];
+  var index2, length, pair, keys, result, object2 = data;
+  result = new Array(object2.length);
+  for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+    pair = object2[index2];
     if (_toString$1.call(pair) !== "[object Object]") return false;
     keys = Object.keys(pair);
     if (keys.length !== 1) return false;
-    result[index] = [keys[0], pair[keys[0]]];
+    result[index2] = [keys[0], pair[keys[0]]];
   }
   return true;
 }
 function constructYamlPairs(data) {
   if (data === null) return [];
-  var index, length, pair, keys, result, object = data;
-  result = new Array(object.length);
-  for (index = 0, length = object.length; index < length; index += 1) {
-    pair = object[index];
+  var index2, length, pair, keys, result, object2 = data;
+  result = new Array(object2.length);
+  for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+    pair = object2[index2];
     keys = Object.keys(pair);
-    result[index] = [keys[0], pair[keys[0]]];
+    result[index2] = [keys[0], pair[keys[0]]];
   }
   return result;
 }
@@ -789,10 +792,10 @@ var pairs = new type("tag:yaml.org,2002:pairs", {
 var _hasOwnProperty$2 = Object.prototype.hasOwnProperty;
 function resolveYamlSet(data) {
   if (data === null) return true;
-  var key, object = data;
-  for (key in object) {
-    if (_hasOwnProperty$2.call(object, key)) {
-      if (object[key] !== null) return false;
+  var key, object2 = data;
+  for (key in object2) {
+    if (_hasOwnProperty$2.call(object2, key)) {
+      if (object2[key] !== null) return false;
     }
   }
   return true;
@@ -886,16 +889,16 @@ function charFromCodepoint(c) {
     (c - 65536 & 1023) + 56320
   );
 }
-function setProperty(object, key, value) {
+function setProperty(object2, key, value) {
   if (key === "__proto__") {
-    Object.defineProperty(object, key, {
+    Object.defineProperty(object2, key, {
       configurable: true,
       enumerable: true,
       writable: true,
       value
     });
   } else {
-    object[key] = value;
+    object2[key] = value;
   }
 }
 var simpleEscapeCheck = new Array(256);
@@ -1008,13 +1011,13 @@ function captureSegment(state, start, end, checkJson) {
   }
 }
 function mergeMappings(state, destination, source, overridableKeys) {
-  var sourceKeys, key, index, quantity;
+  var sourceKeys, key, index2, quantity;
   if (!common$1.isObject(source)) {
     throwError(state, "cannot merge mappings; the provided source object is unacceptable");
   }
   sourceKeys = Object.keys(source);
-  for (index = 0, quantity = sourceKeys.length; index < quantity; index += 1) {
-    key = sourceKeys[index];
+  for (index2 = 0, quantity = sourceKeys.length; index2 < quantity; index2 += 1) {
+    key = sourceKeys[index2];
     if (!_hasOwnProperty$1.call(destination, key)) {
       setProperty(destination, key, source[key]);
       overridableKeys[key] = true;
@@ -1022,15 +1025,15 @@ function mergeMappings(state, destination, source, overridableKeys) {
   }
 }
 function storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, startLine, startLineStart, startPos) {
-  var index, quantity;
+  var index2, quantity;
   if (Array.isArray(keyNode)) {
     keyNode = Array.prototype.slice.call(keyNode);
-    for (index = 0, quantity = keyNode.length; index < quantity; index += 1) {
-      if (Array.isArray(keyNode[index])) {
+    for (index2 = 0, quantity = keyNode.length; index2 < quantity; index2 += 1) {
+      if (Array.isArray(keyNode[index2])) {
         throwError(state, "nested arrays are not supported inside keys");
       }
-      if (typeof keyNode === "object" && _class(keyNode[index]) === "[object Object]") {
-        keyNode[index] = "[object Object]";
+      if (typeof keyNode === "object" && _class(keyNode[index2]) === "[object Object]") {
+        keyNode[index2] = "[object Object]";
       }
     }
   }
@@ -1043,8 +1046,8 @@ function storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valu
   }
   if (keyTag === "tag:yaml.org,2002:merge") {
     if (Array.isArray(valueNode)) {
-      for (index = 0, quantity = valueNode.length; index < quantity; index += 1) {
-        mergeMappings(state, _result, valueNode[index], overridableKeys);
+      for (index2 = 0, quantity = valueNode.length; index2 < quantity; index2 += 1) {
+        mergeMappings(state, _result, valueNode[index2], overridableKeys);
       }
     } else {
       mergeMappings(state, _result, valueNode, overridableKeys);
@@ -1954,8 +1957,8 @@ function loadAll$1(input, iterator, options) {
   if (typeof iterator !== "function") {
     return documents;
   }
-  for (var index = 0, length = documents.length; index < length; index += 1) {
-    iterator(documents[index]);
+  for (var index2 = 0, length = documents.length; index2 < length; index2 += 1) {
+    iterator(documents[index2]);
   }
 }
 function load$1(input, options) {
@@ -2036,21 +2039,21 @@ var DEPRECATED_BOOLEANS_SYNTAX = [
 ];
 var DEPRECATED_BASE60_SYNTAX = /^[-+]?[0-9_]+(?::[0-9_]+)+(?:\.[0-9_]*)?$/;
 function compileStyleMap(schema2, map2) {
-  var result, keys, index, length, tag, style, type2;
+  var result, keys, index2, length, tag, style2, type2;
   if (map2 === null) return {};
   result = {};
   keys = Object.keys(map2);
-  for (index = 0, length = keys.length; index < length; index += 1) {
-    tag = keys[index];
-    style = String(map2[tag]);
+  for (index2 = 0, length = keys.length; index2 < length; index2 += 1) {
+    tag = keys[index2];
+    style2 = String(map2[tag]);
     if (tag.slice(0, 2) === "!!") {
       tag = "tag:yaml.org,2002:" + tag.slice(2);
     }
     type2 = schema2.compiledTypeMap["fallback"][tag];
-    if (type2 && _hasOwnProperty.call(type2.styleAliases, style)) {
-      style = type2.styleAliases[style];
+    if (type2 && _hasOwnProperty.call(type2.styleAliases, style2)) {
+      style2 = type2.styleAliases[style2];
     }
-    result[tag] = style;
+    result[tag] = style2;
   }
   return result;
 }
@@ -2114,9 +2117,9 @@ function generateNextLine(state, level) {
   return "\n" + common$1.repeat(" ", state.indent * level);
 }
 function testImplicitResolving(state, str2) {
-  var index, length, type2;
-  for (index = 0, length = state.implicitTypes.length; index < length; index += 1) {
-    type2 = state.implicitTypes[index];
+  var index2, length, type2;
+  for (index2 = 0, length = state.implicitTypes.length; index2 < length; index2 += 1) {
+    type2 = state.implicitTypes[index2];
     if (type2.resolve(str2)) {
       return true;
     }
@@ -2323,12 +2326,12 @@ function escapeString(string) {
   }
   return result;
 }
-function writeFlowSequence(state, level, object) {
-  var _result = "", _tag = state.tag, index, length, value;
-  for (index = 0, length = object.length; index < length; index += 1) {
-    value = object[index];
+function writeFlowSequence(state, level, object2) {
+  var _result = "", _tag = state.tag, index2, length, value;
+  for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+    value = object2[index2];
     if (state.replacer) {
-      value = state.replacer.call(object, String(index), value);
+      value = state.replacer.call(object2, String(index2), value);
     }
     if (writeNode(state, level, value, false, false) || typeof value === "undefined" && writeNode(state, level, null, false, false)) {
       if (_result !== "") _result += "," + (!state.condenseFlow ? " " : "");
@@ -2338,12 +2341,12 @@ function writeFlowSequence(state, level, object) {
   state.tag = _tag;
   state.dump = "[" + _result + "]";
 }
-function writeBlockSequence(state, level, object, compact) {
-  var _result = "", _tag = state.tag, index, length, value;
-  for (index = 0, length = object.length; index < length; index += 1) {
-    value = object[index];
+function writeBlockSequence(state, level, object2, compact) {
+  var _result = "", _tag = state.tag, index2, length, value;
+  for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+    value = object2[index2];
     if (state.replacer) {
-      value = state.replacer.call(object, String(index), value);
+      value = state.replacer.call(object2, String(index2), value);
     }
     if (writeNode(state, level + 1, value, true, true, false, true) || typeof value === "undefined" && writeNode(state, level + 1, null, true, true, false, true)) {
       if (!compact || _result !== "") {
@@ -2360,16 +2363,16 @@ function writeBlockSequence(state, level, object, compact) {
   state.tag = _tag;
   state.dump = _result || "[]";
 }
-function writeFlowMapping(state, level, object) {
-  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object), index, length, objectKey, objectValue, pairBuffer;
-  for (index = 0, length = objectKeyList.length; index < length; index += 1) {
+function writeFlowMapping(state, level, object2) {
+  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object2), index2, length, objectKey, objectValue, pairBuffer;
+  for (index2 = 0, length = objectKeyList.length; index2 < length; index2 += 1) {
     pairBuffer = "";
     if (_result !== "") pairBuffer += ", ";
     if (state.condenseFlow) pairBuffer += '"';
-    objectKey = objectKeyList[index];
-    objectValue = object[objectKey];
+    objectKey = objectKeyList[index2];
+    objectValue = object2[objectKey];
     if (state.replacer) {
-      objectValue = state.replacer.call(object, objectKey, objectValue);
+      objectValue = state.replacer.call(object2, objectKey, objectValue);
     }
     if (!writeNode(state, level, objectKey, false, false)) {
       continue;
@@ -2385,8 +2388,8 @@ function writeFlowMapping(state, level, object) {
   state.tag = _tag;
   state.dump = "{" + _result + "}";
 }
-function writeBlockMapping(state, level, object, compact) {
-  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object), index, length, objectKey, objectValue, explicitPair, pairBuffer;
+function writeBlockMapping(state, level, object2, compact) {
+  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object2), index2, length, objectKey, objectValue, explicitPair, pairBuffer;
   if (state.sortKeys === true) {
     objectKeyList.sort();
   } else if (typeof state.sortKeys === "function") {
@@ -2394,15 +2397,15 @@ function writeBlockMapping(state, level, object, compact) {
   } else if (state.sortKeys) {
     throw new exception("sortKeys must be a boolean or a function");
   }
-  for (index = 0, length = objectKeyList.length; index < length; index += 1) {
+  for (index2 = 0, length = objectKeyList.length; index2 < length; index2 += 1) {
     pairBuffer = "";
     if (!compact || _result !== "") {
       pairBuffer += generateNextLine(state, level);
     }
-    objectKey = objectKeyList[index];
-    objectValue = object[objectKey];
+    objectKey = objectKeyList[index2];
+    objectValue = object2[objectKey];
     if (state.replacer) {
-      objectValue = state.replacer.call(object, objectKey, objectValue);
+      objectValue = state.replacer.call(object2, objectKey, objectValue);
     }
     if (!writeNode(state, level + 1, objectKey, true, true, true)) {
       continue;
@@ -2433,15 +2436,15 @@ function writeBlockMapping(state, level, object, compact) {
   state.tag = _tag;
   state.dump = _result || "{}";
 }
-function detectType(state, object, explicit) {
-  var _result, typeList, index, length, type2, style;
+function detectType(state, object2, explicit) {
+  var _result, typeList, index2, length, type2, style2;
   typeList = explicit ? state.explicitTypes : state.implicitTypes;
-  for (index = 0, length = typeList.length; index < length; index += 1) {
-    type2 = typeList[index];
-    if ((type2.instanceOf || type2.predicate) && (!type2.instanceOf || typeof object === "object" && object instanceof type2.instanceOf) && (!type2.predicate || type2.predicate(object))) {
+  for (index2 = 0, length = typeList.length; index2 < length; index2 += 1) {
+    type2 = typeList[index2];
+    if ((type2.instanceOf || type2.predicate) && (!type2.instanceOf || typeof object2 === "object" && object2 instanceof type2.instanceOf) && (!type2.predicate || type2.predicate(object2))) {
       if (explicit) {
         if (type2.multi && type2.representName) {
-          state.tag = type2.representName(object);
+          state.tag = type2.representName(object2);
         } else {
           state.tag = type2.tag;
         }
@@ -2449,13 +2452,13 @@ function detectType(state, object, explicit) {
         state.tag = "?";
       }
       if (type2.represent) {
-        style = state.styleMap[type2.tag] || type2.defaultStyle;
+        style2 = state.styleMap[type2.tag] || type2.defaultStyle;
         if (_toString.call(type2.represent) === "[object Function]") {
-          _result = type2.represent(object, style);
-        } else if (_hasOwnProperty.call(type2.represent, style)) {
-          _result = type2.represent[style](object, style);
+          _result = type2.represent(object2, style2);
+        } else if (_hasOwnProperty.call(type2.represent, style2)) {
+          _result = type2.represent[style2](object2, style2);
         } else {
-          throw new exception("!<" + type2.tag + '> tag resolver accepts not "' + style + '" style');
+          throw new exception("!<" + type2.tag + '> tag resolver accepts not "' + style2 + '" style');
         }
         state.dump = _result;
       }
@@ -2464,11 +2467,11 @@ function detectType(state, object, explicit) {
   }
   return false;
 }
-function writeNode(state, level, object, block, compact, iskey, isblockseq) {
+function writeNode(state, level, object2, block, compact, iskey, isblockseq) {
   state.tag = null;
-  state.dump = object;
-  if (!detectType(state, object, false)) {
-    detectType(state, object, true);
+  state.dump = object2;
+  if (!detectType(state, object2, false)) {
+    detectType(state, object2, true);
   }
   var type2 = _toString.call(state.dump);
   var inblock = block;
@@ -2478,7 +2481,7 @@ function writeNode(state, level, object, block, compact, iskey, isblockseq) {
   }
   var objectOrArray = type2 === "[object Object]" || type2 === "[object Array]", duplicateIndex, duplicate;
   if (objectOrArray) {
-    duplicateIndex = state.duplicates.indexOf(object);
+    duplicateIndex = state.duplicates.indexOf(object2);
     duplicate = duplicateIndex !== -1;
   }
   if (state.tag !== null && state.tag !== "?" || duplicate || state.indent !== 2 && level > 0) {
@@ -2544,32 +2547,32 @@ function writeNode(state, level, object, block, compact, iskey, isblockseq) {
   }
   return true;
 }
-function getDuplicateReferences(object, state) {
-  var objects = [], duplicatesIndexes = [], index, length;
-  inspectNode(object, objects, duplicatesIndexes);
-  for (index = 0, length = duplicatesIndexes.length; index < length; index += 1) {
-    state.duplicates.push(objects[duplicatesIndexes[index]]);
+function getDuplicateReferences(object2, state) {
+  var objects = [], duplicatesIndexes = [], index2, length;
+  inspectNode(object2, objects, duplicatesIndexes);
+  for (index2 = 0, length = duplicatesIndexes.length; index2 < length; index2 += 1) {
+    state.duplicates.push(objects[duplicatesIndexes[index2]]);
   }
   state.usedDuplicates = new Array(length);
 }
-function inspectNode(object, objects, duplicatesIndexes) {
-  var objectKeyList, index, length;
-  if (object !== null && typeof object === "object") {
-    index = objects.indexOf(object);
-    if (index !== -1) {
-      if (duplicatesIndexes.indexOf(index) === -1) {
-        duplicatesIndexes.push(index);
+function inspectNode(object2, objects, duplicatesIndexes) {
+  var objectKeyList, index2, length;
+  if (object2 !== null && typeof object2 === "object") {
+    index2 = objects.indexOf(object2);
+    if (index2 !== -1) {
+      if (duplicatesIndexes.indexOf(index2) === -1) {
+        duplicatesIndexes.push(index2);
       }
     } else {
-      objects.push(object);
-      if (Array.isArray(object)) {
-        for (index = 0, length = object.length; index < length; index += 1) {
-          inspectNode(object[index], objects, duplicatesIndexes);
+      objects.push(object2);
+      if (Array.isArray(object2)) {
+        for (index2 = 0, length = object2.length; index2 < length; index2 += 1) {
+          inspectNode(object2[index2], objects, duplicatesIndexes);
         }
       } else {
-        objectKeyList = Object.keys(object);
-        for (index = 0, length = objectKeyList.length; index < length; index += 1) {
-          inspectNode(object[objectKeyList[index]], objects, duplicatesIndexes);
+        objectKeyList = Object.keys(object2);
+        for (index2 = 0, length = objectKeyList.length; index2 < length; index2 += 1) {
+          inspectNode(object2[objectKeyList[index2]], objects, duplicatesIndexes);
         }
       }
     }
@@ -2640,7 +2643,7 @@ var jsYaml = {
   safeDump
 };
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
-function getDefaultExportFromCjs(x) {
+function getDefaultExportFromCjs$1(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
 }
 var src = { exports: {} };
@@ -2811,18 +2814,18 @@ function requireCommon() {
         if (typeof args[0] !== "string") {
           args.unshift("%O");
         }
-        let index = 0;
-        args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format) => {
+        let index2 = 0;
+        args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format2) => {
           if (match === "%%") {
             return "%";
           }
-          index++;
-          const formatter = createDebug.formatters[format];
+          index2++;
+          const formatter = createDebug.formatters[format2];
           if (typeof formatter === "function") {
-            const val = args[index];
+            const val = args[index2];
             match = formatter.call(self2, val);
-            args.splice(index, 1);
-            index--;
+            args.splice(index2, 1);
+            index2--;
           }
           return match;
         });
@@ -3058,15 +3061,15 @@ function requireBrowser() {
       }
       const c = "color: " + this.color;
       args.splice(1, 0, c, "color: inherit");
-      let index = 0;
+      let index2 = 0;
       let lastC = 0;
       args[0].replace(/%[a-zA-Z%]/g, (match) => {
         if (match === "%%") {
           return;
         }
-        index++;
+        index2++;
         if (match === "%c") {
-          lastC = index;
+          lastC = index2;
         }
       });
       args.splice(lastC, 0, c);
@@ -3131,7 +3134,7 @@ var hasRequiredSupportsColor;
 function requireSupportsColor() {
   if (hasRequiredSupportsColor) return supportsColor_1;
   hasRequiredSupportsColor = 1;
-  const os2 = require$$0;
+  const os2 = require$$1$1;
   const tty = require$$1;
   const hasFlag2 = requireHasFlag();
   const { env } = process;
@@ -3246,9 +3249,9 @@ function requireNode() {
   hasRequiredNode = 1;
   (function(module2, exports$1) {
     const tty = require$$1;
-    const util2 = require$$1$1;
+    const util2 = require$$1$2;
     exports$1.init = init;
-    exports$1.log = log;
+    exports$1.log = log2;
     exports$1.formatArgs = formatArgs;
     exports$1.save = save;
     exports$1.load = load2;
@@ -3383,7 +3386,7 @@ function requireNode() {
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
-    function log(...args) {
+    function log2(...args) {
       return process.stderr.write(util2.formatWithOptions(exports$1.inspectOpts, ...args) + "\n");
     }
     function save(namespaces) {
@@ -3566,9 +3569,9 @@ var eos$1 = function(stream2, opts, callback) {
 var endOfStream = eos$1;
 var once = onceExports;
 var eos = endOfStream;
-var fs$3;
+var fs$9;
 try {
-  fs$3 = require("fs");
+  fs$9 = require("fs");
 } catch (e) {
 }
 var noop = function() {
@@ -3579,8 +3582,8 @@ var isFn = function(fn) {
 };
 var isFS = function(stream2) {
   if (!ancient) return false;
-  if (!fs$3) return false;
-  return (stream2 instanceof (fs$3.ReadStream || noop) || stream2 instanceof (fs$3.WriteStream || noop)) && isFn(stream2.close);
+  if (!fs$9) return false;
+  return (stream2 instanceof (fs$9.ReadStream || noop) || stream2 instanceof (fs$9.WriteStream || noop)) && isFn(stream2.close);
 };
 var isRequest = function(stream2) {
   return stream2.setHeader && isFn(stream2.abort);
@@ -3671,7 +3674,7 @@ var bufferStream$1 = (options) => {
   stream2.getBufferedLength = () => length;
   return stream2;
 };
-const { constants: BufferConstants } = require$$0$1;
+const { constants: BufferConstants } = require$$0;
 const pump = pump_1;
 const bufferStream = bufferStream$1;
 class MaxBufferError extends Error {
@@ -3769,22 +3772,22 @@ function pendHold(self2) {
 function pendGo(self2, fn) {
   fn(pendHold(self2));
 }
-var fs$2 = fs$4;
-var util$1 = require$$1$1;
+var fs$8 = fs$a;
+var util$2 = require$$1$2;
 var stream$1 = require$$6;
 var Readable = stream$1.Readable;
 var Writable$1 = stream$1.Writable;
-var PassThrough$1 = stream$1.PassThrough;
+var PassThrough$2 = stream$1.PassThrough;
 var Pend = pend;
-var EventEmitter$1 = require$$4.EventEmitter;
+var EventEmitter$4 = require$$4.EventEmitter;
 fdSlicer.createFromBuffer = createFromBuffer;
 fdSlicer.createFromFd = createFromFd;
 fdSlicer.BufferSlicer = BufferSlicer;
 fdSlicer.FdSlicer = FdSlicer;
-util$1.inherits(FdSlicer, EventEmitter$1);
+util$2.inherits(FdSlicer, EventEmitter$4);
 function FdSlicer(fd, options) {
   options = options || {};
-  EventEmitter$1.call(this);
+  EventEmitter$4.call(this);
   this.fd = fd;
   this.pend = new Pend();
   this.pend.max = 1;
@@ -3794,7 +3797,7 @@ function FdSlicer(fd, options) {
 FdSlicer.prototype.read = function(buffer, offset, length, position, callback) {
   var self2 = this;
   self2.pend.go(function(cb) {
-    fs$2.read(self2.fd, buffer, offset, length, position, function(err, bytesRead, buffer2) {
+    fs$8.read(self2.fd, buffer, offset, length, position, function(err, bytesRead, buffer2) {
       cb();
       callback(err, bytesRead, buffer2);
     });
@@ -3803,7 +3806,7 @@ FdSlicer.prototype.read = function(buffer, offset, length, position, callback) {
 FdSlicer.prototype.write = function(buffer, offset, length, position, callback) {
   var self2 = this;
   self2.pend.go(function(cb) {
-    fs$2.write(self2.fd, buffer, offset, length, position, function(err, written, buffer2) {
+    fs$8.write(self2.fd, buffer, offset, length, position, function(err, written, buffer2) {
       cb();
       callback(err, written, buffer2);
     });
@@ -3824,7 +3827,7 @@ FdSlicer.prototype.unref = function() {
   if (self2.refCount > 0) return;
   if (self2.refCount < 0) throw new Error("invalid unref");
   if (self2.autoClose) {
-    fs$2.close(self2.fd, onCloseDone);
+    fs$8.close(self2.fd, onCloseDone);
   }
   function onCloseDone(err) {
     if (err) {
@@ -3834,7 +3837,7 @@ FdSlicer.prototype.unref = function() {
     }
   }
 };
-util$1.inherits(ReadStream, Readable);
+util$2.inherits(ReadStream, Readable);
 function ReadStream(context, options) {
   options = options || {};
   Readable.call(this, options);
@@ -3861,7 +3864,7 @@ ReadStream.prototype._read = function(n) {
   self2.context.pend.go(function(cb) {
     if (self2.destroyed) return cb();
     var buffer = new Buffer(toRead);
-    fs$2.read(self2.context.fd, buffer, 0, toRead, self2.pos, function(err, bytesRead) {
+    fs$8.read(self2.context.fd, buffer, 0, toRead, self2.pos, function(err, bytesRead) {
       if (err) {
         self2.destroy(err);
       } else if (bytesRead === 0) {
@@ -3883,7 +3886,7 @@ ReadStream.prototype.destroy = function(err) {
   this.emit("error", err);
   this.context.unref();
 };
-util$1.inherits(WriteStream, Writable$1);
+util$2.inherits(WriteStream, Writable$1);
 function WriteStream(context, options) {
   options = options || {};
   Writable$1.call(this, options);
@@ -3908,7 +3911,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
   }
   self2.context.pend.go(function(cb) {
     if (self2.destroyed) return cb();
-    fs$2.write(self2.context.fd, buffer, 0, buffer.length, self2.pos, function(err2, bytes) {
+    fs$8.write(self2.context.fd, buffer, 0, buffer.length, self2.pos, function(err2, bytes) {
       if (err2) {
         self2.destroy();
         cb();
@@ -3928,9 +3931,9 @@ WriteStream.prototype.destroy = function() {
   this.destroyed = true;
   this.context.unref();
 };
-util$1.inherits(BufferSlicer, EventEmitter$1);
+util$2.inherits(BufferSlicer, EventEmitter$4);
 function BufferSlicer(buffer, options) {
-  EventEmitter$1.call(this);
+  EventEmitter$4.call(this);
   options = options || {};
   this.refCount = 0;
   this.buffer = buffer;
@@ -3953,7 +3956,7 @@ BufferSlicer.prototype.write = function(buffer, offset, length, position, callba
 };
 BufferSlicer.prototype.createReadStream = function(options) {
   options = options || {};
-  var readStream = new PassThrough$1(options);
+  var readStream = new PassThrough$2(options);
   readStream.destroyed = false;
   readStream.start = options.start || 0;
   readStream.endOffset = options.end;
@@ -4022,8 +4025,8 @@ function createFromBuffer(buffer, options) {
 function createFromFd(fd, options) {
   return new FdSlicer(fd, options);
 }
-var Buffer$1 = require$$0$1.Buffer;
-var CRC_TABLE = [
+var Buffer$1 = require$$0.Buffer;
+var CRC_TABLE$1 = [
   0,
   1996959894,
   3993919788,
@@ -4282,9 +4285,9 @@ var CRC_TABLE = [
   755167117
 ];
 if (typeof Int32Array !== "undefined") {
-  CRC_TABLE = new Int32Array(CRC_TABLE);
+  CRC_TABLE$1 = new Int32Array(CRC_TABLE$1);
 }
-function ensureBuffer(input) {
+function ensureBuffer$1(input) {
   if (Buffer$1.isBuffer(input)) {
     return input;
   }
@@ -4297,40 +4300,40 @@ function ensureBuffer(input) {
     throw new Error("input must be buffer, number, or string, received " + typeof input);
   }
 }
-function bufferizeInt(num) {
-  var tmp = ensureBuffer(4);
+function bufferizeInt$1(num) {
+  var tmp = ensureBuffer$1(4);
   tmp.writeInt32BE(num, 0);
   return tmp;
 }
-function _crc32(buf, previous) {
-  buf = ensureBuffer(buf);
+function _crc32$1(buf, previous) {
+  buf = ensureBuffer$1(buf);
   if (Buffer$1.isBuffer(previous)) {
     previous = previous.readUInt32BE(0);
   }
   var crc = ~~previous ^ -1;
   for (var n = 0; n < buf.length; n++) {
-    crc = CRC_TABLE[(crc ^ buf[n]) & 255] ^ crc >>> 8;
+    crc = CRC_TABLE$1[(crc ^ buf[n]) & 255] ^ crc >>> 8;
   }
   return crc ^ -1;
 }
-function crc32$1() {
-  return bufferizeInt(_crc32.apply(null, arguments));
+function crc32$3() {
+  return bufferizeInt$1(_crc32$1.apply(null, arguments));
 }
-crc32$1.signed = function() {
-  return _crc32.apply(null, arguments);
+crc32$3.signed = function() {
+  return _crc32$1.apply(null, arguments);
 };
-crc32$1.unsigned = function() {
-  return _crc32.apply(null, arguments) >>> 0;
+crc32$3.unsigned = function() {
+  return _crc32$1.apply(null, arguments) >>> 0;
 };
-var bufferCrc32 = crc32$1;
-var fs$1 = fs$4;
-var zlib = require$$1$2;
+var bufferCrc32$1 = crc32$3;
+var fs$7 = fs$a;
+var zlib$1 = require$$1$3;
 var fd_slicer = fdSlicer;
-var crc32 = bufferCrc32;
-var util = require$$1$1;
-var EventEmitter = require$$4.EventEmitter;
-var Transform = require$$6.Transform;
-var PassThrough = require$$6.PassThrough;
+var crc32$2 = bufferCrc32$1;
+var util$1 = require$$1$2;
+var EventEmitter$3 = require$$4.EventEmitter;
+var Transform$1 = require$$6.Transform;
+var PassThrough$1 = require$$6.PassThrough;
 var Writable = require$$6.Writable;
 yauzl$1.open = open;
 yauzl$1.fromFd = fromFd;
@@ -4338,8 +4341,8 @@ yauzl$1.fromBuffer = fromBuffer;
 yauzl$1.fromRandomAccessReader = fromRandomAccessReader;
 yauzl$1.dosDateTimeToDate = dosDateTimeToDate;
 yauzl$1.validateFileName = validateFileName;
-yauzl$1.ZipFile = ZipFile;
-yauzl$1.Entry = Entry;
+yauzl$1.ZipFile = ZipFile$1;
+yauzl$1.Entry = Entry$1;
 yauzl$1.RandomAccessReader = RandomAccessReader;
 function open(path2, options, callback) {
   if (typeof options === "function") {
@@ -4353,10 +4356,10 @@ function open(path2, options, callback) {
   if (options.validateEntrySizes == null) options.validateEntrySizes = true;
   if (options.strictFileNames == null) options.strictFileNames = false;
   if (callback == null) callback = defaultCallback;
-  fs$1.open(path2, "r", function(err, fd) {
+  fs$7.open(path2, "r", function(err, fd) {
     if (err) return callback(err);
     fromFd(fd, options, function(err2, zipfile) {
-      if (err2) fs$1.close(fd, defaultCallback);
+      if (err2) fs$7.close(fd, defaultCallback);
       callback(err2, zipfile);
     });
   });
@@ -4373,7 +4376,7 @@ function fromFd(fd, options, callback) {
   if (options.validateEntrySizes == null) options.validateEntrySizes = true;
   if (options.strictFileNames == null) options.strictFileNames = false;
   if (callback == null) callback = defaultCallback;
-  fs$1.fstat(fd, function(err, stats) {
+  fs$7.fstat(fd, function(err, stats) {
     if (err) return callback(err);
     var reader = fd_slicer.createFromFd(fd, { autoClose: true });
     fromRandomAccessReader(reader, stats.size, options, callback);
@@ -4434,7 +4437,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
       }
       var comment = decodeStrings ? decodeBuffer(eocdrBuffer, 22, eocdrBuffer.length, false) : eocdrBuffer.slice(22);
       if (!(entryCount === 65535 || centralDirectoryOffset === 4294967295)) {
-        return callback(null, new ZipFile(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
+        return callback(null, new ZipFile$1(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
       }
       var zip64EocdlBuffer = newBuffer(20);
       var zip64EocdlOffset = bufferReadStart + i - zip64EocdlBuffer.length;
@@ -4452,7 +4455,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
           }
           entryCount = readUInt64LE(zip64EocdrBuffer, 32);
           centralDirectoryOffset = readUInt64LE(zip64EocdrBuffer, 48);
-          return callback(null, new ZipFile(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
+          return callback(null, new ZipFile$1(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
         });
       });
       return;
@@ -4460,10 +4463,10 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
     callback(new Error("end of central directory record signature not found"));
   });
 }
-util.inherits(ZipFile, EventEmitter);
-function ZipFile(reader, centralDirectoryOffset, fileSize, entryCount, comment, autoClose, lazyEntries, decodeStrings, validateEntrySizes, strictFileNames) {
+util$1.inherits(ZipFile$1, EventEmitter$3);
+function ZipFile$1(reader, centralDirectoryOffset, fileSize, entryCount, comment, autoClose, lazyEntries, decodeStrings, validateEntrySizes, strictFileNames) {
   var self2 = this;
-  EventEmitter.call(self2);
+  EventEmitter$3.call(self2);
   self2.reader = reader;
   self2.reader.on("error", function(err) {
     emitError(self2, err);
@@ -4485,7 +4488,7 @@ function ZipFile(reader, centralDirectoryOffset, fileSize, entryCount, comment, 
   self2.emittedError = false;
   if (!self2.lazyEntries) self2._readEntry();
 }
-ZipFile.prototype.close = function() {
+ZipFile$1.prototype.close = function() {
   if (!this.isOpen) return;
   this.isOpen = false;
   this.reader.unref();
@@ -4499,11 +4502,11 @@ function emitError(self2, err) {
   self2.emittedError = true;
   self2.emit("error", err);
 }
-ZipFile.prototype.readEntry = function() {
+ZipFile$1.prototype.readEntry = function() {
   if (!this.lazyEntries) throw new Error("readEntry() called without lazyEntries:true");
   this._readEntry();
 };
-ZipFile.prototype._readEntry = function() {
+ZipFile$1.prototype._readEntry = function() {
   var self2 = this;
   if (self2.entryCount === self2.entriesRead) {
     setImmediate(function() {
@@ -4518,7 +4521,7 @@ ZipFile.prototype._readEntry = function() {
   readAndAssertNoEof(self2.reader, buffer, 0, buffer.length, self2.readEntryCursor, function(err) {
     if (err) return emitErrorAndAutoClose(self2, err);
     if (self2.emittedError) return;
-    var entry = new Entry();
+    var entry = new Entry$1();
     var signature = buffer.readUInt32LE(0);
     if (signature !== 33639248) return emitErrorAndAutoClose(self2, new Error("invalid central directory file header signature: 0x" + signature.toString(16)));
     entry.versionMadeBy = buffer.readUInt16LE(4);
@@ -4578,27 +4581,27 @@ ZipFile.prototype._readEntry = function() {
         if (zip64EiefBuffer == null) {
           return emitErrorAndAutoClose(self2, new Error("expected zip64 extended information extra field"));
         }
-        var index = 0;
+        var index2 = 0;
         if (entry.uncompressedSize === 4294967295) {
-          if (index + 8 > zip64EiefBuffer.length) {
+          if (index2 + 8 > zip64EiefBuffer.length) {
             return emitErrorAndAutoClose(self2, new Error("zip64 extended information extra field does not include uncompressed size"));
           }
-          entry.uncompressedSize = readUInt64LE(zip64EiefBuffer, index);
-          index += 8;
+          entry.uncompressedSize = readUInt64LE(zip64EiefBuffer, index2);
+          index2 += 8;
         }
         if (entry.compressedSize === 4294967295) {
-          if (index + 8 > zip64EiefBuffer.length) {
+          if (index2 + 8 > zip64EiefBuffer.length) {
             return emitErrorAndAutoClose(self2, new Error("zip64 extended information extra field does not include compressed size"));
           }
-          entry.compressedSize = readUInt64LE(zip64EiefBuffer, index);
-          index += 8;
+          entry.compressedSize = readUInt64LE(zip64EiefBuffer, index2);
+          index2 += 8;
         }
         if (entry.relativeOffsetOfLocalHeader === 4294967295) {
-          if (index + 8 > zip64EiefBuffer.length) {
+          if (index2 + 8 > zip64EiefBuffer.length) {
             return emitErrorAndAutoClose(self2, new Error("zip64 extended information extra field does not include relative header offset"));
           }
-          entry.relativeOffsetOfLocalHeader = readUInt64LE(zip64EiefBuffer, index);
-          index += 8;
+          entry.relativeOffsetOfLocalHeader = readUInt64LE(zip64EiefBuffer, index2);
+          index2 += 8;
         }
       }
       if (self2.decodeStrings) {
@@ -4612,7 +4615,7 @@ ZipFile.prototype._readEntry = function() {
               continue;
             }
             var oldNameCrc32 = extraField.data.readUInt32LE(1);
-            if (crc32.unsigned(buffer.slice(0, entry.fileNameLength)) !== oldNameCrc32) {
+            if (crc32$2.unsigned(buffer.slice(0, entry.fileNameLength)) !== oldNameCrc32) {
               continue;
             }
             entry.fileName = decodeBuffer(extraField.data, 5, extraField.data.length, true);
@@ -4642,7 +4645,7 @@ ZipFile.prototype._readEntry = function() {
     });
   });
 };
-ZipFile.prototype.openReadStream = function(entry, options, callback) {
+ZipFile$1.prototype.openReadStream = function(entry, options, callback) {
   var self2 = this;
   var relativeStart = 0;
   var relativeEnd = entry.compressedSize;
@@ -4725,7 +4728,7 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
       var endpointStream = readStream;
       if (decompress) {
         var destroyed = false;
-        var inflateFilter = zlib.createInflateRaw();
+        var inflateFilter = zlib$1.createInflateRaw();
         readStream.on("error", function(err2) {
           setImmediate(function() {
             if (!destroyed) inflateFilter.emit("error", err2);
@@ -4756,15 +4759,15 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
     }
   });
 };
-function Entry() {
+function Entry$1() {
 }
-Entry.prototype.getLastModDate = function() {
+Entry$1.prototype.getLastModDate = function() {
   return dosDateTimeToDate(this.lastModFileDate, this.lastModFileTime);
 };
-Entry.prototype.isEncrypted = function() {
+Entry$1.prototype.isEncrypted = function() {
   return (this.generalPurposeBitFlag & 1) !== 0;
 };
-Entry.prototype.isCompressed = function() {
+Entry$1.prototype.isCompressed = function() {
   return this.compressionMethod === 8;
 };
 function dosDateTimeToDate(date, time) {
@@ -4803,9 +4806,9 @@ function readAndAssertNoEof(reader, buffer, offset, length, position, callback) 
     callback();
   });
 }
-util.inherits(AssertByteCountStream, Transform);
+util$1.inherits(AssertByteCountStream, Transform$1);
 function AssertByteCountStream(byteCount) {
-  Transform.call(this);
+  Transform$1.call(this);
   this.actualByteCount = 0;
   this.expectedByteCount = byteCount;
 }
@@ -4824,9 +4827,9 @@ AssertByteCountStream.prototype._flush = function(cb) {
   }
   cb();
 };
-util.inherits(RandomAccessReader, EventEmitter);
+util$1.inherits(RandomAccessReader, EventEmitter$3);
 function RandomAccessReader() {
-  EventEmitter.call(this);
+  EventEmitter$3.call(this);
   this.refCount = 0;
 }
 RandomAccessReader.prototype.ref = function() {
@@ -4847,7 +4850,7 @@ RandomAccessReader.prototype.createReadStream = function(options) {
   var start = options.start;
   var end = options.end;
   if (start === end) {
-    var emptyStream = new PassThrough();
+    var emptyStream = new PassThrough$1();
     setImmediate(function() {
       emptyStream.end();
     });
@@ -4900,9 +4903,9 @@ RandomAccessReader.prototype.read = function(buffer, offset, length, position, c
 RandomAccessReader.prototype.close = function(callback) {
   setImmediate(callback);
 };
-util.inherits(RefUnrefFilter, PassThrough);
+util$1.inherits(RefUnrefFilter, PassThrough$1);
 function RefUnrefFilter(context) {
-  PassThrough.call(this);
+  PassThrough$1.call(this);
   this.context = context;
   this.context.ref();
   this.unreffedYet = false;
@@ -4916,14 +4919,14 @@ RefUnrefFilter.prototype.unref = function(cb) {
   this.unreffedYet = true;
   this.context.unref();
 };
-var cp437 = "\0☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+var cp437$1 = "\0☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
 function decodeBuffer(buffer, start, end, isUtf8) {
   if (isUtf8) {
     return buffer.toString("utf8", start, end);
   } else {
     var result = "";
     for (var i = start; i < end; i++) {
-      result += cp437[buffer[i]];
+      result += cp437$1[buffer[i]];
     }
     return result;
   }
@@ -4947,10 +4950,10 @@ function defaultCallback(err) {
   if (err) throw err;
 }
 const debug = srcExports("extract-zip");
-const { createWriteStream, promises: fs } = fs$4;
+const { createWriteStream, promises: fs$6 } = fs$a;
 const getStream = getStreamExports;
-const path = path$1;
-const { promisify } = require$$1$1;
+const path$6 = path$7;
+const { promisify } = require$$1$2;
 const stream = require$$6;
 const yauzl = yauzl$1;
 const openZip = promisify(yauzl.open);
@@ -4986,12 +4989,12 @@ class Extractor {
           this.zipfile.readEntry();
           return;
         }
-        const destDir = path.dirname(path.join(this.opts.dir, entry.fileName));
+        const destDir = path$6.dirname(path$6.join(this.opts.dir, entry.fileName));
         try {
-          await fs.mkdir(destDir, { recursive: true });
-          const canonicalDestDir = await fs.realpath(destDir);
-          const relativeDestDir = path.relative(this.opts.dir, canonicalDestDir);
-          if (relativeDestDir.split(path.sep).includes("..")) {
+          await fs$6.mkdir(destDir, { recursive: true });
+          const canonicalDestDir = await fs$6.realpath(destDir);
+          const relativeDestDir = path$6.relative(this.opts.dir, canonicalDestDir);
+          if (relativeDestDir.split(path$6.sep).includes("..")) {
             throw new Error(`Out of bound path "${canonicalDestDir}" found while processing file ${entry.fileName}`);
           }
           await this.extractEntry(entry);
@@ -5013,7 +5016,7 @@ class Extractor {
     if (this.opts.onEntry) {
       this.opts.onEntry(entry, this.zipfile);
     }
-    const dest = path.join(this.opts.dir, entry.fileName);
+    const dest = path$6.join(this.opts.dir, entry.fileName);
     const mode = entry.externalFileAttributes >> 16 & 65535;
     const IFMT = 61440;
     const IFDIR = 16384;
@@ -5027,20 +5030,20 @@ class Extractor {
     if (!isDir) isDir = madeBy === 0 && entry.externalFileAttributes === 16;
     debug("extracting entry", { filename: entry.fileName, isDir, isSymlink: symlink });
     const procMode = this.getExtractedMode(mode, isDir) & 511;
-    const destDir = isDir ? dest : path.dirname(dest);
+    const destDir = isDir ? dest : path$6.dirname(dest);
     const mkdirOptions = { recursive: true };
     if (isDir) {
       mkdirOptions.mode = procMode;
     }
     debug("mkdir", { dir: destDir, ...mkdirOptions });
-    await fs.mkdir(destDir, mkdirOptions);
+    await fs$6.mkdir(destDir, mkdirOptions);
     if (isDir) return;
     debug("opening read stream", dest);
     const readStream = await promisify(this.zipfile.openReadStream.bind(this.zipfile))(entry);
     if (symlink) {
       const link = await getStream(readStream);
       debug("creating symlink", link, dest);
-      await fs.symlink(link, dest);
+      await fs$6.symlink(link, dest);
     } else {
       await pipeline(readStream, createWriteStream(dest, { mode: procMode }));
     }
@@ -5069,53 +5072,53 @@ class Extractor {
 }
 var extractZip = async function(zipPath, opts) {
   debug("creating target directory", opts.dir);
-  if (!path.isAbsolute(opts.dir)) {
+  if (!path$6.isAbsolute(opts.dir)) {
     throw new Error("Target directory is expected to be absolute");
   }
-  await fs.mkdir(opts.dir, { recursive: true });
-  opts.dir = await fs.realpath(opts.dir);
+  await fs$6.mkdir(opts.dir, { recursive: true });
+  opts.dir = await fs$6.realpath(opts.dir);
   return new Extractor(zipPath, opts).extract();
 };
-const extractZip$1 = /* @__PURE__ */ getDefaultExportFromCjs(extractZip);
+const extractZip$1 = /* @__PURE__ */ getDefaultExportFromCjs$1(extractZip);
 function cpRecursiveSync(src2, dest, opts = {}) {
   const { dereference = false, force = false } = opts;
-  const stat = dereference ? fs$4.statSync(src2) : fs$4.lstatSync(src2);
+  const stat = dereference ? fs$a.statSync(src2) : fs$a.lstatSync(src2);
   if (stat.isDirectory()) {
-    if (!fs$4.existsSync(dest)) {
-      fs$4.mkdirSync(dest, { recursive: true });
+    if (!fs$a.existsSync(dest)) {
+      fs$a.mkdirSync(dest, { recursive: true });
     }
-    for (const entry of fs$4.readdirSync(src2)) {
-      cpRecursiveSync(path$1.join(src2, entry), path$1.join(dest, entry), opts);
+    for (const entry of fs$a.readdirSync(src2)) {
+      cpRecursiveSync(path$7.join(src2, entry), path$7.join(dest, entry), opts);
     }
   } else if (stat.isFile()) {
-    if (fs$4.existsSync(dest) && !force) {
+    if (fs$a.existsSync(dest) && !force) {
       return;
     }
-    const destDir = path$1.dirname(dest);
-    if (!fs$4.existsSync(destDir)) {
-      fs$4.mkdirSync(destDir, { recursive: true });
+    const destDir = path$7.dirname(dest);
+    if (!fs$a.existsSync(destDir)) {
+      fs$a.mkdirSync(destDir, { recursive: true });
     }
-    fs$4.copyFileSync(src2, dest);
+    fs$a.copyFileSync(src2, dest);
   } else if (stat.isSymbolicLink()) {
-    if (fs$4.existsSync(dest)) {
+    if (fs$a.existsSync(dest)) {
       if (!force) return;
-      fs$4.unlinkSync(dest);
+      fs$a.unlinkSync(dest);
     }
-    const target = fs$4.readlinkSync(src2);
-    fs$4.symlinkSync(target, dest);
+    const target = fs$a.readlinkSync(src2);
+    fs$a.symlinkSync(target, dest);
   }
 }
 const PYTHON_RUNTIME_DIR_NAME = "python-win";
 [
-  path$1.join("Scripts", "pip.exe"),
-  path$1.join("Scripts", "pip3.exe"),
-  path$1.join("Scripts", "pip.cmd"),
-  path$1.join("Scripts", "pip3.cmd"),
-  path$1.join("Scripts", "pip"),
-  path$1.join("Scripts", "pip3")
+  path$7.join("Scripts", "pip.exe"),
+  path$7.join("Scripts", "pip3.exe"),
+  path$7.join("Scripts", "pip.cmd"),
+  path$7.join("Scripts", "pip3.cmd"),
+  path$7.join("Scripts", "pip"),
+  path$7.join("Scripts", "pip3")
 ];
-path$1.join("Lib", "site-packages", "pip", "__main__.py");
-path$1.join("Lib", "site-packages", "pip", "__init__.py");
+path$7.join("Lib", "site-packages", "pip", "__main__.py");
+path$7.join("Lib", "site-packages", "pip", "__init__.py");
 function appendWindowsPath(current, entries) {
   const delimiter = ";";
   const seen = /* @__PURE__ */ new Set();
@@ -5133,30 +5136,30 @@ function appendWindowsPath(current, entries) {
   return merged.length > 0 ? merged.join(delimiter) : current;
 }
 function resolveBundledCandidates() {
-  if (electron.app.isPackaged) {
+  if (require$$0$1.app.isPackaged) {
     return [
-      path$1.join(process.resourcesPath, PYTHON_RUNTIME_DIR_NAME),
-      path$1.join(electron.app.getAppPath(), PYTHON_RUNTIME_DIR_NAME)
+      path$7.join(process.resourcesPath, PYTHON_RUNTIME_DIR_NAME),
+      path$7.join(require$$0$1.app.getAppPath(), PYTHON_RUNTIME_DIR_NAME)
     ];
   }
-  const projectRoot = path$1.resolve(__dirname, "..", "..", "..");
+  const projectRoot = path$7.resolve(__dirname, "..", "..", "..");
   return [
-    path$1.join(projectRoot, "resources", PYTHON_RUNTIME_DIR_NAME),
-    path$1.join(process.cwd(), "resources", PYTHON_RUNTIME_DIR_NAME),
-    path$1.join(electron.app.getAppPath(), "resources", PYTHON_RUNTIME_DIR_NAME)
+    path$7.join(projectRoot, "resources", PYTHON_RUNTIME_DIR_NAME),
+    path$7.join(process.cwd(), "resources", PYTHON_RUNTIME_DIR_NAME),
+    path$7.join(require$$0$1.app.getAppPath(), "resources", PYTHON_RUNTIME_DIR_NAME)
   ];
 }
 function getBundledPythonRoot() {
   const candidates = resolveBundledCandidates();
   for (const candidate of candidates) {
-    if (fs$4.existsSync(candidate) && fs$4.statSync(candidate).isDirectory()) {
+    if (fs$a.existsSync(candidate) && fs$a.statSync(candidate).isDirectory()) {
       return candidate;
     }
   }
   return null;
 }
 function getUserPythonRoot() {
-  return path$1.join(electron.app.getPath("userData"), "runtimes", PYTHON_RUNTIME_DIR_NAME);
+  return path$7.join(require$$0$1.app.getPath("userData"), "runtimes", PYTHON_RUNTIME_DIR_NAME);
 }
 function appendPythonRuntimeToEnv(env) {
   if (process.platform !== "win32") {
@@ -5167,8 +5170,8 @@ function appendPythonRuntimeToEnv(env) {
   const candidates = [userRoot, bundledRoot].filter((value) => Boolean(value));
   const pathEntries = [];
   for (const root of candidates) {
-    if (!fs$4.existsSync(root)) continue;
-    pathEntries.push(root, path$1.join(root, "Scripts"));
+    if (!fs$a.existsSync(root)) continue;
+    pathEntries.push(root, path$7.join(root, "Scripts"));
   }
   if (pathEntries.length > 0) {
     env.PATH = appendWindowsPath(env.PATH, pathEntries);
@@ -5180,7 +5183,7 @@ function resolveUserShellPath() {
   if (process.platform === "win32") return null;
   try {
     const shell = process.env.SHELL || "/bin/bash";
-    const result = child_process.execSync(`${shell} -ilc 'echo __PATH__=$PATH'`, {
+    const result = require$$0$2.execSync(`${shell} -ilc 'echo __PATH__=$PATH'`, {
       encoding: "utf-8",
       timeout: 5e3,
       env: { ...process.env }
@@ -5193,10 +5196,10 @@ function resolveUserShellPath() {
   }
 }
 function hasCommand(command, env) {
-  var _a;
+  var _a2;
   const isWin = process.platform === "win32";
   const checker = isWin ? "where" : "which";
-  const result = child_process.spawnSync(checker, [command], {
+  const result = require$$0$2.spawnSync(checker, [command], {
     stdio: "pipe",
     env,
     shell: isWin,
@@ -5204,7 +5207,7 @@ function hasCommand(command, env) {
   });
   if (result.status !== 0) {
     console.log(
-      `[skills] hasCommand('${command}'): not found (status=${result.status}, error=${((_a = result.error) == null ? void 0 : _a.message) || "none"})`
+      `[skills] hasCommand('${command}'): not found (status=${result.status}, error=${((_a2 = result.error) == null ? void 0 : _a2.message) || "none"})`
     );
   }
   return result.status === 0;
@@ -5235,11 +5238,11 @@ function normalizePathKey(env) {
 function resolveWindowsRegistryPath() {
   if (process.platform !== "win32") return null;
   try {
-    const machinePath = child_process.execSync(
+    const machinePath = require$$0$2.execSync(
       'reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v Path',
       { encoding: "utf-8", timeout: 5e3, stdio: ["ignore", "pipe", "ignore"] }
     );
-    const userPath = child_process.execSync('reg query "HKCU\\Environment" /v Path', {
+    const userPath = require$$0$2.execSync('reg query "HKCU\\Environment" /v Path', {
       encoding: "utf-8",
       timeout: 5e3,
       stdio: ["ignore", "pipe", "ignore"]
@@ -5257,9 +5260,9 @@ function resolveWindowsRegistryPath() {
 function buildSkillEnv() {
   const env = { ...process.env };
   normalizePathKey(env);
-  if (electron.app.isPackaged) {
+  if (require$$0$1.app.isPackaged) {
     if (!env.HOME) {
-      env.HOME = electron.app.getPath("home");
+      env.HOME = require$$0$1.app.getPath("home");
     }
     if (process.platform === "win32") {
       const registryPath = resolveWindowsRegistryPath();
@@ -5369,7 +5372,7 @@ const normalizeFolderName = (name) => {
   const normalized = name.replace(/[^a-zA-Z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
   return normalized || "skill";
 };
-const isZipFile = (filePath) => path$1.extname(filePath).toLowerCase() === ".zip";
+const isZipFile = (filePath) => path$7.extname(filePath).toLowerCase() === ".zip";
 const compareVersions = (a, b) => {
   const pa = a.split(".").map((s) => parseInt(s, 10) || 0);
   const pb = b.split(".").map((s) => parseInt(s, 10) || 0);
@@ -5382,10 +5385,10 @@ const compareVersions = (a, b) => {
   return 0;
 };
 const resolveWithin = (root, target) => {
-  const resolvedRoot = path$1.resolve(root);
-  const resolvedTarget = path$1.resolve(root, target);
+  const resolvedRoot = path$7.resolve(root);
+  const resolvedTarget = path$7.resolve(root, target);
   if (resolvedTarget === resolvedRoot) return resolvedTarget;
-  if (!resolvedTarget.startsWith(resolvedRoot + path$1.sep)) {
+  if (!resolvedTarget.startsWith(resolvedRoot + path$7.sep)) {
     throw new Error("Invalid target path");
   }
   return resolvedTarget;
@@ -5403,7 +5406,7 @@ const appendEnvPath = (current, entries) => {
 const listWindowsCommandPaths = (command) => {
   if (process.platform !== "win32") return [];
   try {
-    const result = child_process.spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
+    const result = require$$0$2.spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
       encoding: "utf8",
       windowsHide: true
     });
@@ -5420,19 +5423,19 @@ const resolveWindowsGitExecutable = () => {
   const localAppData = process.env.LOCALAPPDATA || "";
   const userProfile = process.env.USERPROFILE || "";
   const installedCandidates = [
-    path$1.join(programFiles, "Git", "cmd", "git.exe"),
-    path$1.join(programFiles, "Git", "bin", "git.exe"),
-    path$1.join(programFilesX86, "Git", "cmd", "git.exe"),
-    path$1.join(programFilesX86, "Git", "bin", "git.exe"),
-    path$1.join(localAppData, "Programs", "Git", "cmd", "git.exe"),
-    path$1.join(localAppData, "Programs", "Git", "bin", "git.exe"),
-    path$1.join(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe"),
-    path$1.join(userProfile, "scoop", "apps", "git", "current", "bin", "git.exe"),
+    path$7.join(programFiles, "Git", "cmd", "git.exe"),
+    path$7.join(programFiles, "Git", "bin", "git.exe"),
+    path$7.join(programFilesX86, "Git", "cmd", "git.exe"),
+    path$7.join(programFilesX86, "Git", "bin", "git.exe"),
+    path$7.join(localAppData, "Programs", "Git", "cmd", "git.exe"),
+    path$7.join(localAppData, "Programs", "Git", "bin", "git.exe"),
+    path$7.join(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe"),
+    path$7.join(userProfile, "scoop", "apps", "git", "current", "bin", "git.exe"),
     "C:\\Git\\cmd\\git.exe",
     "C:\\Git\\bin\\git.exe"
   ];
   for (const candidate of installedCandidates) {
-    if (candidate && fs$4.existsSync(candidate)) {
+    if (candidate && fs$a.existsSync(candidate)) {
       return candidate;
     }
   }
@@ -5440,23 +5443,23 @@ const resolveWindowsGitExecutable = () => {
   for (const candidate of whereCandidates) {
     const normalized = candidate.trim();
     if (!normalized) continue;
-    if (normalized.toLowerCase().endsWith("git.exe") && fs$4.existsSync(normalized)) {
+    if (normalized.toLowerCase().endsWith("git.exe") && fs$a.existsSync(normalized)) {
       return normalized;
     }
   }
-  const bundledRoots = electron.app.isPackaged ? [path$1.join(process.resourcesPath, "mingit")] : [
-    path$1.join(__dirname, "..", "..", "resources", "mingit"),
-    path$1.join(process.cwd(), "resources", "mingit")
+  const bundledRoots = require$$0$1.app.isPackaged ? [path$7.join(process.resourcesPath, "mingit")] : [
+    path$7.join(__dirname, "..", "..", "resources", "mingit"),
+    path$7.join(process.cwd(), "resources", "mingit")
   ];
   for (const root of bundledRoots) {
     const bundledCandidates = [
-      path$1.join(root, "cmd", "git.exe"),
-      path$1.join(root, "bin", "git.exe"),
-      path$1.join(root, "mingw64", "bin", "git.exe"),
-      path$1.join(root, "usr", "bin", "git.exe")
+      path$7.join(root, "cmd", "git.exe"),
+      path$7.join(root, "bin", "git.exe"),
+      path$7.join(root, "mingw64", "bin", "git.exe"),
+      path$7.join(root, "usr", "bin", "git.exe")
     ];
     for (const candidate of bundledCandidates) {
-      if (fs$4.existsSync(candidate)) {
+      if (fs$a.existsSync(candidate)) {
         return candidate;
       }
     }
@@ -5472,20 +5475,20 @@ const resolveGitCommand = () => {
     return { command: "git" };
   }
   const env = { ...process.env };
-  const gitDir = path$1.dirname(gitExe);
-  const gitRoot = path$1.dirname(gitDir);
+  const gitDir = path$7.dirname(gitExe);
+  const gitRoot = path$7.dirname(gitDir);
   const candidateDirs = [
     gitDir,
-    path$1.join(gitRoot, "cmd"),
-    path$1.join(gitRoot, "bin"),
-    path$1.join(gitRoot, "mingw64", "bin"),
-    path$1.join(gitRoot, "usr", "bin")
-  ].filter((dir) => fs$4.existsSync(dir));
+    path$7.join(gitRoot, "cmd"),
+    path$7.join(gitRoot, "bin"),
+    path$7.join(gitRoot, "mingw64", "bin"),
+    path$7.join(gitRoot, "usr", "bin")
+  ].filter((dir) => fs$a.existsSync(dir));
   env.PATH = appendEnvPath(env.PATH, candidateDirs);
   return { command: gitExe, env };
 };
 const runCommand = (command, args, options) => new Promise((resolve, reject) => {
-  const child = child_process.spawn(command, args, {
+  const child = require$$0$2.spawn(command, args, {
     cwd: options == null ? void 0 : options.cwd,
     env: options == null ? void 0 : options.env,
     windowsHide: true,
@@ -5508,7 +5511,7 @@ const runCommand = (command, args, options) => new Promise((resolve, reject) => 
 });
 const runScriptWithTimeout = (options) => new Promise((resolve) => {
   const startedAt = Date.now();
-  const child = child_process.spawn(options.command, options.args, {
+  const child = require$$0$2.spawn(options.command, options.args, {
     cwd: options.cwd,
     env: options.env,
     windowsHide: true,
@@ -5568,7 +5571,7 @@ const runScriptWithTimeout = (options) => new Promise((resolve) => {
 const cleanupPathSafely = (targetPath) => {
   if (!targetPath) return;
   try {
-    fs$4.rmSync(targetPath, {
+    fs$a.rmSync(targetPath, {
       recursive: true,
       force: true,
       maxRetries: process.platform === "win32" ? 5 : 0,
@@ -5583,31 +5586,31 @@ const cleanupPathSafely = (targetPath) => {
   }
 };
 const listSkillDirs = (root) => {
-  if (!fs$4.existsSync(root)) return [];
-  const skillFile = path$1.join(root, SKILL_FILE_NAME);
-  if (fs$4.existsSync(skillFile)) {
+  if (!fs$a.existsSync(root)) return [];
+  const skillFile = path$7.join(root, SKILL_FILE_NAME);
+  if (fs$a.existsSync(skillFile)) {
     return [root];
   }
-  const entries = fs$4.readdirSync(root);
-  return entries.map((entry) => path$1.join(root, entry)).filter((entryPath) => {
+  const entries = fs$a.readdirSync(root);
+  return entries.map((entry) => path$7.join(root, entry)).filter((entryPath) => {
     try {
-      const stat = fs$4.lstatSync(entryPath);
+      const stat = fs$a.lstatSync(entryPath);
       if (!stat.isDirectory() && !stat.isSymbolicLink()) {
         return false;
       }
-      return fs$4.existsSync(path$1.join(entryPath, SKILL_FILE_NAME));
+      return fs$a.existsSync(path$7.join(entryPath, SKILL_FILE_NAME));
     } catch {
       return false;
     }
   });
 };
 const collectSkillDirsFromSource = (source) => {
-  const resolved = path$1.resolve(source);
-  if (fs$4.existsSync(path$1.join(resolved, SKILL_FILE_NAME))) {
+  const resolved = path$7.resolve(source);
+  if (fs$a.existsSync(path$7.join(resolved, SKILL_FILE_NAME))) {
     return [resolved];
   }
-  const nestedRoot = path$1.join(resolved, SKILLS_DIR_NAME);
-  if (fs$4.existsSync(nestedRoot) && fs$4.statSync(nestedRoot).isDirectory()) {
+  const nestedRoot = path$7.join(resolved, SKILLS_DIR_NAME);
+  if (fs$a.existsSync(nestedRoot) && fs$a.statSync(nestedRoot).isDirectory()) {
     const nestedSkills = listSkillDirs(nestedRoot);
     if (nestedSkills.length > 0) {
       return nestedSkills;
@@ -5620,37 +5623,37 @@ const collectSkillDirsFromSource = (source) => {
   return collectSkillDirsRecursively(resolved);
 };
 const collectSkillDirsRecursively = (root) => {
-  const resolvedRoot = path$1.resolve(root);
-  if (!fs$4.existsSync(resolvedRoot)) return [];
+  const resolvedRoot = path$7.resolve(root);
+  if (!fs$a.existsSync(resolvedRoot)) return [];
   const matchedDirs = [];
   const queue = [resolvedRoot];
   const seen = /* @__PURE__ */ new Set();
   while (queue.length > 0) {
     const current = queue.shift();
     if (!current) continue;
-    const normalized = path$1.resolve(current);
+    const normalized = path$7.resolve(current);
     if (seen.has(normalized)) continue;
     seen.add(normalized);
     let stat;
     try {
-      stat = fs$4.lstatSync(normalized);
+      stat = fs$a.lstatSync(normalized);
     } catch {
       continue;
     }
     if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
-    if (fs$4.existsSync(path$1.join(normalized, SKILL_FILE_NAME))) {
+    if (fs$a.existsSync(path$7.join(normalized, SKILL_FILE_NAME))) {
       matchedDirs.push(normalized);
       continue;
     }
     let entries = [];
     try {
-      entries = fs$4.readdirSync(normalized);
+      entries = fs$a.readdirSync(normalized);
     } catch {
       continue;
     }
     for (const entry of entries) {
       if (!entry || entry === ".git" || entry === "node_modules") continue;
-      queue.push(path$1.join(normalized, entry));
+      queue.push(path$7.join(normalized, entry));
     }
   }
   return matchedDirs;
@@ -5727,7 +5730,7 @@ const downloadGithubArchive = async (source, tempRoot, ref) => {
   let lastError = null;
   for (const candidate of archiveUrlCandidates) {
     try {
-      const response = await electron.session.defaultSession.fetch(candidate.url, {
+      const response = await require$$0$1.session.defaultSession.fetch(candidate.url, {
         method: "GET",
         headers: candidate.headers
       });
@@ -5745,14 +5748,14 @@ const downloadGithubArchive = async (source, tempRoot, ref) => {
   if (!buffer) {
     throw new Error(lastError || "Archive download failed");
   }
-  const zipPath = path$1.join(tempRoot, "github-archive.zip");
-  const extractRoot = path$1.join(tempRoot, "github-archive");
-  fs$4.writeFileSync(zipPath, buffer);
-  fs$4.mkdirSync(extractRoot, { recursive: true });
+  const zipPath = path$7.join(tempRoot, "github-archive.zip");
+  const extractRoot = path$7.join(tempRoot, "github-archive");
+  fs$a.writeFileSync(zipPath, buffer);
+  fs$a.mkdirSync(extractRoot, { recursive: true });
   await extractZip$1(zipPath, { dir: extractRoot });
-  const extractedDirs = fs$4.readdirSync(extractRoot).map((entry) => path$1.join(extractRoot, entry)).filter((entryPath) => {
+  const extractedDirs = fs$a.readdirSync(extractRoot).map((entry) => path$7.join(extractRoot, entry)).filter((entryPath) => {
     try {
-      return fs$4.statSync(entryPath).isDirectory();
+      return fs$a.statSync(entryPath).isDirectory();
     } catch {
       return false;
     }
@@ -5771,7 +5774,7 @@ const isRemoteZipUrl = (source) => {
   }
 };
 const downloadZipUrl = async (zipUrl, tempRoot) => {
-  const response = await electron.session.defaultSession.fetch(zipUrl, {
+  const response = await require$$0$1.session.defaultSession.fetch(zipUrl, {
     method: "GET",
     headers: { "User-Agent": "LobsterAI Skill Downloader" }
   });
@@ -5781,14 +5784,14 @@ const downloadZipUrl = async (zipUrl, tempRoot) => {
     );
   }
   const buffer = Buffer.from(await response.arrayBuffer());
-  const zipPath = path$1.join(tempRoot, "remote-skill.zip");
-  const extractRoot = path$1.join(tempRoot, "remote-skill");
-  fs$4.writeFileSync(zipPath, buffer);
-  fs$4.mkdirSync(extractRoot, { recursive: true });
+  const zipPath = path$7.join(tempRoot, "remote-skill.zip");
+  const extractRoot = path$7.join(tempRoot, "remote-skill");
+  fs$a.writeFileSync(zipPath, buffer);
+  fs$a.mkdirSync(extractRoot, { recursive: true });
   await extractZip$1(zipPath, { dir: extractRoot });
-  const extractedDirs = fs$4.readdirSync(extractRoot).map((entry) => path$1.join(extractRoot, entry)).filter((entryPath) => {
+  const extractedDirs = fs$a.readdirSync(extractRoot).map((entry) => path$7.join(extractRoot, entry)).filter((entryPath) => {
     try {
-      return fs$4.statSync(entryPath).isDirectory();
+      return fs$a.statSync(entryPath).isDirectory();
     } catch {
       return false;
     }
@@ -5843,22 +5846,22 @@ const parseGithubTreeOrBlobUrl = (source) => {
   }
 };
 const isWebSearchSkillBroken = (skillRoot) => {
-  const startServerScript = path$1.join(skillRoot, "scripts", "start-server.sh");
-  const searchScript = path$1.join(skillRoot, "scripts", "search.sh");
-  const serverEntry = path$1.join(skillRoot, "dist", "server", "index.js");
+  const startServerScript = path$7.join(skillRoot, "scripts", "start-server.sh");
+  const searchScript = path$7.join(skillRoot, "scripts", "search.sh");
+  const serverEntry = path$7.join(skillRoot, "dist", "server", "index.js");
   const requiredPaths = [
     startServerScript,
     searchScript,
     serverEntry,
-    path$1.join(skillRoot, "node_modules", "iconv-lite", "encodings", "index.js")
+    path$7.join(skillRoot, "node_modules", "iconv-lite", "encodings", "index.js")
   ];
-  if (requiredPaths.some((requiredPath) => !fs$4.existsSync(requiredPath))) {
+  if (requiredPaths.some((requiredPath) => !fs$a.existsSync(requiredPath))) {
     return true;
   }
   try {
-    const startScript = fs$4.readFileSync(startServerScript, "utf-8");
-    const searchScriptContent = fs$4.readFileSync(searchScript, "utf-8");
-    const serverEntryContent = fs$4.readFileSync(serverEntry, "utf-8");
+    const startScript = fs$a.readFileSync(startServerScript, "utf-8");
+    const searchScriptContent = fs$a.readFileSync(searchScript, "utf-8");
+    const serverEntryContent = fs$a.readFileSync(serverEntry, "utf-8");
     if (!startScript.includes("WEB_SEARCH_FORCE_REPAIR")) {
       return true;
     }
@@ -5898,15 +5901,15 @@ class SkillManager {
     this.getStore = getStore2;
   }
   getSkillsRoot() {
-    return path$1.resolve(electron.app.getPath("userData"), SKILLS_DIR_NAME);
+    return path$7.resolve(require$$0$1.app.getPath("userData"), SKILLS_DIR_NAME);
   }
   /**
    * 确保目录存在
    */
   ensureSkillsRoot() {
     const root = this.getSkillsRoot();
-    if (!fs$4.existsSync(root)) {
-      fs$4.mkdirSync(root, { recursive: true });
+    if (!fs$a.existsSync(root)) {
+      fs$a.mkdirSync(root, { recursive: true });
     }
     return root;
   }
@@ -5914,7 +5917,7 @@ class SkillManager {
    * 同步技能
    */
   syncBundledSkillsToUserData() {
-    if (!electron.app.isPackaged) {
+    if (!require$$0$1.app.isPackaged) {
       return;
     }
     console.log("[skills] syncBundledSkillsToUserData: start");
@@ -5925,7 +5928,7 @@ class SkillManager {
       "[skills] syncBundledSkillsToUserData: bundledRoot =",
       bundledRoot
     );
-    if (!bundledRoot || bundledRoot === userRoot || !fs$4.existsSync(bundledRoot)) {
+    if (!bundledRoot || bundledRoot === userRoot || !fs$a.existsSync(bundledRoot)) {
       console.log(
         "[skills] syncBundledSkillsToUserData: bundledRoot skipped (missing or same as userRoot)"
       );
@@ -5939,9 +5942,9 @@ class SkillManager {
         "bundled skills"
       );
       bundledSkillDirs.forEach((dir) => {
-        const id = path$1.basename(dir);
-        const targetDir = path$1.join(userRoot, id);
-        const targetExists = fs$4.existsSync(targetDir);
+        const id = path$7.basename(dir);
+        const targetDir = path$7.join(userRoot, id);
+        const targetExists = fs$a.existsSync(targetDir);
         let shouldRepair = false;
         let needsCleanCopy = false;
         if (targetExists) {
@@ -5964,19 +5967,19 @@ class SkillManager {
             `[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`
           );
           let envBackup = null;
-          const envPath = path$1.join(targetDir, ".env");
-          if (needsCleanCopy && fs$4.existsSync(envPath)) {
-            envBackup = fs$4.readFileSync(envPath);
+          const envPath = path$7.join(targetDir, ".env");
+          if (needsCleanCopy && fs$a.existsSync(envPath)) {
+            envBackup = fs$a.readFileSync(envPath);
           }
           if (needsCleanCopy) {
-            fs$4.rmSync(targetDir, { recursive: true, force: true });
+            fs$a.rmSync(targetDir, { recursive: true, force: true });
           }
           cpRecursiveSync(dir, targetDir, {
             dereference: true,
             force: shouldRepair
           });
           if (envBackup !== null) {
-            fs$4.writeFileSync(envPath, envBackup);
+            fs$a.writeFileSync(envPath, envBackup);
           }
           console.log(
             `[skills] syncBundledSkillsToUserData: copied "${id}" successfully`
@@ -5988,10 +5991,10 @@ class SkillManager {
           console.warn(`[skills] Failed to sync bundled skill "${id}":`, error);
         }
       });
-      const bundledConfig = path$1.join(bundledRoot, SKILLS_CONFIG_FILE);
-      const targetConfig = path$1.join(userRoot, SKILLS_CONFIG_FILE);
-      if (fs$4.existsSync(bundledConfig)) {
-        if (!fs$4.existsSync(targetConfig)) {
+      const bundledConfig = path$7.join(bundledRoot, SKILLS_CONFIG_FILE);
+      const targetConfig = path$7.join(userRoot, SKILLS_CONFIG_FILE);
+      if (fs$a.existsSync(bundledConfig)) {
+        if (!fs$a.existsSync(targetConfig)) {
           console.log(
             "[skills] syncBundledSkillsToUserData: copying skills.config.json"
           );
@@ -6010,23 +6013,23 @@ class SkillManager {
    * Returns false if bundled has dependencies but target doesn't.
    */
   isSkillRuntimeHealthy(targetDir, bundledDir) {
-    const bundledNodeModules = path$1.join(bundledDir, "node_modules");
-    const targetNodeModules = path$1.join(targetDir, "node_modules");
-    const targetPackageJson = path$1.join(targetDir, "package.json");
-    if (!fs$4.existsSync(targetPackageJson)) {
+    const bundledNodeModules = path$7.join(bundledDir, "node_modules");
+    const targetNodeModules = path$7.join(targetDir, "node_modules");
+    const targetPackageJson = path$7.join(targetDir, "package.json");
+    if (!fs$a.existsSync(targetPackageJson)) {
       return true;
     }
-    if (!fs$4.existsSync(bundledNodeModules)) {
+    if (!fs$a.existsSync(bundledNodeModules)) {
       return true;
     }
-    if (!fs$4.existsSync(targetNodeModules)) {
+    if (!fs$a.existsSync(targetNodeModules)) {
       return false;
     }
     return true;
   }
   getSkillVersion(skillDir) {
     try {
-      const raw = fs$4.readFileSync(path$1.join(skillDir, SKILL_FILE_NAME), "utf8");
+      const raw = fs$a.readFileSync(path$7.join(skillDir, SKILL_FILE_NAME), "utf8");
       const { frontmatter } = parseFrontmatter(raw);
       return typeof frontmatter.version === "string" ? frontmatter.version : typeof frontmatter.version === "number" ? String(frontmatter.version) : "";
     } catch {
@@ -6035,8 +6038,8 @@ class SkillManager {
   }
   mergeSkillsConfig(bundledPath, targetPath) {
     try {
-      const bundled = JSON.parse(fs$4.readFileSync(bundledPath, "utf-8"));
-      const target = JSON.parse(fs$4.readFileSync(targetPath, "utf-8"));
+      const bundled = JSON.parse(fs$a.readFileSync(bundledPath, "utf-8"));
+      const target = JSON.parse(fs$a.readFileSync(targetPath, "utf-8"));
       if (!bundled.defaults || !target.defaults) return;
       let changed = false;
       for (const [id, config] of Object.entries(bundled.defaults)) {
@@ -6047,12 +6050,12 @@ class SkillManager {
       }
       if (changed) {
         const tmpPath = targetPath + ".tmp";
-        fs$4.writeFileSync(
+        fs$a.writeFileSync(
           tmpPath,
           JSON.stringify(target, null, 2) + "\n",
           "utf-8"
         );
-        fs$4.renameSync(tmpPath, targetPath);
+        fs$a.renameSync(tmpPath, targetPath);
         console.log(
           "[skills] mergeSkillsConfig: merged new skill entries into user config"
         );
@@ -6073,14 +6076,14 @@ class SkillManager {
     const builtInSkillIds = this.listBuiltInSkillIds();
     const skillMap = /* @__PURE__ */ new Map();
     orderedRoots.forEach((root) => {
-      if (!fs$4.existsSync(root)) return;
+      if (!fs$a.existsSync(root)) return;
       const skillDirs = listSkillDirs(root);
       skillDirs.forEach((dir) => {
         const skill = this.parseSkillDir(
           dir,
           state,
           defaults,
-          builtInSkillIds.has(path$1.basename(dir))
+          builtInSkillIds.has(path$7.basename(dir))
         );
         if (!skill) return;
         skillMap.set(skill.id, skill);
@@ -6088,8 +6091,8 @@ class SkillManager {
     });
     const skills = Array.from(skillMap.values());
     skills.sort((a, b) => {
-      var _a, _b;
-      const orderA = ((_a = defaults[a.id]) == null ? void 0 : _a.order) ?? 999;
+      var _a2, _b;
+      const orderA = ((_a2 = defaults[a.id]) == null ? void 0 : _a2.order) ?? 999;
       const orderB = ((_b = defaults[b.id]) == null ? void 0 : _b.order) ?? 999;
       if (orderA !== orderB) return orderA - orderB;
       return a.name.localeCompare(b.name);
@@ -6128,17 +6131,17 @@ class SkillManager {
   }
   deleteSkill(id) {
     const root = this.ensureSkillsRoot();
-    if (id !== path$1.basename(id)) {
+    if (id !== path$7.basename(id)) {
       throw new Error("Invalid skill id");
     }
     if (this.isBuiltInSkillId(id)) {
       throw new Error("Built-in skills cannot be deleted");
     }
     const targetDir = resolveWithin(root, id);
-    if (!fs$4.existsSync(targetDir)) {
+    if (!fs$a.existsSync(targetDir)) {
       throw new Error("Skill not found");
     }
-    fs$4.rmSync(targetDir, { recursive: true, force: true });
+    fs$a.rmSync(targetDir, { recursive: true, force: true });
     const state = this.loadSkillStateMap();
     delete state[id];
     this.saveSkillStateMap(state);
@@ -6155,18 +6158,18 @@ class SkillManager {
       }
       const root = this.ensureSkillsRoot();
       let localSource = trimmed;
-      if (fs$4.existsSync(localSource)) {
-        const stat = fs$4.statSync(localSource);
+      if (fs$a.existsSync(localSource)) {
+        const stat = fs$a.statSync(localSource);
         if (stat.isFile()) {
           if (isZipFile(localSource)) {
-            const tempRoot = fs$4.mkdtempSync(
-              path$1.join(electron.app.getPath("temp"), "lobsterai-skill-zip-")
+            const tempRoot = fs$a.mkdtempSync(
+              path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-")
             );
             await extractZip$1(localSource, { dir: tempRoot });
             localSource = tempRoot;
             cleanupPath = tempRoot;
-          } else if (path$1.basename(localSource) === SKILL_FILE_NAME) {
-            localSource = path$1.dirname(localSource);
+          } else if (path$7.basename(localSource) === SKILL_FILE_NAME) {
+            localSource = path$7.dirname(localSource);
           } else {
             return {
               success: false,
@@ -6175,8 +6178,8 @@ class SkillManager {
           }
         }
       } else if (isRemoteZipUrl(trimmed)) {
-        const tempRoot = fs$4.mkdtempSync(
-          path$1.join(electron.app.getPath("temp"), "lobsterai-skill-zip-")
+        const tempRoot = fs$a.mkdtempSync(
+          path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-")
         );
         cleanupPath = tempRoot;
         localSource = await downloadZipUrl(trimmed, tempRoot);
@@ -6188,14 +6191,14 @@ class SkillManager {
             error: "Invalid skill source. Use owner/repo, repo URL, or a GitHub tree/blob URL."
           };
         }
-        const tempRoot = fs$4.mkdtempSync(
-          path$1.join(electron.app.getPath("temp"), "lobsterai-skill-")
+        const tempRoot = fs$a.mkdtempSync(
+          path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-")
         );
         cleanupPath = tempRoot;
         const repoName = normalizeFolderName(
           normalized.repoNameHint || deriveRepoName(normalized.repoUrl)
         );
-        const clonePath = path$1.join(tempRoot, repoName);
+        const clonePath = path$7.join(tempRoot, repoName);
         const cloneArgs = ["clone", "--depth", "1"];
         if (normalized.ref) {
           cloneArgs.push("--branch", normalized.ref);
@@ -6242,16 +6245,16 @@ class SkillManager {
             downloadedSourceRoot,
             normalized.sourceSubpath
           );
-          if (!fs$4.existsSync(scopedSource)) {
+          if (!fs$a.existsSync(scopedSource)) {
             return {
               success: false,
               error: `Path "${normalized.sourceSubpath}" not found in repository`
             };
           }
-          const scopedStat = fs$4.statSync(scopedSource);
+          const scopedStat = fs$a.statSync(scopedSource);
           if (scopedStat.isFile()) {
-            if (path$1.basename(scopedSource) === SKILL_FILE_NAME) {
-              localSource = path$1.dirname(scopedSource);
+            if (path$7.basename(scopedSource) === SKILL_FILE_NAME) {
+              localSource = path$7.dirname(scopedSource);
             } else {
               return {
                 success: false,
@@ -6272,10 +6275,10 @@ class SkillManager {
         return { success: false, error: "No SKILL.md found in source" };
       }
       for (const skillDir of skillDirs) {
-        const folderName = normalizeFolderName(path$1.basename(skillDir));
+        const folderName = normalizeFolderName(path$7.basename(skillDir));
         let targetDir = resolveWithin(root, folderName);
         let suffix = 1;
-        while (fs$4.existsSync(targetDir)) {
+        while (fs$a.existsSync(targetDir)) {
           targetDir = resolveWithin(root, `${folderName}-${suffix}`);
           suffix += 1;
         }
@@ -6300,16 +6303,16 @@ class SkillManager {
     const roots = this.getSkillRoots(primaryRoot);
     const watchHandler = () => this.scheduleNotify();
     roots.forEach((root) => {
-      if (!fs$4.existsSync(root)) return;
+      if (!fs$a.existsSync(root)) return;
       try {
-        this.watchers.push(fs$4.watch(root, watchHandler));
+        this.watchers.push(fs$a.watch(root, watchHandler));
       } catch (error) {
         console.warn("[skills] Failed to watch skills root:", root, error);
       }
       const skillDirs = listSkillDirs(root);
       skillDirs.forEach((dir) => {
         try {
-          this.watchers.push(fs$4.watch(dir, watchHandler));
+          this.watchers.push(fs$a.watch(dir, watchHandler));
         } catch (error) {
           console.warn("[skills] Failed to watch skill directory:", dir, error);
         }
@@ -6338,27 +6341,27 @@ class SkillManager {
     }, WATCH_DEBOUNCE_MS);
   }
   notifySkillsChanged() {
-    electron.BrowserWindow.getAllWindows().forEach((win) => {
+    require$$0$1.BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
         win.webContents.send("skills:changed");
       }
     });
   }
   parseSkillDir(dir, state, defaults, isBuiltIn) {
-    var _a, _b;
-    const skillFile = path$1.join(dir, SKILL_FILE_NAME);
-    if (!fs$4.existsSync(skillFile)) return null;
+    var _a2, _b;
+    const skillFile = path$7.join(dir, SKILL_FILE_NAME);
+    if (!fs$a.existsSync(skillFile)) return null;
     try {
-      const raw = fs$4.readFileSync(skillFile, "utf8");
+      const raw = fs$a.readFileSync(skillFile, "utf8");
       const { frontmatter, content } = parseFrontmatter(raw);
-      const name = (String(frontmatter.name || "") || path$1.basename(dir)).trim() || path$1.basename(dir);
+      const name = (String(frontmatter.name || "") || path$7.basename(dir)).trim() || path$7.basename(dir);
       const description = (String(frontmatter.description || "") || extractDescription(content) || name).trim();
       const isOfficial = isTruthy(frontmatter.official) || isTruthy(frontmatter.isOfficial);
       const version = typeof frontmatter.version === "string" ? frontmatter.version : typeof frontmatter.version === "number" ? String(frontmatter.version) : void 0;
-      const updatedAt = fs$4.statSync(skillFile).mtimeMs;
-      const id = path$1.basename(dir);
+      const updatedAt = fs$a.statSync(skillFile).mtimeMs;
+      const id = path$7.basename(dir);
       const prompt = content.trim();
-      const defaultEnabled = ((_a = defaults[id]) == null ? void 0 : _a.enabled) ?? true;
+      const defaultEnabled = ((_a2 = defaults[id]) == null ? void 0 : _a2.enabled) ?? true;
       const enabled = ((_b = state[id]) == null ? void 0 : _b.enabled) ?? defaultEnabled;
       return {
         id,
@@ -6379,10 +6382,10 @@ class SkillManager {
   }
   listBuiltInSkillIds() {
     const builtInRoot = this.getBundledSkillsRoot();
-    if (!builtInRoot || !fs$4.existsSync(builtInRoot)) {
+    if (!builtInRoot || !fs$a.existsSync(builtInRoot)) {
       return /* @__PURE__ */ new Set();
     }
-    return new Set(listSkillDirs(builtInRoot).map((dir) => path$1.basename(dir)));
+    return new Set(listSkillDirs(builtInRoot).map((dir) => path$7.basename(dir)));
   }
   isBuiltInSkillId(id) {
     return this.listBuiltInSkillIds().has(id);
@@ -6410,10 +6413,10 @@ class SkillManager {
     const merged = {};
     const reversedRoots = [...roots].reverse();
     for (const root of reversedRoots) {
-      const configPath = path$1.join(root, SKILLS_CONFIG_FILE);
-      if (!fs$4.existsSync(configPath)) continue;
+      const configPath = path$7.join(root, SKILLS_CONFIG_FILE);
+      if (!fs$a.existsSync(configPath)) continue;
       try {
-        const raw = fs$4.readFileSync(configPath, "utf8");
+        const raw = fs$a.readFileSync(configPath, "utf8");
         const config = JSON.parse(raw);
         if (config.defaults && typeof config.defaults === "object") {
           for (const [id, settings] of Object.entries(config.defaults)) {
@@ -6434,41 +6437,41 @@ class SkillManager {
     const resolvedPrimary = primaryRoot ?? this.getSkillsRoot();
     const roots = [resolvedPrimary];
     const claudeSkillsRoot = this.getClaudeSkillsRoot();
-    if (claudeSkillsRoot && fs$4.existsSync(claudeSkillsRoot)) {
+    if (claudeSkillsRoot && fs$a.existsSync(claudeSkillsRoot)) {
       roots.push(claudeSkillsRoot);
     }
     const appRoot = this.getBundledSkillsRoot();
-    if (appRoot !== resolvedPrimary && fs$4.existsSync(appRoot)) {
+    if (appRoot !== resolvedPrimary && fs$a.existsSync(appRoot)) {
       roots.push(appRoot);
     }
     return roots;
   }
   getClaudeSkillsRoot() {
-    const homeDir = electron.app.getPath("home");
-    return path$1.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR);
+    const homeDir = require$$0$1.app.getPath("home");
+    return path$7.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR);
   }
   getBundledSkillsRoot() {
-    if (electron.app.isPackaged) {
-      const resourcesRoot = path$1.resolve(
+    if (require$$0$1.app.isPackaged) {
+      const resourcesRoot = path$7.resolve(
         process.resourcesPath,
         SKILLS_DIR_NAME
       );
-      if (fs$4.existsSync(resourcesRoot)) {
+      if (fs$a.existsSync(resourcesRoot)) {
         return resourcesRoot;
       }
-      return path$1.resolve(electron.app.getAppPath(), SKILLS_DIR_NAME);
+      return path$7.resolve(require$$0$1.app.getAppPath(), SKILLS_DIR_NAME);
     }
-    const projectRoot = path$1.resolve(__dirname, "..");
-    return path$1.resolve(projectRoot, SKILLS_DIR_NAME);
+    const projectRoot = path$7.resolve(__dirname, "..");
+    return path$7.resolve(projectRoot, SKILLS_DIR_NAME);
   }
   getSkillConfig(skillId) {
     try {
       const skillDir = this.resolveSkillDir(skillId);
-      const envPath = path$1.join(skillDir, ".env");
-      if (!fs$4.existsSync(envPath)) {
+      const envPath = path$7.join(skillDir, ".env");
+      if (!fs$a.existsSync(envPath)) {
         return { success: true, config: {} };
       }
-      const raw = fs$4.readFileSync(envPath, "utf8");
+      const raw = fs$a.readFileSync(envPath, "utf8");
       const config = {};
       for (const line of raw.split(/\r?\n/)) {
         const trimmed = line.trim();
@@ -6490,9 +6493,9 @@ class SkillManager {
   setSkillConfig(skillId, config) {
     try {
       const skillDir = this.resolveSkillDir(skillId);
-      const envPath = path$1.join(skillDir, ".env");
+      const envPath = path$7.join(skillDir, ".env");
       const lines = Object.entries(config).filter(([key]) => key.trim()).map(([key, value]) => `${key}=${value}`);
-      fs$4.writeFileSync(envPath, lines.join("\n") + "\n", "utf8");
+      fs$a.writeFileSync(envPath, lines.join("\n") + "\n", "utf8");
       return { success: true };
     } catch (error) {
       return {
@@ -6502,17 +6505,17 @@ class SkillManager {
     }
   }
   repairSkillFromBundled(skillId, skillPath) {
-    if (!electron.app.isPackaged) return false;
+    if (!require$$0$1.app.isPackaged) return false;
     const bundledRoot = this.getBundledSkillsRoot();
-    if (!bundledRoot || !fs$4.existsSync(bundledRoot)) {
+    if (!bundledRoot || !fs$a.existsSync(bundledRoot)) {
       return false;
     }
-    const bundledPath = path$1.join(bundledRoot, skillId);
-    if (!fs$4.existsSync(bundledPath) || bundledPath === skillPath) {
+    const bundledPath = path$7.join(bundledRoot, skillId);
+    if (!fs$a.existsSync(bundledPath) || bundledPath === skillPath) {
       return false;
     }
-    const bundledNodeModules = path$1.join(bundledPath, "node_modules");
-    if (!fs$4.existsSync(bundledNodeModules)) {
+    const bundledNodeModules = path$7.join(bundledPath, "node_modules");
+    if (!fs$a.existsSync(bundledNodeModules)) {
       console.log(
         `[skills] Bundled ${skillId} does not have node_modules, skipping repair`
       );
@@ -6520,7 +6523,7 @@ class SkillManager {
     }
     try {
       console.log(`[skills] Repairing ${skillId} from bundled resources...`);
-      fs$4.cpSync(bundledPath, skillPath, {
+      fs$a.cpSync(bundledPath, skillPath, {
         recursive: true,
         dereference: true,
         force: true,
@@ -6537,30 +6540,30 @@ class SkillManager {
     }
   }
   ensureSkillDependencies(skillDir) {
-    var _a;
-    const nodeModulesPath = path$1.join(skillDir, "node_modules");
-    const packageJsonPath = path$1.join(skillDir, "package.json");
-    const skillId = path$1.basename(skillDir);
+    var _a2;
+    const nodeModulesPath = path$7.join(skillDir, "node_modules");
+    const packageJsonPath = path$7.join(skillDir, "package.json");
+    const skillId = path$7.basename(skillDir);
     console.log(`[skills] Checking dependencies for ${skillId}...`);
     console.log(
-      `[skills]   node_modules exists: ${fs$4.existsSync(nodeModulesPath)}`
+      `[skills]   node_modules exists: ${fs$a.existsSync(nodeModulesPath)}`
     );
     console.log(
-      `[skills]   package.json exists: ${fs$4.existsSync(packageJsonPath)}`
+      `[skills]   package.json exists: ${fs$a.existsSync(packageJsonPath)}`
     );
     console.log(`[skills]   skillDir: ${skillDir}`);
-    if (fs$4.existsSync(nodeModulesPath)) {
+    if (fs$a.existsSync(nodeModulesPath)) {
       console.log(`[skills] Dependencies already installed for ${skillId}`);
       return { success: true };
     }
-    if (!fs$4.existsSync(packageJsonPath)) {
+    if (!fs$a.existsSync(packageJsonPath)) {
       console.log(
         `[skills] No package.json found for ${skillId}, skipping install`
       );
       return { success: true };
     }
     if (this.repairSkillFromBundled(skillId, skillDir)) {
-      if (fs$4.existsSync(nodeModulesPath)) {
+      if (fs$a.existsSync(nodeModulesPath)) {
         console.log(
           `[skills] Dependencies restored from bundled resources for ${skillId}`
         );
@@ -6571,7 +6574,7 @@ class SkillManager {
     const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
     console.log(`[skills]   PATH keys in env: ${JSON.stringify(pathKeys)}`);
     console.log(
-      `[skills]   PATH (first 300 chars): ${(_a = env.PATH) == null ? void 0 : _a.substring(0, 300)}`
+      `[skills]   PATH (first 300 chars): ${(_a2 = env.PATH) == null ? void 0 : _a2.substring(0, 300)}`
     );
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     if (!hasCommand(npmCommand, env) && !hasCommand("npm", env)) {
@@ -6584,7 +6587,7 @@ class SkillManager {
     console.log(`[skills]   Working directory: ${skillDir}`);
     try {
       const isWin = process.platform === "win32";
-      const result = child_process.spawnSync("npm", ["install"], {
+      const result = require$$0$2.spawnSync("npm", ["install"], {
         cwd: skillDir,
         encoding: "utf-8",
         stdio: "pipe",
@@ -6615,7 +6618,7 @@ class SkillManager {
           error: `Failed to install dependencies: ${errorMsg}`
         };
       }
-      if (!fs$4.existsSync(nodeModulesPath)) {
+      if (!fs$a.existsSync(nodeModulesPath)) {
         const errorMsg = "npm install appeared to succeed but node_modules was not created";
         console.error(`[skills] ${errorMsg}`);
         return { success: false, error: errorMsg };
@@ -6637,7 +6640,7 @@ class SkillManager {
     }
   }
   async testEmailConnectivity(skillId, config) {
-    var _a, _b, _c, _d;
+    var _a2, _b, _c, _d;
     try {
       const skillDir = this.resolveSkillDir(skillId);
       const depsResult = this.ensureSkillDependencies(skillDir);
@@ -6648,9 +6651,9 @@ class SkillManager {
         );
         return { success: false, error: depsResult.error };
       }
-      const imapScript = path$1.join(skillDir, "scripts", "imap.js");
-      const smtpScript = path$1.join(skillDir, "scripts", "smtp.js");
-      if (!fs$4.existsSync(imapScript) || !fs$4.existsSync(smtpScript)) {
+      const imapScript = path$7.join(skillDir, "scripts", "imap.js");
+      const smtpScript = path$7.join(skillDir, "scripts", "smtp.js");
+      if (!fs$a.existsSync(imapScript) || !fs$a.existsSync(smtpScript)) {
         console.error("[email-connectivity] Scripts not found:", {
           imapScript,
           smtpScript
@@ -6686,7 +6689,7 @@ class SkillManager {
             exitCode: imapResult.exitCode,
             timedOut: imapResult.timedOut,
             durationMs: imapResult.durationMs,
-            stdout: (_a = imapResult.stdout) == null ? void 0 : _a.slice(0, 500),
+            stdout: (_a2 = imapResult.stdout) == null ? void 0 : _a2.slice(0, 500),
             stderr: (_b = imapResult.stderr) == null ? void 0 : _b.slice(0, 500),
             error: imapResult.error,
             spawnErrorCode: imapResult.spawnErrorCode
@@ -6755,11 +6758,11 @@ class SkillManager {
     if (!skill) {
       throw new Error("Skill not found");
     }
-    return path$1.dirname(skill.skillPath);
+    return path$7.dirname(skill.skillPath);
   }
   getScriptRuntimeCandidates() {
     const candidates = [];
-    if (!electron.app.isPackaged) {
+    if (!require$$0$1.app.isPackaged) {
       candidates.push({ command: "node" });
     }
     candidates.push({
@@ -6861,8 +6864,8 @@ class SkillManager {
 }
 const USER_MEMORIES_MIGRATION_KEY = "userMemories.migration.v1.completed";
 function loadWasmBinary() {
-  const wasmPath = electron.app.isPackaged ? path$1.join(process.resourcesPath, "app.asar.unpacked/node_modules/sql.js/dist/sql-wasm.wasm") : path$1.join(electron.app.getAppPath(), "node_modules/sql.js/dist/sql-wasm.wasm");
-  const buf = fs$4.readFileSync(wasmPath);
+  const wasmPath = require$$0$1.app.isPackaged ? path$7.join(process.resourcesPath, "app.asar.unpacked/node_modules/sql.js/dist/sql-wasm.wasm") : path$7.join(require$$0$1.app.getAppPath(), "node_modules/sql.js/dist/sql-wasm.wasm");
+  const buf = fs$a.readFileSync(wasmPath);
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 const _SqliteStore = class _SqliteStore {
@@ -6886,8 +6889,8 @@ const _SqliteStore = class _SqliteStore {
    * 4. 建表并执行迁移。
    */
   static async create(userDataPath) {
-    const basePath = userDataPath ?? electron.app.getPath("userData");
-    const dbPath = path$1.join(basePath, DB_FILENAME);
+    const basePath = userDataPath ?? require$$0$1.app.getPath("userData");
+    const dbPath = path$7.join(basePath, DB_FILENAME);
     if (!_SqliteStore.sqlPromise) {
       const wasmBinary = loadWasmBinary();
       _SqliteStore.sqlPromise = initSqlJs({
@@ -6896,8 +6899,8 @@ const _SqliteStore = class _SqliteStore {
     }
     const SQL = await _SqliteStore.sqlPromise;
     let db;
-    if (fs$4.existsSync(dbPath)) {
-      const buffer = fs$4.readFileSync(dbPath);
+    if (fs$a.existsSync(dbPath)) {
+      const buffer = fs$a.readFileSync(dbPath);
       db = new SQL.Database(buffer);
     } else {
       db = new SQL.Database();
@@ -6915,7 +6918,7 @@ const _SqliteStore = class _SqliteStore {
    * - 迁移失败尽量降级处理，避免阻塞启动。
    */
   initializeTables(basePath) {
-    var _a, _b;
+    var _a2, _b;
     this.db.run(`
       CREATE TABLE IF NOT EXISTS kv (
         key TEXT PRIMARY KEY,
@@ -7048,7 +7051,7 @@ const _SqliteStore = class _SqliteStore {
     `);
     try {
       const colsResult = this.db.exec("PRAGMA table_info(cowork_sessions);");
-      const columns = ((_a = colsResult[0]) == null ? void 0 : _a.values.map((row) => row[1])) || [];
+      const columns = ((_a2 = colsResult[0]) == null ? void 0 : _a2.values.map((row) => row[1])) || [];
       if (!columns.includes("execution_mode")) {
         this.db.run("ALTER TABLE cowork_sessions ADD COLUMN execution_mode TEXT;");
         this.save();
@@ -7122,7 +7125,7 @@ const _SqliteStore = class _SqliteStore {
    * 使用 kv 标记保证该迁移只执行一次。
    */
   migrateLegacyMemoryFileToUserMemories() {
-    var _a, _b, _c;
+    var _a2, _b, _c;
     if (this.get(USER_MEMORIES_MIGRATION_KEY) === "1") {
       return;
     }
@@ -7145,7 +7148,7 @@ const _SqliteStore = class _SqliteStore {
           `SELECT id FROM user_memories WHERE fingerprint = ? AND status != 'deleted' LIMIT 1`,
           [fingerprint]
         );
-        if ((_c = (_b = (_a = existing[0]) == null ? void 0 : _a.values) == null ? void 0 : _b[0]) == null ? void 0 : _c[0]) {
+        if ((_c = (_b = (_a2 = existing[0]) == null ? void 0 : _a2.values) == null ? void 0 : _b[0]) == null ? void 0 : _c[0]) {
           continue;
         }
         const memoryId = crypto.randomUUID();
@@ -7192,14 +7195,14 @@ const _SqliteStore = class _SqliteStore {
    * 仅在 kv 当前为空时执行，避免覆盖已存在的新版本数据。
    */
   migrateFromElectronStore(userDataPath) {
-    var _a, _b;
+    var _a2, _b;
     const result = this.db.exec("SELECT COUNT(*) as count FROM kv");
-    const count = (_b = (_a = result[0]) == null ? void 0 : _a.values[0]) == null ? void 0 : _b[0];
+    const count = (_b = (_a2 = result[0]) == null ? void 0 : _a2.values[0]) == null ? void 0 : _b[0];
     if (count > 0) return;
-    const legacyPath = path$1.join(userDataPath, "config.json");
-    if (!fs$4.existsSync(legacyPath)) return;
+    const legacyPath = path$7.join(userDataPath, "config.json");
+    if (!fs$a.existsSync(legacyPath)) return;
     try {
-      const raw = fs$4.readFileSync(legacyPath, "utf8");
+      const raw = fs$a.readFileSync(legacyPath, "utf8");
       const data = JSON.parse(raw);
       if (!data || typeof data !== "object") return;
       const entries = Object.entries(data);
@@ -7233,15 +7236,15 @@ const _SqliteStore = class _SqliteStore {
    */
   tryReadLegacyMemoryText() {
     const candidates = [
-      path$1.join(process.cwd(), "MEMORY.md"),
-      path$1.join(electron.app.getAppPath(), "MEMORY.md"),
-      path$1.join(process.cwd(), "memory.md"),
-      path$1.join(electron.app.getAppPath(), "memory.md")
+      path$7.join(process.cwd(), "MEMORY.md"),
+      path$7.join(require$$0$1.app.getAppPath(), "MEMORY.md"),
+      path$7.join(process.cwd(), "memory.md"),
+      path$7.join(require$$0$1.app.getAppPath(), "memory.md")
     ];
     for (const candidate of candidates) {
       try {
-        if (fs$4.existsSync(candidate) && fs$4.statSync(candidate).isFile()) {
-          return fs$4.readFileSync(candidate, "utf8");
+        if (fs$a.existsSync(candidate) && fs$a.statSync(candidate).isFile()) {
+          return fs$a.readFileSync(candidate, "utf8");
         }
       } catch {
       }
@@ -7282,16 +7285,16 @@ const _SqliteStore = class _SqliteStore {
   save() {
     const data = this.db.export();
     const buffer = Buffer.from(data);
-    fs$4.writeFileSync(this.dbPath, buffer);
+    fs$a.writeFileSync(this.dbPath, buffer);
   }
   /**
    * 从 kv 表读取并反序列化指定 key 的值。
    * 如果值不存在或 JSON 解析失败，返回 undefined。
    */
   get(key) {
-    var _a;
+    var _a2;
     const result = this.db.exec("SELECT value FROM kv WHERE key = ?", [key]);
-    if (!((_a = result[0]) == null ? void 0 : _a.values[0])) return void 0;
+    if (!((_a2 = result[0]) == null ? void 0 : _a2.values[0])) return void 0;
     const value = result[0].values[0][0];
     try {
       return JSON.parse(value);
@@ -7367,9 +7370,9 @@ function rng() {
 }
 const native = { randomUUID: node_crypto.randomUUID };
 function _v4(options, buf, offset) {
-  var _a;
+  var _a2;
   options = options || {};
-  const rnds = options.random ?? ((_a = options.rng) == null ? void 0 : _a.call(options)) ?? rng();
+  const rnds = options.random ?? ((_a2 = options.rng) == null ? void 0 : _a2.call(options)) ?? rng();
   if (rnds.length < 16) {
     throw new Error("Random bytes length must be >= 16");
   }
@@ -7478,8 +7481,8 @@ function buildCharacterBigramMap(value) {
   if (!compact) return /* @__PURE__ */ new Map();
   if (compact.length <= 1) return /* @__PURE__ */ new Map([[compact, 1]]);
   const map2 = /* @__PURE__ */ new Map();
-  for (let index = 0; index < compact.length - 1; index += 1) {
-    const gram = compact.slice(index, index + 2);
+  for (let index2 = 0; index2 < compact.length - 1; index2 += 1) {
+    const gram = compact.slice(index2, index2 + 2);
     map2.set(gram, (map2.get(gram) || 0) + 1);
   }
   return map2;
@@ -7529,9 +7532,9 @@ class CoworkStore {
     this.saveDb = saveDb;
   }
   getOne(sql, params = []) {
-    var _a;
+    var _a2;
     const result = this.db.exec(sql, params);
-    if (!((_a = result[0]) == null ? void 0 : _a.values[0])) return void 0;
+    if (!((_a2 = result[0]) == null ? void 0 : _a2.values[0])) return void 0;
     const columns = result[0].columns;
     const values = result[0].values[0];
     const row = {};
@@ -7541,9 +7544,9 @@ class CoworkStore {
     return row;
   }
   getAll(sql, params = []) {
-    var _a;
+    var _a2;
     const result = this.db.exec(sql, params);
-    if (!((_a = result[0]) == null ? void 0 : _a.values)) return [];
+    if (!((_a2 = result[0]) == null ? void 0 : _a2.values)) return [];
     const columns = result[0].columns;
     return result[0].values.map((values) => {
       const row = {};
@@ -7711,7 +7714,7 @@ class CoworkStore {
     return updated ? this.mapMemoryRow(updated) : null;
   }
   deleteUserMemory(id) {
-    var _a, _b;
+    var _a2, _b;
     const now = Date.now();
     this.db.run(
       `
@@ -7730,7 +7733,7 @@ class CoworkStore {
       [id]
     );
     this.saveDb();
-    return (((_b = (_a = this.db).getRowsModified) == null ? void 0 : _b.call(_a)) || 0) > 0;
+    return (((_b = (_a2 = this.db).getRowsModified) == null ? void 0 : _b.call(_a2)) || 0) > 0;
   }
   listUserMemories(options = {}) {
     const query = normalizeMemoryText(options.query || "");
@@ -7824,27 +7827,27 @@ class CoworkStore {
 }
 const MAX_LOG_SIZE = 5 * 1024 * 1024;
 let logFilePath = null;
-function getLogFilePath() {
+function getLogFilePath$1() {
   if (!logFilePath) {
-    const logDir = path$1.join(electron.app.getPath("userData"), "logs");
-    if (!fs$4.existsSync(logDir)) {
-      fs$4.mkdirSync(logDir, { recursive: true });
+    const logDir = path$7.join(require$$0$1.app.getPath("userData"), "logs");
+    if (!fs$a.existsSync(logDir)) {
+      fs$a.mkdirSync(logDir, { recursive: true });
     }
-    logFilePath = path$1.join(logDir, "cowork.log");
+    logFilePath = path$7.join(logDir, "cowork.log");
   }
   return logFilePath;
 }
 function rotateIfNeeded() {
   try {
-    const filePath = getLogFilePath();
-    if (!fs$4.existsSync(filePath)) return;
-    const stat = fs$4.statSync(filePath);
+    const filePath = getLogFilePath$1();
+    if (!fs$a.existsSync(filePath)) return;
+    const stat = fs$a.statSync(filePath);
     if (stat.size > MAX_LOG_SIZE) {
       const backupPath = filePath + ".old";
-      if (fs$4.existsSync(backupPath)) {
-        fs$4.unlinkSync(backupPath);
+      if (fs$a.existsSync(backupPath)) {
+        fs$a.unlinkSync(backupPath);
       }
-      fs$4.renameSync(filePath, backupPath);
+      fs$a.renameSync(filePath, backupPath);
     }
   } catch {
   }
@@ -7863,9 +7866,12 @@ function coworkLog(level, tag, message, extra) {
       }
     }
     parts.push("");
-    fs$4.appendFileSync(getLogFilePath(), parts.join("\n"), "utf-8");
+    fs$a.appendFileSync(getLogFilePath$1(), parts.join("\n"), "utf-8");
   } catch {
   }
+}
+function getCoworkLogPath() {
+  return getLogFilePath$1();
 }
 const SANDBOX_BASE_URL = process.env.COWORK_SANDBOX_BASE_URL || "";
 const SANDBOX_RUNTIME_VERSION = process.env.COWORK_SANDBOX_RUNTIME_VERSION || "v0.1.3";
@@ -7924,11 +7930,11 @@ function getRuntimeBinaryName() {
   return isWindows2 ? "qemu-system-x86_64.exe" : "qemu-system-x86_64";
 }
 function getSandboxPaths() {
-  const baseDir = path$1.join(electron.app.getPath("userData"), "cowork", "sandbox");
-  const runtimeDir = path$1.join(baseDir, "runtime", `${SANDBOX_RUNTIME_VERSION}`);
-  const imageDir = path$1.join(baseDir, "images", `${SANDBOX_IMAGE_VERSION}`);
-  const runtimeBinary = path$1.join(runtimeDir, getRuntimeBinaryName());
-  const imagePath = path$1.join(imageDir, `linux-${process.arch}.qcow2`);
+  const baseDir = path$7.join(require$$0$1.app.getPath("userData"), "cowork", "sandbox");
+  const runtimeDir = path$7.join(baseDir, "runtime", `${SANDBOX_RUNTIME_VERSION}`);
+  const imageDir = path$7.join(baseDir, "images", `${SANDBOX_IMAGE_VERSION}`);
+  const runtimeBinary = path$7.join(runtimeDir, getRuntimeBinaryName());
+  const imagePath = path$7.join(imageDir, `linux-${process.arch}.qcow2`);
   return { baseDir, runtimeDir, imageDir, runtimeBinary, imagePath };
 }
 function getRuntimeUrl(platformKey) {
@@ -8028,14 +8034,14 @@ function getInitrdPathOverride() {
   return SANDBOX_INITRD_PATH || null;
 }
 async function downloadFile(url, destination, stage) {
-  const response = await electron.session.defaultSession.fetch(url);
+  const response = await require$$0$1.session.defaultSession.fetch(url);
   if (!response.ok) {
     throw new Error(`Download failed (${response.status}): ${url}`);
   }
-  await fs$4.promises.mkdir(path$1.dirname(destination), { recursive: true });
+  await fs$a.promises.mkdir(path$7.dirname(destination), { recursive: true });
   if (!response.body) {
     const data = Buffer.from(await response.arrayBuffer());
-    await fs$4.promises.writeFile(destination, data);
+    await fs$a.promises.writeFile(destination, data);
     emitProgress({
       stage,
       received: data.length,
@@ -8066,7 +8072,7 @@ async function downloadFile(url, destination, stage) {
       url
     });
   });
-  await promises.pipeline(nodeStream, fs$4.createWriteStream(destination));
+  await promises.pipeline(nodeStream, fs$a.createWriteStream(destination));
   emitProgress({
     stage,
     received,
@@ -8077,7 +8083,7 @@ async function downloadFile(url, destination, stage) {
 }
 async function sha256File(filePath) {
   const hash = crypto.createHash("sha256");
-  const stream2 = fs$4.createReadStream(filePath);
+  const stream2 = fs$a.createReadStream(filePath);
   await new Promise((resolve, reject) => {
     stream2.on("data", (chunk) => hash.update(chunk));
     stream2.on("end", () => resolve());
@@ -8089,28 +8095,28 @@ async function verifySha256(filePath, expected) {
   if (!expected) return;
   const actual = await sha256File(filePath);
   if (actual.toLowerCase() !== expected.toLowerCase()) {
-    throw new Error(`Checksum mismatch for ${path$1.basename(filePath)}`);
+    throw new Error(`Checksum mismatch for ${path$7.basename(filePath)}`);
   }
 }
 function extractTarArchive(archivePath, destDir) {
-  var _a;
-  const result = child_process.spawnSync("tar", ["-xf", archivePath, "-C", destDir], { stdio: "pipe" });
+  var _a2;
+  const result = require$$0$2.spawnSync("tar", ["-xf", archivePath, "-C", destDir], { stdio: "pipe" });
   if (result.status !== 0) {
-    throw new Error(((_a = result.stderr) == null ? void 0 : _a.toString()) || "Failed to extract tar archive");
+    throw new Error(((_a2 = result.stderr) == null ? void 0 : _a2.toString()) || "Failed to extract tar archive");
   }
 }
 function extractArchive(archivePath, destDir) {
-  var _a, _b, _c;
+  var _a2, _b, _c;
   if (archivePath.endsWith(".zip")) {
     if (process.platform === "win32") {
-      const result = child_process.spawnSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -Force "${archivePath}" "${destDir}"`], {
+      const result = require$$0$2.spawnSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -Force "${archivePath}" "${destDir}"`], {
         stdio: "pipe"
       });
       if (result.status !== 0) {
-        throw new Error(((_a = result.stderr) == null ? void 0 : _a.toString()) || "Failed to extract zip archive");
+        throw new Error(((_a2 = result.stderr) == null ? void 0 : _a2.toString()) || "Failed to extract zip archive");
       }
     } else {
-      const result = child_process.spawnSync("unzip", ["-q", archivePath, "-d", destDir], { stdio: "pipe" });
+      const result = require$$0$2.spawnSync("unzip", ["-q", archivePath, "-d", destDir], { stdio: "pipe" });
       if (result.status !== 0) {
         throw new Error(((_b = result.stderr) == null ? void 0 : _b.toString()) || "Failed to extract zip archive");
       }
@@ -8122,7 +8128,7 @@ function extractArchive(archivePath, destDir) {
     return;
   }
   if (archivePath.endsWith(".tar.gz") || archivePath.endsWith(".tgz")) {
-    const result = child_process.spawnSync("tar", ["-xzf", archivePath, "-C", destDir], { stdio: "pipe" });
+    const result = require$$0$2.spawnSync("tar", ["-xzf", archivePath, "-C", destDir], { stdio: "pipe" });
     if (result.status !== 0) {
       throw new Error(((_c = result.stderr) == null ? void 0 : _c.toString()) || "Failed to extract tar archive");
     }
@@ -8131,11 +8137,11 @@ function extractArchive(archivePath, destDir) {
   throw new Error("Unsupported runtime archive format");
 }
 async function extractGzipBinary(archivePath, targetPath) {
-  await promises.pipeline(fs$4.createReadStream(archivePath), require$$1$2.createGunzip(), fs$4.createWriteStream(targetPath));
+  await promises.pipeline(fs$a.createReadStream(archivePath), require$$1$3.createGunzip(), fs$a.createWriteStream(targetPath));
 }
 async function isTarFile(filePath) {
   try {
-    const handle = await fs$4.promises.open(filePath, "r");
+    const handle = await fs$a.promises.open(filePath, "r");
     const buffer = Buffer.alloc(262);
     await handle.read(buffer, 0, 262, 0);
     await handle.close();
@@ -8148,7 +8154,7 @@ async function isTarFile(filePath) {
 }
 async function isGzipFile(filePath) {
   try {
-    const handle = await fs$4.promises.open(filePath, "r");
+    const handle = await fs$a.promises.open(filePath, "r");
     const buffer = Buffer.alloc(2);
     await handle.read(buffer, 0, 2, 0);
     await handle.close();
@@ -8160,7 +8166,7 @@ async function isGzipFile(filePath) {
 }
 async function isPEFile(filePath) {
   try {
-    const handle = await fs$4.promises.open(filePath, "r");
+    const handle = await fs$a.promises.open(filePath, "r");
     const buffer = Buffer.alloc(2);
     await handle.read(buffer, 0, 2, 0);
     await handle.close();
@@ -8171,11 +8177,11 @@ async function isPEFile(filePath) {
   }
 }
 async function runNsisInstaller(installerPath, targetDir) {
-  var _a;
-  await fs$4.promises.mkdir(targetDir, { recursive: true });
+  var _a2;
+  await fs$a.promises.mkdir(targetDir, { recursive: true });
   console.log(`[Sandbox] Launching QEMU installer interactively: ${installerPath}`);
   console.log(`[Sandbox] Suggested install directory: ${targetDir}`);
-  const result = child_process.spawnSync(
+  const result = require$$0$2.spawnSync(
     "powershell.exe",
     ["-NoProfile", "-Command", `Start-Process -FilePath '${installerPath}' -ArgumentList '/D=${targetDir}' -Wait`],
     { stdio: "pipe", timeout: 6e5 }
@@ -8184,7 +8190,7 @@ async function runNsisInstaller(installerPath, targetDir) {
     throw new Error(`Failed to launch installer: ${result.error.message}`);
   }
   if (result.status !== 0) {
-    const stderr = ((_a = result.stderr) == null ? void 0 : _a.toString().trim()) || "";
+    const stderr = ((_a2 = result.stderr) == null ? void 0 : _a2.toString().trim()) || "";
     throw new Error(
       `Installer failed (exit code ${result.status}): ${stderr || "User may have cancelled the installation or denied elevation."}`
     );
@@ -8192,20 +8198,20 @@ async function runNsisInstaller(installerPath, targetDir) {
   console.log("[Sandbox] QEMU installer process completed");
 }
 function resolveRuntimeBinary(runtimeDir, expectedPath) {
-  if (fs$4.existsSync(expectedPath)) {
+  if (fs$a.existsSync(expectedPath)) {
     return expectedPath;
   }
-  if (!fs$4.existsSync(runtimeDir)) {
+  if (!fs$a.existsSync(runtimeDir)) {
     return null;
   }
-  const targetName = path$1.basename(expectedPath);
+  const targetName = path$7.basename(expectedPath);
   const stack = [runtimeDir];
   while (stack.length > 0) {
     const current = stack.pop();
     if (!current) continue;
-    const entries = fs$4.readdirSync(current, { withFileTypes: true });
+    const entries = fs$a.readdirSync(current, { withFileTypes: true });
     for (const entry of entries) {
-      const entryPath = path$1.join(current, entry.name);
+      const entryPath = path$7.join(current, entry.name);
       if (entry.isDirectory()) {
         stack.push(entryPath);
       } else if (entry.isFile() && entry.name === targetName) {
@@ -8220,13 +8226,13 @@ function findSystemQemu() {
     return null;
   }
   const qemuName = getRuntimeBinaryName();
-  const result = child_process.spawnSync("where", [qemuName], { stdio: "pipe" });
+  const result = require$$0$2.spawnSync("where", [qemuName], { stdio: "pipe" });
   if (result.status === 0 && result.stdout) {
     const paths = result.stdout.toString().trim().split("\n");
     for (const qemuPath of paths) {
       const trimmedPath = qemuPath.trim();
-      if (fs$4.existsSync(trimmedPath)) {
-        const testResult = child_process.spawnSync(trimmedPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
+      if (fs$a.existsSync(trimmedPath)) {
+        const testResult = require$$0$2.spawnSync(trimmedPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
         if (testResult.status === 0 || testResult.status === 3221225781) {
           return trimmedPath;
         }
@@ -8236,22 +8242,22 @@ function findSystemQemu() {
   const commonPaths = [
     "C:\\Program Files\\qemu",
     "C:\\Program Files (x86)\\qemu",
-    path$1.join(process.env.LOCALAPPDATA || "", "Programs", "qemu")
+    path$7.join(process.env.LOCALAPPDATA || "", "Programs", "qemu")
   ];
   for (const basePath of commonPaths) {
-    const qemuPath = path$1.join(basePath, qemuName);
-    if (fs$4.existsSync(qemuPath)) {
+    const qemuPath = path$7.join(basePath, qemuName);
+    if (fs$a.existsSync(qemuPath)) {
       return qemuPath;
     }
   }
   return null;
 }
 function validateQemuBinary(binaryPath) {
-  var _a;
-  if (!fs$4.existsSync(binaryPath)) {
+  var _a2;
+  if (!fs$a.existsSync(binaryPath)) {
     return { valid: false, error: "Binary not found" };
   }
-  const result = child_process.spawnSync(binaryPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
+  const result = require$$0$2.spawnSync(binaryPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
   if (result.status === 0) {
     return { valid: true };
   }
@@ -8264,7 +8270,7 @@ function validateQemuBinary(binaryPath) {
   if (result.status !== null && result.status !== 0) {
     return {
       valid: false,
-      error: `QEMU binary failed to run (exit code: ${result.status}). ${((_a = result.stderr) == null ? void 0 : _a.toString()) || ""}`.trim()
+      error: `QEMU binary failed to run (exit code: ${result.status}). ${((_a2 = result.stderr) == null ? void 0 : _a2.toString()) || ""}`.trim()
     };
   }
   if (result.error) {
@@ -8279,7 +8285,7 @@ function checkQemuVirtfsSupport(binaryPath) {
   if (process.platform === "win32") {
     return true;
   }
-  const result = child_process.spawnSync(binaryPath, ["-help"], { stdio: "pipe", timeout: 5e3 });
+  const result = require$$0$2.spawnSync(binaryPath, ["-help"], { stdio: "pipe", timeout: 5e3 });
   if (result.status === 0 && result.stdout) {
     return result.stdout.toString().includes("-virtfs");
   }
@@ -8289,17 +8295,17 @@ function hasHypervisorEntitlement(output) {
   return output.includes("com.apple.security.hypervisor");
 }
 function ensureHypervisorEntitlement(binaryPath, runtimeDir) {
-  var _a, _b, _c, _d;
+  var _a2, _b, _c, _d;
   if (process.platform !== "darwin") return;
-  const probe = child_process.spawnSync("codesign", ["-d", "--entitlements", ":-", binaryPath], { stdio: "pipe" });
+  const probe = require$$0$2.spawnSync("codesign", ["-d", "--entitlements", ":-", binaryPath], { stdio: "pipe" });
   if (probe.status === 0) {
-    const stdout = ((_a = probe.stdout) == null ? void 0 : _a.toString()) || "";
+    const stdout = ((_a2 = probe.stdout) == null ? void 0 : _a2.toString()) || "";
     const stderr = ((_b = probe.stderr) == null ? void 0 : _b.toString()) || "";
     if (hasHypervisorEntitlement(stdout) || hasHypervisorEntitlement(stderr)) {
       return;
     }
   }
-  const entitlementsPath = path$1.join(runtimeDir, "entitlements.hypervisor.plist");
+  const entitlementsPath = path$7.join(runtimeDir, "entitlements.hypervisor.plist");
   const entitlements = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
@@ -8312,19 +8318,19 @@ function ensureHypervisorEntitlement(binaryPath, runtimeDir) {
     ""
   ].join("\n");
   try {
-    fs$4.writeFileSync(entitlementsPath, entitlements);
+    fs$a.writeFileSync(entitlementsPath, entitlements);
   } catch (error) {
     console.warn("Failed to write hypervisor entitlements file:", error);
     return;
   }
-  const sign = child_process.spawnSync("codesign", ["-s", "-", "--force", "--entitlements", entitlementsPath, binaryPath], { stdio: "pipe" });
+  const sign = require$$0$2.spawnSync("codesign", ["-s", "-", "--force", "--entitlements", entitlementsPath, binaryPath], { stdio: "pipe" });
   if (sign.status !== 0) {
     const stderr = ((_c = sign.stderr) == null ? void 0 : _c.toString()) || ((_d = sign.stdout) == null ? void 0 : _d.toString()) || "Unknown codesign error";
     console.warn("Failed to codesign sandbox runtime for HVF:", stderr.trim());
   }
 }
 async function ensureRuntime() {
-  var _a;
+  var _a2;
   const platformKey = getPlatformKey();
   if (!platformKey) {
     throw new Error("Sandbox VM is not supported on this platform.");
@@ -8337,19 +8343,19 @@ async function ensureRuntime() {
       await extractGzipBinary(resolvedBinary, tempPath);
       if (await isTarFile(tempPath)) {
         extractTarArchive(tempPath, runtimeDir);
-        await fs$4.promises.unlink(tempPath);
+        await fs$a.promises.unlink(tempPath);
         try {
-          await fs$4.promises.unlink(resolvedBinary);
+          await fs$a.promises.unlink(resolvedBinary);
         } catch (error) {
           console.warn("Failed to remove sandbox runtime gzip archive:", error);
         }
       } else {
-        await fs$4.promises.rename(tempPath, resolvedBinary);
+        await fs$a.promises.rename(tempPath, resolvedBinary);
       }
     } else if (await isTarFile(resolvedBinary)) {
       extractTarArchive(resolvedBinary, runtimeDir);
       try {
-        await fs$4.promises.unlink(resolvedBinary);
+        await fs$a.promises.unlink(resolvedBinary);
       } catch (error) {
         console.warn("Failed to remove sandbox runtime tar archive:", error);
       }
@@ -8364,7 +8370,7 @@ async function ensureRuntime() {
     }
     if (process.platform !== "win32") {
       try {
-        fs$4.chmodSync(finalResolved, 493);
+        fs$a.chmodSync(finalResolved, 493);
       } catch (error) {
         console.warn("Failed to chmod sandbox runtime binary:", error);
       }
@@ -8409,73 +8415,73 @@ async function ensureRuntime() {
     }
     throw new Error(errorMsg);
   }
-  const archivePath = path$1.join(runtimeDir, `runtime-${platformKey}.download`);
-  await fs$4.promises.mkdir(runtimeDir, { recursive: true });
+  const archivePath = path$7.join(runtimeDir, `runtime-${platformKey}.download`);
+  await fs$a.promises.mkdir(runtimeDir, { recursive: true });
   await downloadFile(url, archivePath, "runtime");
   await verifySha256(archivePath, SANDBOX_RUNTIME_SHA256);
   if (url.endsWith(".zip") || url.endsWith(".tar.gz") || url.endsWith(".tgz")) {
     extractArchive(archivePath, runtimeDir);
-    await fs$4.promises.unlink(archivePath);
+    await fs$a.promises.unlink(archivePath);
   } else if (url.endsWith(".gz")) {
     const tempPath = `${runtimeBinary}.download`;
     await extractGzipBinary(archivePath, tempPath);
-    await fs$4.promises.unlink(archivePath);
+    await fs$a.promises.unlink(archivePath);
     if (await isTarFile(tempPath)) {
       extractTarArchive(tempPath, runtimeDir);
-      await fs$4.promises.unlink(tempPath);
+      await fs$a.promises.unlink(tempPath);
     } else if (process.platform === "win32" && await isPEFile(tempPath)) {
-      const fileStats = await fs$4.promises.stat(tempPath);
+      const fileStats = await fs$a.promises.stat(tempPath);
       console.log(`[Sandbox] Decompressed PE file: ${fileStats.size} bytes`);
-      const versionProbe = child_process.spawnSync(tempPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
-      const versionOutput = ((_a = versionProbe.stdout) == null ? void 0 : _a.toString().trim()) || "";
+      const versionProbe = require$$0$2.spawnSync(tempPath, ["--version"], { stdio: "pipe", timeout: 5e3 });
+      const versionOutput = ((_a2 = versionProbe.stdout) == null ? void 0 : _a2.toString().trim()) || "";
       console.log(`[Sandbox] PE --version probe: exit=${versionProbe.status}, stdout="${versionOutput.slice(0, 120)}"`);
       if (versionProbe.status === 0 && versionOutput.toLowerCase().includes("qemu")) {
         console.log("[Sandbox] Downloaded file is a QEMU binary, renaming directly");
-        await fs$4.promises.rename(tempPath, runtimeBinary);
+        await fs$a.promises.rename(tempPath, runtimeBinary);
       } else {
-        const installerPath = path$1.join(runtimeDir, "qemu-installer.exe");
-        await fs$4.promises.rename(tempPath, installerPath);
+        const installerPath = path$7.join(runtimeDir, "qemu-installer.exe");
+        await fs$a.promises.rename(tempPath, installerPath);
         try {
           console.log(`[Sandbox] Running QEMU NSIS installer to: ${runtimeDir}`);
           await runNsisInstaller(installerPath, runtimeDir);
           console.log("[Sandbox] QEMU NSIS installer completed successfully");
         } catch (error) {
           try {
-            const entries = fs$4.readdirSync(runtimeDir);
+            const entries = fs$a.readdirSync(runtimeDir);
             console.log(`[Sandbox] Runtime dir contents after failed install: ${JSON.stringify(entries)}`);
           } catch {
           }
           try {
-            await fs$4.promises.unlink(installerPath);
+            await fs$a.promises.unlink(installerPath);
           } catch {
           }
           throw new Error(`Failed to install QEMU: ${error instanceof Error ? error.message : String(error)}`);
         }
         try {
-          const entries = fs$4.readdirSync(runtimeDir);
+          const entries = fs$a.readdirSync(runtimeDir);
           console.log(`[Sandbox] Runtime dir contents after install: ${JSON.stringify(entries)}`);
         } catch {
         }
         try {
-          await fs$4.promises.unlink(installerPath);
+          await fs$a.promises.unlink(installerPath);
         } catch (error) {
           console.warn("[Sandbox] Failed to remove QEMU installer after installation:", error);
         }
       }
     } else {
-      await fs$4.promises.rename(tempPath, runtimeBinary);
+      await fs$a.promises.rename(tempPath, runtimeBinary);
     }
   } else {
     const targetPath = runtimeBinary;
-    await fs$4.promises.rename(archivePath, targetPath);
+    await fs$a.promises.rename(archivePath, targetPath);
   }
   const finalBinary = resolveRuntimeBinary(runtimeDir, runtimeBinary);
   if (!finalBinary) {
     try {
       const listDir = (dir, prefix = "") => {
         const results = [];
-        for (const entry of fs$4.readdirSync(dir, { withFileTypes: true })) {
-          const full = path$1.join(dir, entry.name);
+        for (const entry of fs$a.readdirSync(dir, { withFileTypes: true })) {
+          const full = path$7.join(dir, entry.name);
           results.push(`${prefix}${entry.name}${entry.isDirectory() ? "/" : ""}`);
           if (entry.isDirectory()) {
             results.push(...listDir(full, prefix + "  "));
@@ -8483,7 +8489,7 @@ async function ensureRuntime() {
         }
         return results;
       };
-      console.log(`[Sandbox] Binary not found. Looking for: ${path$1.basename(runtimeBinary)}`);
+      console.log(`[Sandbox] Binary not found. Looking for: ${path$7.basename(runtimeBinary)}`);
       console.log(`[Sandbox] Runtime dir tree:
 ${listDir(runtimeDir).join("\n")}`);
     } catch {
@@ -8497,7 +8503,7 @@ ${listDir(runtimeDir).join("\n")}`);
   }
   if (process.platform !== "win32") {
     try {
-      fs$4.chmodSync(finalBinary, 493);
+      fs$a.chmodSync(finalBinary, 493);
     } catch (error) {
       console.warn("Failed to chmod sandbox runtime binary:", error);
     }
@@ -8507,7 +8513,7 @@ ${listDir(runtimeDir).join("\n")}`);
 }
 async function ensureImage() {
   const { imageDir, imagePath } = getSandboxPaths();
-  if (fs$4.existsSync(imagePath)) {
+  if (fs$a.existsSync(imagePath)) {
     return imagePath;
   }
   const url = getImageUrl();
@@ -8515,51 +8521,51 @@ async function ensureImage() {
     const errorMsg = process.platform === "win32" ? "Windows sandbox image is not yet configured. Please set COWORK_SANDBOX_IMAGE_URL or COWORK_SANDBOX_BASE_URL environment variable, or wait for default Windows image support." : "Sandbox image download URL is not configured.";
     throw new Error(errorMsg);
   }
-  await fs$4.promises.mkdir(imageDir, { recursive: true });
+  await fs$a.promises.mkdir(imageDir, { recursive: true });
   const downloadPath = `${imagePath}.download`;
   await downloadFile(url, downloadPath, "image");
   await verifySha256(downloadPath, getImageSha256());
-  await fs$4.promises.rename(downloadPath, imagePath);
+  await fs$a.promises.rename(downloadPath, imagePath);
   return imagePath;
 }
 async function ensureKernel() {
   const override = getKernelPathOverride();
-  if (override && fs$4.existsSync(override)) {
+  if (override && fs$a.existsSync(override)) {
     return override;
   }
   const archVariant = getArchVariant();
   if (!archVariant) return null;
   const { imageDir } = getSandboxPaths();
-  const kernelPath = path$1.join(imageDir, `vmlinuz-virt-${archVariant}`);
-  if (fs$4.existsSync(kernelPath)) {
+  const kernelPath = path$7.join(imageDir, `vmlinuz-virt-${archVariant}`);
+  if (fs$a.existsSync(kernelPath)) {
     return kernelPath;
   }
   const url = getKernelUrl();
   if (!url) return null;
-  await fs$4.promises.mkdir(imageDir, { recursive: true });
+  await fs$a.promises.mkdir(imageDir, { recursive: true });
   const downloadPath = `${kernelPath}.download`;
   await downloadFile(url, downloadPath, "image");
-  await fs$4.promises.rename(downloadPath, kernelPath);
+  await fs$a.promises.rename(downloadPath, kernelPath);
   return kernelPath;
 }
 async function ensureInitrd() {
   const override = getInitrdPathOverride();
-  if (override && fs$4.existsSync(override)) {
+  if (override && fs$a.existsSync(override)) {
     return override;
   }
   const archVariant = getArchVariant();
   if (!archVariant) return null;
   const { imageDir } = getSandboxPaths();
-  const initrdPath = path$1.join(imageDir, `initramfs-virt-${archVariant}`);
-  if (fs$4.existsSync(initrdPath)) {
+  const initrdPath = path$7.join(imageDir, `initramfs-virt-${archVariant}`);
+  if (fs$a.existsSync(initrdPath)) {
     return initrdPath;
   }
   const url = getInitrdUrl();
   if (!url) return null;
-  await fs$4.promises.mkdir(imageDir, { recursive: true });
+  await fs$a.promises.mkdir(imageDir, { recursive: true });
   const downloadPath = `${initrdPath}.download`;
   await downloadFile(url, downloadPath, "image");
-  await fs$4.promises.rename(downloadPath, initrdPath);
+  await fs$a.promises.rename(downloadPath, initrdPath);
   return initrdPath;
 }
 function resolveAvailableRuntimeBinary() {
@@ -8569,7 +8575,7 @@ function resolveAvailableRuntimeBinary() {
     return localRuntime;
   }
   if (process.platform === "win32") {
-    if (_resolvedSystemQemuPath && fs$4.existsSync(_resolvedSystemQemuPath)) {
+    if (_resolvedSystemQemuPath && fs$a.existsSync(_resolvedSystemQemuPath)) {
       return _resolvedSystemQemuPath;
     }
     const systemQemu = findSystemQemu();
@@ -8628,9 +8634,9 @@ async function _ensureSandboxReadyImpl() {
     downloadState.progress = void 0;
     coworkLog("INFO", "ensureSandboxReady", "Sandbox ready", {
       runtimeBinary,
-      runtimeExists: fs$4.existsSync(runtimeBinary),
+      runtimeExists: fs$a.existsSync(runtimeBinary),
       imagePath,
-      imageExists: fs$4.existsSync(imagePath),
+      imageExists: fs$a.existsSync(imagePath),
       kernelPath,
       initrdPath
     });
@@ -8669,7 +8675,7 @@ function getSandboxStatus() {
   }
   const { imagePath } = getSandboxPaths();
   const runtimeReady = Boolean(resolveAvailableRuntimeBinary());
-  const imageReady = fs$4.existsSync(imagePath);
+  const imageReady = fs$a.existsSync(imagePath);
   return {
     supported: true,
     runtimeReady,
@@ -8679,32 +8685,3052 @@ function getSandboxStatus() {
     error: downloadState.error
   };
 }
-electron.app.name = APP_NAME;
-electron.app.setName(APP_NAME);
+const fs$5 = fs$a;
+const path$5 = path$7;
+var packageJson$1 = {
+  findAndReadPackageJson,
+  tryReadJsonAt
+};
+function findAndReadPackageJson() {
+  return tryReadJsonAt(getMainModulePath()) || tryReadJsonAt(extractPathFromArgs()) || tryReadJsonAt(process.resourcesPath, "app.asar") || tryReadJsonAt(process.resourcesPath, "app") || tryReadJsonAt(process.cwd()) || { name: void 0, version: void 0 };
+}
+function tryReadJsonAt(...searchPaths) {
+  if (!searchPaths[0]) {
+    return void 0;
+  }
+  try {
+    const searchPath = path$5.join(...searchPaths);
+    const fileName = findUp("package.json", searchPath);
+    if (!fileName) {
+      return void 0;
+    }
+    const json2 = JSON.parse(fs$5.readFileSync(fileName, "utf8"));
+    const name = (json2 == null ? void 0 : json2.productName) || (json2 == null ? void 0 : json2.name);
+    if (!name || name.toLowerCase() === "electron") {
+      return void 0;
+    }
+    if (name) {
+      return { name, version: json2 == null ? void 0 : json2.version };
+    }
+    return void 0;
+  } catch (e) {
+    return void 0;
+  }
+}
+function findUp(fileName, cwd) {
+  let currentPath = cwd;
+  while (true) {
+    const parsedPath = path$5.parse(currentPath);
+    const root = parsedPath.root;
+    const dir = parsedPath.dir;
+    if (fs$5.existsSync(path$5.join(currentPath, fileName))) {
+      return path$5.resolve(path$5.join(currentPath, fileName));
+    }
+    if (currentPath === root) {
+      return null;
+    }
+    currentPath = dir;
+  }
+}
+function extractPathFromArgs() {
+  const matchedArgs = process.argv.filter((arg) => {
+    return arg.indexOf("--user-data-dir=") === 0;
+  });
+  if (matchedArgs.length === 0 || typeof matchedArgs[0] !== "string") {
+    return null;
+  }
+  const userDataDir = matchedArgs[0];
+  return userDataDir.replace("--user-data-dir=", "");
+}
+function getMainModulePath() {
+  var _a2;
+  try {
+    return (_a2 = require.main) == null ? void 0 : _a2.filename;
+  } catch {
+    return void 0;
+  }
+}
+const childProcess = require$$0$2;
+const os$3 = require$$1$1;
+const path$4 = path$7;
+const packageJson = packageJson$1;
+let NodeExternalApi$1 = class NodeExternalApi {
+  constructor() {
+    __publicField(this, "appName");
+    __publicField(this, "appPackageJson");
+    __publicField(this, "platform", process.platform);
+  }
+  getAppLogPath(appName = this.getAppName()) {
+    if (this.platform === "darwin") {
+      return path$4.join(this.getSystemPathHome(), "Library/Logs", appName);
+    }
+    return path$4.join(this.getAppUserDataPath(appName), "logs");
+  }
+  getAppName() {
+    var _a2;
+    const appName = this.appName || ((_a2 = this.getAppPackageJson()) == null ? void 0 : _a2.name);
+    if (!appName) {
+      throw new Error(
+        "electron-log can't determine the app name. It tried these methods:\n1. Use `electron.app.name`\n2. Use productName or name from the nearest package.json`\nYou can also set it through log.transports.file.setAppName()"
+      );
+    }
+    return appName;
+  }
+  /**
+   * @private
+   * @returns {undefined}
+   */
+  getAppPackageJson() {
+    if (typeof this.appPackageJson !== "object") {
+      this.appPackageJson = packageJson.findAndReadPackageJson();
+    }
+    return this.appPackageJson;
+  }
+  getAppUserDataPath(appName = this.getAppName()) {
+    return appName ? path$4.join(this.getSystemPathAppData(), appName) : void 0;
+  }
+  getAppVersion() {
+    var _a2;
+    return (_a2 = this.getAppPackageJson()) == null ? void 0 : _a2.version;
+  }
+  getElectronLogPath() {
+    return this.getAppLogPath();
+  }
+  getMacOsVersion() {
+    const release = Number(os$3.release().split(".")[0]);
+    if (release <= 19) {
+      return `10.${release - 4}`;
+    }
+    return release - 9;
+  }
+  /**
+   * @protected
+   * @returns {string}
+   */
+  getOsVersion() {
+    let osName = os$3.type().replace("_", " ");
+    let osVersion = os$3.release();
+    if (osName === "Darwin") {
+      osName = "macOS";
+      osVersion = this.getMacOsVersion();
+    }
+    return `${osName} ${osVersion}`;
+  }
+  /**
+   * @return {PathVariables}
+   */
+  getPathVariables() {
+    const appName = this.getAppName();
+    const appVersion = this.getAppVersion();
+    const self2 = this;
+    return {
+      appData: this.getSystemPathAppData(),
+      appName,
+      appVersion,
+      get electronDefaultDir() {
+        return self2.getElectronLogPath();
+      },
+      home: this.getSystemPathHome(),
+      libraryDefaultDir: this.getAppLogPath(appName),
+      libraryTemplate: this.getAppLogPath("{appName}"),
+      temp: this.getSystemPathTemp(),
+      userData: this.getAppUserDataPath(appName)
+    };
+  }
+  getSystemPathAppData() {
+    const home = this.getSystemPathHome();
+    switch (this.platform) {
+      case "darwin": {
+        return path$4.join(home, "Library/Application Support");
+      }
+      case "win32": {
+        return process.env.APPDATA || path$4.join(home, "AppData/Roaming");
+      }
+      default: {
+        return process.env.XDG_CONFIG_HOME || path$4.join(home, ".config");
+      }
+    }
+  }
+  getSystemPathHome() {
+    var _a2;
+    return ((_a2 = os$3.homedir) == null ? void 0 : _a2.call(os$3)) || process.env.HOME;
+  }
+  getSystemPathTemp() {
+    return os$3.tmpdir();
+  }
+  getVersions() {
+    return {
+      app: `${this.getAppName()} ${this.getAppVersion()}`,
+      electron: void 0,
+      os: this.getOsVersion()
+    };
+  }
+  isDev() {
+    return process.env.NODE_ENV === "development" || process.env.ELECTRON_IS_DEV === "1";
+  }
+  isElectron() {
+    return Boolean(process.versions.electron);
+  }
+  onAppEvent(_eventName, _handler) {
+  }
+  onAppReady(handler) {
+    handler();
+  }
+  onEveryWebContentsEvent(eventName, handler) {
+  }
+  /**
+   * Listen to async messages sent from opposite process
+   * @param {string} channel
+   * @param {function} listener
+   */
+  onIpc(channel, listener) {
+  }
+  onIpcInvoke(channel, listener) {
+  }
+  /**
+   * @param {string} url
+   * @param {Function} [logFunction]
+   */
+  openUrl(url, logFunction = console.error) {
+    const startMap = { darwin: "open", win32: "start", linux: "xdg-open" };
+    const start = startMap[process.platform] || "xdg-open";
+    childProcess.exec(`${start} ${url}`, {}, (err) => {
+      if (err) {
+        logFunction(err);
+      }
+    });
+  }
+  setAppName(appName) {
+    this.appName = appName;
+  }
+  setPlatform(platform) {
+    this.platform = platform;
+  }
+  setPreloadFileForSessions({
+    filePath,
+    // eslint-disable-line no-unused-vars
+    includeFutureSession = true,
+    // eslint-disable-line no-unused-vars
+    getSessions = () => []
+    // eslint-disable-line no-unused-vars
+  }) {
+  }
+  /**
+   * Sent a message to opposite process
+   * @param {string} channel
+   * @param {any} message
+   */
+  sendIpc(channel, message) {
+  }
+  showErrorBox(title, message) {
+  }
+};
+var NodeExternalApi_1 = NodeExternalApi$1;
+const path$3 = path$7;
+const NodeExternalApi2 = NodeExternalApi_1;
+let ElectronExternalApi$1 = class ElectronExternalApi extends NodeExternalApi2 {
+  /**
+   * @param {object} options
+   * @param {typeof Electron} [options.electron]
+   */
+  constructor({ electron: electron2 } = {}) {
+    super();
+    /**
+     * @type {typeof Electron}
+     */
+    __publicField(this, "electron");
+    this.electron = electron2;
+  }
+  getAppName() {
+    var _a2, _b;
+    let appName;
+    try {
+      appName = this.appName || ((_a2 = this.electron.app) == null ? void 0 : _a2.name) || ((_b = this.electron.app) == null ? void 0 : _b.getName());
+    } catch {
+    }
+    return appName || super.getAppName();
+  }
+  getAppUserDataPath(appName) {
+    return this.getPath("userData") || super.getAppUserDataPath(appName);
+  }
+  getAppVersion() {
+    var _a2;
+    let appVersion;
+    try {
+      appVersion = (_a2 = this.electron.app) == null ? void 0 : _a2.getVersion();
+    } catch {
+    }
+    return appVersion || super.getAppVersion();
+  }
+  getElectronLogPath() {
+    return this.getPath("logs") || super.getElectronLogPath();
+  }
+  /**
+   * @private
+   * @param {any} name
+   * @returns {string|undefined}
+   */
+  getPath(name) {
+    var _a2;
+    try {
+      return (_a2 = this.electron.app) == null ? void 0 : _a2.getPath(name);
+    } catch {
+      return void 0;
+    }
+  }
+  getVersions() {
+    return {
+      app: `${this.getAppName()} ${this.getAppVersion()}`,
+      electron: `Electron ${process.versions.electron}`,
+      os: this.getOsVersion()
+    };
+  }
+  getSystemPathAppData() {
+    return this.getPath("appData") || super.getSystemPathAppData();
+  }
+  isDev() {
+    var _a2;
+    if (((_a2 = this.electron.app) == null ? void 0 : _a2.isPackaged) !== void 0) {
+      return !this.electron.app.isPackaged;
+    }
+    if (typeof process.execPath === "string") {
+      const execFileName = path$3.basename(process.execPath).toLowerCase();
+      return execFileName.startsWith("electron");
+    }
+    return super.isDev();
+  }
+  onAppEvent(eventName, handler) {
+    var _a2;
+    (_a2 = this.electron.app) == null ? void 0 : _a2.on(eventName, handler);
+    return () => {
+      var _a3;
+      (_a3 = this.electron.app) == null ? void 0 : _a3.off(eventName, handler);
+    };
+  }
+  onAppReady(handler) {
+    var _a2, _b, _c;
+    if ((_a2 = this.electron.app) == null ? void 0 : _a2.isReady()) {
+      handler();
+    } else if ((_b = this.electron.app) == null ? void 0 : _b.once) {
+      (_c = this.electron.app) == null ? void 0 : _c.once("ready", handler);
+    } else {
+      handler();
+    }
+  }
+  onEveryWebContentsEvent(eventName, handler) {
+    var _a2, _b, _c;
+    (_b = (_a2 = this.electron.webContents) == null ? void 0 : _a2.getAllWebContents()) == null ? void 0 : _b.forEach((webContents) => {
+      webContents.on(eventName, handler);
+    });
+    (_c = this.electron.app) == null ? void 0 : _c.on("web-contents-created", onWebContentsCreated);
+    return () => {
+      var _a3, _b2;
+      (_a3 = this.electron.webContents) == null ? void 0 : _a3.getAllWebContents().forEach((webContents) => {
+        webContents.off(eventName, handler);
+      });
+      (_b2 = this.electron.app) == null ? void 0 : _b2.off("web-contents-created", onWebContentsCreated);
+    };
+    function onWebContentsCreated(_, webContents) {
+      webContents.on(eventName, handler);
+    }
+  }
+  /**
+   * Listen to async messages sent from opposite process
+   * @param {string} channel
+   * @param {function} listener
+   */
+  onIpc(channel, listener) {
+    var _a2;
+    (_a2 = this.electron.ipcMain) == null ? void 0 : _a2.on(channel, listener);
+  }
+  onIpcInvoke(channel, listener) {
+    var _a2, _b;
+    (_b = (_a2 = this.electron.ipcMain) == null ? void 0 : _a2.handle) == null ? void 0 : _b.call(_a2, channel, listener);
+  }
+  /**
+   * @param {string} url
+   * @param {Function} [logFunction]
+   */
+  openUrl(url, logFunction = console.error) {
+    var _a2;
+    (_a2 = this.electron.shell) == null ? void 0 : _a2.openExternal(url).catch(logFunction);
+  }
+  setPreloadFileForSessions({
+    filePath,
+    includeFutureSession = true,
+    getSessions = () => {
+      var _a2;
+      return [(_a2 = this.electron.session) == null ? void 0 : _a2.defaultSession];
+    }
+  }) {
+    for (const session of getSessions().filter(Boolean)) {
+      setPreload(session);
+    }
+    if (includeFutureSession) {
+      this.onAppEvent("session-created", (session) => {
+        setPreload(session);
+      });
+    }
+    function setPreload(session) {
+      if (typeof session.registerPreloadScript === "function") {
+        session.registerPreloadScript({
+          filePath,
+          id: "electron-log-preload",
+          type: "frame"
+        });
+      } else {
+        session.setPreloads([...session.getPreloads(), filePath]);
+      }
+    }
+  }
+  /**
+   * Sent a message to opposite process
+   * @param {string} channel
+   * @param {any} message
+   */
+  sendIpc(channel, message) {
+    var _a2, _b;
+    (_b = (_a2 = this.electron.BrowserWindow) == null ? void 0 : _a2.getAllWindows()) == null ? void 0 : _b.forEach((wnd) => {
+      var _a3, _b2;
+      if (((_a3 = wnd.webContents) == null ? void 0 : _a3.isDestroyed()) === false && ((_b2 = wnd.webContents) == null ? void 0 : _b2.isCrashed()) === false) {
+        wnd.webContents.send(channel, message);
+      }
+    });
+  }
+  showErrorBox(title, message) {
+    var _a2;
+    (_a2 = this.electron.dialog) == null ? void 0 : _a2.showErrorBox(title, message);
+  }
+};
+var ElectronExternalApi_1 = ElectronExternalApi$1;
+var electronLogPreload = { exports: {} };
+(function(module2) {
+  let electron2 = {};
+  try {
+    electron2 = require("electron");
+  } catch (e) {
+  }
+  if (electron2.ipcRenderer) {
+    initialize2(electron2);
+  }
+  {
+    module2.exports = initialize2;
+  }
+  function initialize2({ contextBridge, ipcRenderer }) {
+    if (!ipcRenderer) {
+      return;
+    }
+    ipcRenderer.on("__ELECTRON_LOG_IPC__", (_, message) => {
+      window.postMessage({ cmd: "message", ...message });
+    });
+    ipcRenderer.invoke("__ELECTRON_LOG__", { cmd: "getOptions" }).catch((e) => console.error(new Error(
+      `electron-log isn't initialized in the main process. Please call log.initialize() before. ${e.message}`
+    )));
+    const electronLog = {
+      sendToMain(message) {
+        try {
+          ipcRenderer.send("__ELECTRON_LOG__", message);
+        } catch (e) {
+          console.error("electronLog.sendToMain ", e, "data:", message);
+          ipcRenderer.send("__ELECTRON_LOG__", {
+            cmd: "errorHandler",
+            error: { message: e == null ? void 0 : e.message, stack: e == null ? void 0 : e.stack },
+            errorName: "sendToMain"
+          });
+        }
+      },
+      log(...data) {
+        electronLog.sendToMain({ data, level: "info" });
+      }
+    };
+    for (const level of ["error", "warn", "info", "verbose", "debug", "silly"]) {
+      electronLog[level] = (...data) => electronLog.sendToMain({
+        data,
+        level
+      });
+    }
+    if (contextBridge && process.contextIsolated) {
+      try {
+        contextBridge.exposeInMainWorld("__electronLog", electronLog);
+      } catch {
+      }
+    }
+    if (typeof window === "object") {
+      window.__electronLog = electronLog;
+    } else {
+      __electronLog = electronLog;
+    }
+  }
+})(electronLogPreload);
+var electronLogPreloadExports = electronLogPreload.exports;
+const fs$4 = fs$a;
+const os$2 = require$$1$1;
+const path$2 = path$7;
+const preloadInitializeFn = electronLogPreloadExports;
+let preloadInitialized = false;
+let spyConsoleInitialized = false;
+var initialize$1 = {
+  initialize({
+    externalApi: externalApi2,
+    getSessions,
+    includeFutureSession,
+    logger,
+    preload = true,
+    spyRendererConsole = false
+  }) {
+    externalApi2.onAppReady(() => {
+      try {
+        if (preload) {
+          initializePreload({
+            externalApi: externalApi2,
+            getSessions,
+            includeFutureSession,
+            logger,
+            preloadOption: preload
+          });
+        }
+        if (spyRendererConsole) {
+          initializeSpyRendererConsole({ externalApi: externalApi2, logger });
+        }
+      } catch (err) {
+        logger.warn(err);
+      }
+    });
+  }
+};
+function initializePreload({
+  externalApi: externalApi2,
+  getSessions,
+  includeFutureSession,
+  logger,
+  preloadOption
+}) {
+  let preloadPath = typeof preloadOption === "string" ? preloadOption : void 0;
+  if (preloadInitialized) {
+    logger.warn(new Error("log.initialize({ preload }) already called").stack);
+    return;
+  }
+  preloadInitialized = true;
+  try {
+    preloadPath = path$2.resolve(
+      __dirname,
+      "../renderer/electron-log-preload.js"
+    );
+  } catch {
+  }
+  if (!preloadPath || !fs$4.existsSync(preloadPath)) {
+    preloadPath = path$2.join(
+      externalApi2.getAppUserDataPath() || os$2.tmpdir(),
+      "electron-log-preload.js"
+    );
+    const preloadCode = `
+      try {
+        (${preloadInitializeFn.toString()})(require('electron'));
+      } catch(e) {
+        console.error(e);
+      }
+    `;
+    fs$4.writeFileSync(preloadPath, preloadCode, "utf8");
+  }
+  externalApi2.setPreloadFileForSessions({
+    filePath: preloadPath,
+    includeFutureSession,
+    getSessions
+  });
+}
+function initializeSpyRendererConsole({ externalApi: externalApi2, logger }) {
+  if (spyConsoleInitialized) {
+    logger.warn(
+      new Error("log.initialize({ spyRendererConsole }) already called").stack
+    );
+    return;
+  }
+  spyConsoleInitialized = true;
+  const levels = ["debug", "info", "warn", "error"];
+  externalApi2.onEveryWebContentsEvent(
+    "console-message",
+    (event, level, message) => {
+      logger.processMessage({
+        data: [message],
+        level: levels[level],
+        variables: { processType: "renderer" }
+      });
+    }
+  );
+}
+var scope = scopeFactory$1;
+function scopeFactory$1(logger) {
+  return Object.defineProperties(scope2, {
+    defaultLabel: { value: "", writable: true },
+    labelPadding: { value: true, writable: true },
+    maxLabelLength: { value: 0, writable: true },
+    labelLength: {
+      get() {
+        switch (typeof scope2.labelPadding) {
+          case "boolean":
+            return scope2.labelPadding ? scope2.maxLabelLength : 0;
+          case "number":
+            return scope2.labelPadding;
+          default:
+            return 0;
+        }
+      }
+    }
+  });
+  function scope2(label) {
+    scope2.maxLabelLength = Math.max(scope2.maxLabelLength, label.length);
+    const newScope = {};
+    for (const level of logger.levels) {
+      newScope[level] = (...d) => logger.logData(d, { level, scope: label });
+    }
+    newScope.log = newScope.info;
+    return newScope;
+  }
+}
+let Buffering$1 = class Buffering {
+  constructor({ processMessage: processMessage2 }) {
+    this.processMessage = processMessage2;
+    this.buffer = [];
+    this.enabled = false;
+    this.begin = this.begin.bind(this);
+    this.commit = this.commit.bind(this);
+    this.reject = this.reject.bind(this);
+  }
+  addMessage(message) {
+    this.buffer.push(message);
+  }
+  begin() {
+    this.enabled = [];
+  }
+  commit() {
+    this.enabled = false;
+    this.buffer.forEach((item) => this.processMessage(item));
+    this.buffer = [];
+  }
+  reject() {
+    this.enabled = false;
+    this.buffer = [];
+  }
+};
+var Buffering_1 = Buffering$1;
+const scopeFactory = scope;
+const Buffering2 = Buffering_1;
+let Logger$1 = (_a = class {
+  constructor({
+    allowUnknownLevel = false,
+    dependencies = {},
+    errorHandler,
+    eventLogger,
+    initializeFn,
+    isDev: isDev2 = false,
+    levels = ["error", "warn", "info", "verbose", "debug", "silly"],
+    logId,
+    transportFactories = {},
+    variables
+  } = {}) {
+    __publicField(this, "dependencies", {});
+    __publicField(this, "errorHandler", null);
+    __publicField(this, "eventLogger", null);
+    __publicField(this, "functions", {});
+    __publicField(this, "hooks", []);
+    __publicField(this, "isDev", false);
+    __publicField(this, "levels", null);
+    __publicField(this, "logId", null);
+    __publicField(this, "scope", null);
+    __publicField(this, "transports", {});
+    __publicField(this, "variables", {});
+    this.addLevel = this.addLevel.bind(this);
+    this.create = this.create.bind(this);
+    this.initialize = this.initialize.bind(this);
+    this.logData = this.logData.bind(this);
+    this.processMessage = this.processMessage.bind(this);
+    this.allowUnknownLevel = allowUnknownLevel;
+    this.buffering = new Buffering2(this);
+    this.dependencies = dependencies;
+    this.initializeFn = initializeFn;
+    this.isDev = isDev2;
+    this.levels = levels;
+    this.logId = logId;
+    this.scope = scopeFactory(this);
+    this.transportFactories = transportFactories;
+    this.variables = variables || {};
+    for (const name of this.levels) {
+      this.addLevel(name, false);
+    }
+    this.log = this.info;
+    this.functions.log = this.log;
+    this.errorHandler = errorHandler;
+    errorHandler == null ? void 0 : errorHandler.setOptions({ ...dependencies, logFn: this.error });
+    this.eventLogger = eventLogger;
+    eventLogger == null ? void 0 : eventLogger.setOptions({ ...dependencies, logger: this });
+    for (const [name, factory] of Object.entries(transportFactories)) {
+      this.transports[name] = factory(this, dependencies);
+    }
+    _a.instances[logId] = this;
+  }
+  static getInstance({ logId }) {
+    return this.instances[logId] || this.instances.default;
+  }
+  addLevel(level, index2 = this.levels.length) {
+    if (index2 !== false) {
+      this.levels.splice(index2, 0, level);
+    }
+    this[level] = (...args) => this.logData(args, { level });
+    this.functions[level] = this[level];
+  }
+  catchErrors(options) {
+    this.processMessage(
+      {
+        data: ["log.catchErrors is deprecated. Use log.errorHandler instead"],
+        level: "warn"
+      },
+      { transports: ["console"] }
+    );
+    return this.errorHandler.startCatching(options);
+  }
+  create(options) {
+    if (typeof options === "string") {
+      options = { logId: options };
+    }
+    return new _a({
+      dependencies: this.dependencies,
+      errorHandler: this.errorHandler,
+      initializeFn: this.initializeFn,
+      isDev: this.isDev,
+      transportFactories: this.transportFactories,
+      variables: { ...this.variables },
+      ...options
+    });
+  }
+  compareLevels(passLevel, checkLevel, levels = this.levels) {
+    const pass = levels.indexOf(passLevel);
+    const check = levels.indexOf(checkLevel);
+    if (check === -1 || pass === -1) {
+      return true;
+    }
+    return check <= pass;
+  }
+  initialize(options = {}) {
+    this.initializeFn({ logger: this, ...this.dependencies, ...options });
+  }
+  logData(data, options = {}) {
+    if (this.buffering.enabled) {
+      this.buffering.addMessage({ data, date: /* @__PURE__ */ new Date(), ...options });
+    } else {
+      this.processMessage({ data, ...options });
+    }
+  }
+  processMessage(message, { transports = this.transports } = {}) {
+    if (message.cmd === "errorHandler") {
+      this.errorHandler.handle(message.error, {
+        errorName: message.errorName,
+        processType: "renderer",
+        showDialog: Boolean(message.showDialog)
+      });
+      return;
+    }
+    let level = message.level;
+    if (!this.allowUnknownLevel) {
+      level = this.levels.includes(message.level) ? message.level : "info";
+    }
+    const normalizedMessage = {
+      date: /* @__PURE__ */ new Date(),
+      logId: this.logId,
+      ...message,
+      level,
+      variables: {
+        ...this.variables,
+        ...message.variables
+      }
+    };
+    for (const [transName, transFn] of this.transportEntries(transports)) {
+      if (typeof transFn !== "function" || transFn.level === false) {
+        continue;
+      }
+      if (!this.compareLevels(transFn.level, message.level)) {
+        continue;
+      }
+      try {
+        const transformedMsg = this.hooks.reduce((msg, hook) => {
+          return msg ? hook(msg, transFn, transName) : msg;
+        }, normalizedMessage);
+        if (transformedMsg) {
+          transFn({ ...transformedMsg, data: [...transformedMsg.data] });
+        }
+      } catch (e) {
+        this.processInternalErrorFn(e);
+      }
+    }
+  }
+  processInternalErrorFn(_e) {
+  }
+  transportEntries(transports = this.transports) {
+    const transportArray = Array.isArray(transports) ? transports : Object.entries(transports);
+    return transportArray.map((item) => {
+      switch (typeof item) {
+        case "string":
+          return this.transports[item] ? [item, this.transports[item]] : null;
+        case "function":
+          return [item.name, item];
+        default:
+          return Array.isArray(item) ? item : null;
+      }
+    }).filter(Boolean);
+  }
+}, __publicField(_a, "instances", {}), _a);
+var Logger_1 = Logger$1;
+let ErrorHandler$1 = class ErrorHandler {
+  constructor({
+    externalApi: externalApi2,
+    logFn = void 0,
+    onError = void 0,
+    showDialog = void 0
+  } = {}) {
+    __publicField(this, "externalApi");
+    __publicField(this, "isActive", false);
+    __publicField(this, "logFn");
+    __publicField(this, "onError");
+    __publicField(this, "showDialog", true);
+    this.createIssue = this.createIssue.bind(this);
+    this.handleError = this.handleError.bind(this);
+    this.handleRejection = this.handleRejection.bind(this);
+    this.setOptions({ externalApi: externalApi2, logFn, onError, showDialog });
+    this.startCatching = this.startCatching.bind(this);
+    this.stopCatching = this.stopCatching.bind(this);
+  }
+  handle(error, {
+    logFn = this.logFn,
+    onError = this.onError,
+    processType = "browser",
+    showDialog = this.showDialog,
+    errorName = ""
+  } = {}) {
+    var _a2;
+    error = normalizeError(error);
+    try {
+      if (typeof onError === "function") {
+        const versions = ((_a2 = this.externalApi) == null ? void 0 : _a2.getVersions()) || {};
+        const createIssue = this.createIssue;
+        const result = onError({
+          createIssue,
+          error,
+          errorName,
+          processType,
+          versions
+        });
+        if (result === false) {
+          return;
+        }
+      }
+      errorName ? logFn(errorName, error) : logFn(error);
+      if (showDialog && !errorName.includes("rejection") && this.externalApi) {
+        this.externalApi.showErrorBox(
+          `A JavaScript error occurred in the ${processType} process`,
+          error.stack
+        );
+      }
+    } catch {
+      console.error(error);
+    }
+  }
+  setOptions({ externalApi: externalApi2, logFn, onError, showDialog }) {
+    if (typeof externalApi2 === "object") {
+      this.externalApi = externalApi2;
+    }
+    if (typeof logFn === "function") {
+      this.logFn = logFn;
+    }
+    if (typeof onError === "function") {
+      this.onError = onError;
+    }
+    if (typeof showDialog === "boolean") {
+      this.showDialog = showDialog;
+    }
+  }
+  startCatching({ onError, showDialog } = {}) {
+    if (this.isActive) {
+      return;
+    }
+    this.isActive = true;
+    this.setOptions({ onError, showDialog });
+    process.on("uncaughtException", this.handleError);
+    process.on("unhandledRejection", this.handleRejection);
+  }
+  stopCatching() {
+    this.isActive = false;
+    process.removeListener("uncaughtException", this.handleError);
+    process.removeListener("unhandledRejection", this.handleRejection);
+  }
+  createIssue(pageUrl, queryParams) {
+    var _a2;
+    (_a2 = this.externalApi) == null ? void 0 : _a2.openUrl(
+      `${pageUrl}?${new URLSearchParams(queryParams).toString()}`
+    );
+  }
+  handleError(error) {
+    this.handle(error, { errorName: "Unhandled" });
+  }
+  handleRejection(reason) {
+    const error = reason instanceof Error ? reason : new Error(JSON.stringify(reason));
+    this.handle(error, { errorName: "Unhandled rejection" });
+  }
+};
+function normalizeError(e) {
+  if (e instanceof Error) {
+    return e;
+  }
+  if (e && typeof e === "object") {
+    if (e.message) {
+      return Object.assign(new Error(e.message), e);
+    }
+    try {
+      return new Error(JSON.stringify(e));
+    } catch (serErr) {
+      return new Error(`Couldn't normalize error ${String(e)}: ${serErr}`);
+    }
+  }
+  return new Error(`Can't normalize error ${String(e)}`);
+}
+var ErrorHandler_1 = ErrorHandler$1;
+let EventLogger$1 = class EventLogger {
+  constructor(options = {}) {
+    __publicField(this, "disposers", []);
+    __publicField(this, "format", "{eventSource}#{eventName}:");
+    __publicField(this, "formatters", {
+      app: {
+        "certificate-error": ({ args }) => {
+          return this.arrayToObject(args.slice(1, 4), [
+            "url",
+            "error",
+            "certificate"
+          ]);
+        },
+        "child-process-gone": ({ args }) => {
+          return args.length === 1 ? args[0] : args;
+        },
+        "render-process-gone": ({ args: [webContents, details] }) => {
+          return details && typeof details === "object" ? { ...details, ...this.getWebContentsDetails(webContents) } : [];
+        }
+      },
+      webContents: {
+        "console-message": ({ args: [level, message, line, sourceId] }) => {
+          if (level < 3) {
+            return void 0;
+          }
+          return { message, source: `${sourceId}:${line}` };
+        },
+        "did-fail-load": ({ args }) => {
+          return this.arrayToObject(args, [
+            "errorCode",
+            "errorDescription",
+            "validatedURL",
+            "isMainFrame",
+            "frameProcessId",
+            "frameRoutingId"
+          ]);
+        },
+        "did-fail-provisional-load": ({ args }) => {
+          return this.arrayToObject(args, [
+            "errorCode",
+            "errorDescription",
+            "validatedURL",
+            "isMainFrame",
+            "frameProcessId",
+            "frameRoutingId"
+          ]);
+        },
+        "plugin-crashed": ({ args }) => {
+          return this.arrayToObject(args, ["name", "version"]);
+        },
+        "preload-error": ({ args }) => {
+          return this.arrayToObject(args, ["preloadPath", "error"]);
+        }
+      }
+    });
+    __publicField(this, "events", {
+      app: {
+        "certificate-error": true,
+        "child-process-gone": true,
+        "render-process-gone": true
+      },
+      webContents: {
+        // 'console-message': true,
+        "did-fail-load": true,
+        "did-fail-provisional-load": true,
+        "plugin-crashed": true,
+        "preload-error": true,
+        "unresponsive": true
+      }
+    });
+    __publicField(this, "externalApi");
+    __publicField(this, "level", "error");
+    __publicField(this, "scope", "");
+    this.setOptions(options);
+  }
+  setOptions({
+    events,
+    externalApi: externalApi2,
+    level,
+    logger,
+    format: format2,
+    formatters,
+    scope: scope2
+  }) {
+    if (typeof events === "object") {
+      this.events = events;
+    }
+    if (typeof externalApi2 === "object") {
+      this.externalApi = externalApi2;
+    }
+    if (typeof level === "string") {
+      this.level = level;
+    }
+    if (typeof logger === "object") {
+      this.logger = logger;
+    }
+    if (typeof format2 === "string" || typeof format2 === "function") {
+      this.format = format2;
+    }
+    if (typeof formatters === "object") {
+      this.formatters = formatters;
+    }
+    if (typeof scope2 === "string") {
+      this.scope = scope2;
+    }
+  }
+  startLogging(options = {}) {
+    this.setOptions(options);
+    this.disposeListeners();
+    for (const eventName of this.getEventNames(this.events.app)) {
+      this.disposers.push(
+        this.externalApi.onAppEvent(eventName, (...handlerArgs) => {
+          this.handleEvent({ eventSource: "app", eventName, handlerArgs });
+        })
+      );
+    }
+    for (const eventName of this.getEventNames(this.events.webContents)) {
+      this.disposers.push(
+        this.externalApi.onEveryWebContentsEvent(
+          eventName,
+          (...handlerArgs) => {
+            this.handleEvent(
+              { eventSource: "webContents", eventName, handlerArgs }
+            );
+          }
+        )
+      );
+    }
+  }
+  stopLogging() {
+    this.disposeListeners();
+  }
+  arrayToObject(array, fieldNames) {
+    const obj = {};
+    fieldNames.forEach((fieldName, index2) => {
+      obj[fieldName] = array[index2];
+    });
+    if (array.length > fieldNames.length) {
+      obj.unknownArgs = array.slice(fieldNames.length);
+    }
+    return obj;
+  }
+  disposeListeners() {
+    this.disposers.forEach((disposer) => disposer());
+    this.disposers = [];
+  }
+  formatEventLog({ eventName, eventSource, handlerArgs }) {
+    var _a2;
+    const [event, ...args] = handlerArgs;
+    if (typeof this.format === "function") {
+      return this.format({ args, event, eventName, eventSource });
+    }
+    const formatter = (_a2 = this.formatters[eventSource]) == null ? void 0 : _a2[eventName];
+    let formattedArgs = args;
+    if (typeof formatter === "function") {
+      formattedArgs = formatter({ args, event, eventName, eventSource });
+    }
+    if (!formattedArgs) {
+      return void 0;
+    }
+    const eventData = {};
+    if (Array.isArray(formattedArgs)) {
+      eventData.args = formattedArgs;
+    } else if (typeof formattedArgs === "object") {
+      Object.assign(eventData, formattedArgs);
+    }
+    if (eventSource === "webContents") {
+      Object.assign(eventData, this.getWebContentsDetails(event == null ? void 0 : event.sender));
+    }
+    const title = this.format.replace("{eventSource}", eventSource === "app" ? "App" : "WebContents").replace("{eventName}", eventName);
+    return [title, eventData];
+  }
+  getEventNames(eventMap) {
+    if (!eventMap || typeof eventMap !== "object") {
+      return [];
+    }
+    return Object.entries(eventMap).filter(([_, listen]) => listen).map(([eventName]) => eventName);
+  }
+  getWebContentsDetails(webContents) {
+    if (!(webContents == null ? void 0 : webContents.loadURL)) {
+      return {};
+    }
+    try {
+      return {
+        webContents: {
+          id: webContents.id,
+          url: webContents.getURL()
+        }
+      };
+    } catch {
+      return {};
+    }
+  }
+  handleEvent({ eventName, eventSource, handlerArgs }) {
+    var _a2;
+    const log2 = this.formatEventLog({ eventName, eventSource, handlerArgs });
+    if (log2) {
+      const logFns = this.scope ? this.logger.scope(this.scope) : this.logger;
+      (_a2 = logFns == null ? void 0 : logFns[this.level]) == null ? void 0 : _a2.call(logFns, ...log2);
+    }
+  }
+};
+var EventLogger_1 = EventLogger$1;
+var transform_1 = { transform: transform$5 };
+function transform$5({
+  logger,
+  message,
+  transport,
+  initialData = (message == null ? void 0 : message.data) || [],
+  transforms = transport == null ? void 0 : transport.transforms
+}) {
+  return transforms.reduce((data, trans) => {
+    if (typeof trans === "function") {
+      return trans({ data, logger, message, transport });
+    }
+    return data;
+  }, initialData);
+}
+const { transform: transform$4 } = transform_1;
+var format$2 = {
+  concatFirstStringElements: concatFirstStringElements$2,
+  format({ message, logger, transport, data = message == null ? void 0 : message.data }) {
+    switch (typeof transport.format) {
+      case "string": {
+        return transform$4({
+          message,
+          logger,
+          transforms: [formatVariables, formatScope, formatText],
+          transport,
+          initialData: [transport.format, ...data]
+        });
+      }
+      case "function": {
+        return transport.format({
+          data,
+          level: (message == null ? void 0 : message.level) || "info",
+          logger,
+          message,
+          transport
+        });
+      }
+      default: {
+        return data;
+      }
+    }
+  }
+};
+function concatFirstStringElements$2({ data }) {
+  if (typeof data[0] !== "string" || typeof data[1] !== "string") {
+    return data;
+  }
+  if (data[0].match(/%[1cdfiOos]/)) {
+    return data;
+  }
+  return [`${data[0]} ${data[1]}`, ...data.slice(2)];
+}
+function timeZoneFromOffset(minutesOffset) {
+  const minutesPositive = Math.abs(minutesOffset);
+  const sign = minutesOffset > 0 ? "-" : "+";
+  const hours = Math.floor(minutesPositive / 60).toString().padStart(2, "0");
+  const minutes = (minutesPositive % 60).toString().padStart(2, "0");
+  return `${sign}${hours}:${minutes}`;
+}
+function formatScope({ data, logger, message }) {
+  const { defaultLabel, labelLength } = (logger == null ? void 0 : logger.scope) || {};
+  const template = data[0];
+  let label = message.scope;
+  if (!label) {
+    label = defaultLabel;
+  }
+  let scopeText;
+  if (label === "") {
+    scopeText = labelLength > 0 ? "".padEnd(labelLength + 3) : "";
+  } else if (typeof label === "string") {
+    scopeText = ` (${label})`.padEnd(labelLength + 3);
+  } else {
+    scopeText = "";
+  }
+  data[0] = template.replace("{scope}", scopeText);
+  return data;
+}
+function formatVariables({ data, message }) {
+  let template = data[0];
+  if (typeof template !== "string") {
+    return data;
+  }
+  template = template.replace("{level}]", `${message.level}]`.padEnd(6, " "));
+  const date = message.date || /* @__PURE__ */ new Date();
+  data[0] = template.replace(/\{(\w+)}/g, (substring, name) => {
+    var _a2;
+    switch (name) {
+      case "level":
+        return message.level || "info";
+      case "logId":
+        return message.logId;
+      case "y":
+        return date.getFullYear().toString(10);
+      case "m":
+        return (date.getMonth() + 1).toString(10).padStart(2, "0");
+      case "d":
+        return date.getDate().toString(10).padStart(2, "0");
+      case "h":
+        return date.getHours().toString(10).padStart(2, "0");
+      case "i":
+        return date.getMinutes().toString(10).padStart(2, "0");
+      case "s":
+        return date.getSeconds().toString(10).padStart(2, "0");
+      case "ms":
+        return date.getMilliseconds().toString(10).padStart(3, "0");
+      case "z":
+        return timeZoneFromOffset(date.getTimezoneOffset());
+      case "iso":
+        return date.toISOString();
+      default: {
+        return ((_a2 = message.variables) == null ? void 0 : _a2[name]) || substring;
+      }
+    }
+  }).trim();
+  return data;
+}
+function formatText({ data }) {
+  const template = data[0];
+  if (typeof template !== "string") {
+    return data;
+  }
+  const textTplPosition = template.lastIndexOf("{text}");
+  if (textTplPosition === template.length - 6) {
+    data[0] = template.replace(/\s?{text}/, "");
+    if (data[0] === "") {
+      data.shift();
+    }
+    return data;
+  }
+  const templatePieces = template.split("{text}");
+  let result = [];
+  if (templatePieces[0] !== "") {
+    result.push(templatePieces[0]);
+  }
+  result = result.concat(data.slice(1));
+  if (templatePieces[1] !== "") {
+    result.push(templatePieces[1]);
+  }
+  return result;
+}
+var object = { exports: {} };
+(function(module2) {
+  const util2 = require$$1$2;
+  module2.exports = {
+    serialize,
+    maxDepth({ data, transport, depth = (transport == null ? void 0 : transport.depth) ?? 6 }) {
+      if (!data) {
+        return data;
+      }
+      if (depth < 1) {
+        if (Array.isArray(data)) return "[array]";
+        if (typeof data === "object" && data) return "[object]";
+        return data;
+      }
+      if (Array.isArray(data)) {
+        return data.map((child) => module2.exports.maxDepth({
+          data: child,
+          depth: depth - 1
+        }));
+      }
+      if (typeof data !== "object") {
+        return data;
+      }
+      if (data && typeof data.toISOString === "function") {
+        return data;
+      }
+      if (data === null) {
+        return null;
+      }
+      if (data instanceof Error) {
+        return data;
+      }
+      const newJson = {};
+      for (const i in data) {
+        if (!Object.prototype.hasOwnProperty.call(data, i)) continue;
+        newJson[i] = module2.exports.maxDepth({
+          data: data[i],
+          depth: depth - 1
+        });
+      }
+      return newJson;
+    },
+    toJSON({ data }) {
+      return JSON.parse(JSON.stringify(data, createSerializer()));
+    },
+    toString({ data, transport }) {
+      const inspectOptions = (transport == null ? void 0 : transport.inspectOptions) || {};
+      const simplifiedData = data.map((item) => {
+        if (item === void 0) {
+          return void 0;
+        }
+        try {
+          const str2 = JSON.stringify(item, createSerializer(), "  ");
+          return str2 === void 0 ? void 0 : JSON.parse(str2);
+        } catch (e) {
+          return item;
+        }
+      });
+      return util2.formatWithOptions(inspectOptions, ...simplifiedData);
+    }
+  };
+  function createSerializer(options = {}) {
+    const seen = /* @__PURE__ */ new WeakSet();
+    return function(key, value) {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) {
+          return void 0;
+        }
+        seen.add(value);
+      }
+      return serialize(key, value, options);
+    };
+  }
+  function serialize(key, value, options = {}) {
+    const serializeMapAndSet = (options == null ? void 0 : options.serializeMapAndSet) !== false;
+    if (value instanceof Error) {
+      return value.stack;
+    }
+    if (!value) {
+      return value;
+    }
+    if (typeof value === "function") {
+      return `[function] ${value.toString()}`;
+    }
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (serializeMapAndSet && value instanceof Map && Object.fromEntries) {
+      return Object.fromEntries(value);
+    }
+    if (serializeMapAndSet && value instanceof Set && Array.from) {
+      return Array.from(value);
+    }
+    return value;
+  }
+})(object);
+var objectExports = object.exports;
+var style = {
+  applyAnsiStyles({ data }) {
+    return transformStyles(data, styleToAnsi, resetAnsiStyle);
+  },
+  removeStyles({ data }) {
+    return transformStyles(data, () => "");
+  }
+};
+const ANSI_COLORS = {
+  unset: "\x1B[0m",
+  black: "\x1B[30m",
+  red: "\x1B[31m",
+  green: "\x1B[32m",
+  yellow: "\x1B[33m",
+  blue: "\x1B[34m",
+  magenta: "\x1B[35m",
+  cyan: "\x1B[36m",
+  white: "\x1B[37m",
+  gray: "\x1B[90m"
+};
+function styleToAnsi(style2) {
+  const color = style2.replace(/color:\s*(\w+).*/, "$1").toLowerCase();
+  return ANSI_COLORS[color] || "";
+}
+function resetAnsiStyle(string) {
+  return string + ANSI_COLORS.unset;
+}
+function transformStyles(data, onStyleFound, onStyleApplied) {
+  const foundStyles = {};
+  return data.reduce((result, item, index2, array) => {
+    if (foundStyles[index2]) {
+      return result;
+    }
+    if (typeof item === "string") {
+      let valueIndex = index2;
+      let styleApplied = false;
+      item = item.replace(/%[1cdfiOos]/g, (match) => {
+        valueIndex += 1;
+        if (match !== "%c") {
+          return match;
+        }
+        const style2 = array[valueIndex];
+        if (typeof style2 === "string") {
+          foundStyles[valueIndex] = true;
+          styleApplied = true;
+          return onStyleFound(style2, item);
+        }
+        return match;
+      });
+      if (styleApplied && onStyleApplied) {
+        item = onStyleApplied(item);
+      }
+    }
+    result.push(item);
+    return result;
+  }, []);
+}
+const {
+  concatFirstStringElements: concatFirstStringElements$1,
+  format: format$1
+} = format$2;
+const { maxDepth: maxDepth$2, toJSON: toJSON$2 } = objectExports;
+const {
+  applyAnsiStyles,
+  removeStyles: removeStyles$2
+} = style;
+const { transform: transform$3 } = transform_1;
+const consoleMethods = {
+  error: console.error,
+  warn: console.warn,
+  info: console.info,
+  verbose: console.info,
+  debug: console.debug,
+  silly: console.debug,
+  log: console.log
+};
+var console_1 = consoleTransportFactory;
+const separator = process.platform === "win32" ? ">" : "›";
+const DEFAULT_FORMAT = `%c{h}:{i}:{s}.{ms}{scope}%c ${separator} {text}`;
+Object.assign(consoleTransportFactory, {
+  DEFAULT_FORMAT
+});
+function consoleTransportFactory(logger) {
+  return Object.assign(transport, {
+    colorMap: {
+      error: "red",
+      warn: "yellow",
+      info: "cyan",
+      verbose: "unset",
+      debug: "gray",
+      silly: "gray",
+      default: "unset"
+    },
+    format: DEFAULT_FORMAT,
+    level: "silly",
+    transforms: [
+      addTemplateColors,
+      format$1,
+      formatStyles,
+      concatFirstStringElements$1,
+      maxDepth$2,
+      toJSON$2
+    ],
+    useStyles: process.env.FORCE_STYLES,
+    writeFn({ message }) {
+      const consoleLogFn = consoleMethods[message.level] || consoleMethods.info;
+      consoleLogFn(...message.data);
+    }
+  });
+  function transport(message) {
+    const data = transform$3({ logger, message, transport });
+    transport.writeFn({
+      message: { ...message, data }
+    });
+  }
+}
+function addTemplateColors({ data, message, transport }) {
+  if (typeof transport.format !== "string" || !transport.format.includes("%c")) {
+    return data;
+  }
+  return [
+    `color:${levelToStyle(message.level, transport)}`,
+    "color:unset",
+    ...data
+  ];
+}
+function canUseStyles(useStyleValue, level) {
+  if (typeof useStyleValue === "boolean") {
+    return useStyleValue;
+  }
+  const useStderr = level === "error" || level === "warn";
+  const stream2 = useStderr ? process.stderr : process.stdout;
+  return stream2 && stream2.isTTY;
+}
+function formatStyles(args) {
+  const { message, transport } = args;
+  const useStyles = canUseStyles(transport.useStyles, message.level);
+  const nextTransform = useStyles ? applyAnsiStyles : removeStyles$2;
+  return nextTransform(args);
+}
+function levelToStyle(level, transport) {
+  return transport.colorMap[level] || transport.colorMap.default;
+}
+const EventEmitter$2 = require$$4;
+const fs$3 = fs$a;
+const os$1 = require$$1$1;
+let File$2 = class File extends EventEmitter$2 {
+  constructor({
+    path: path2,
+    writeOptions = { encoding: "utf8", flag: "a", mode: 438 },
+    writeAsync = false
+  }) {
+    super();
+    __publicField(this, "asyncWriteQueue", []);
+    __publicField(this, "bytesWritten", 0);
+    __publicField(this, "hasActiveAsyncWriting", false);
+    __publicField(this, "path", null);
+    __publicField(this, "initialSize");
+    __publicField(this, "writeOptions", null);
+    __publicField(this, "writeAsync", false);
+    this.path = path2;
+    this.writeOptions = writeOptions;
+    this.writeAsync = writeAsync;
+  }
+  get size() {
+    return this.getSize();
+  }
+  clear() {
+    try {
+      fs$3.writeFileSync(this.path, "", {
+        mode: this.writeOptions.mode,
+        flag: "w"
+      });
+      this.reset();
+      return true;
+    } catch (e) {
+      if (e.code === "ENOENT") {
+        return true;
+      }
+      this.emit("error", e, this);
+      return false;
+    }
+  }
+  crop(bytesAfter) {
+    try {
+      const content = readFileSyncFromEnd(this.path, bytesAfter || 4096);
+      this.clear();
+      this.writeLine(`[log cropped]${os$1.EOL}${content}`);
+    } catch (e) {
+      this.emit(
+        "error",
+        new Error(`Couldn't crop file ${this.path}. ${e.message}`),
+        this
+      );
+    }
+  }
+  getSize() {
+    if (this.initialSize === void 0) {
+      try {
+        const stats = fs$3.statSync(this.path);
+        this.initialSize = stats.size;
+      } catch (e) {
+        this.initialSize = 0;
+      }
+    }
+    return this.initialSize + this.bytesWritten;
+  }
+  increaseBytesWrittenCounter(text) {
+    this.bytesWritten += Buffer.byteLength(text, this.writeOptions.encoding);
+  }
+  isNull() {
+    return false;
+  }
+  nextAsyncWrite() {
+    const file2 = this;
+    if (this.hasActiveAsyncWriting || this.asyncWriteQueue.length === 0) {
+      return;
+    }
+    const text = this.asyncWriteQueue.join("");
+    this.asyncWriteQueue = [];
+    this.hasActiveAsyncWriting = true;
+    fs$3.writeFile(this.path, text, this.writeOptions, (e) => {
+      file2.hasActiveAsyncWriting = false;
+      if (e) {
+        file2.emit(
+          "error",
+          new Error(`Couldn't write to ${file2.path}. ${e.message}`),
+          this
+        );
+      } else {
+        file2.increaseBytesWrittenCounter(text);
+      }
+      file2.nextAsyncWrite();
+    });
+  }
+  reset() {
+    this.initialSize = void 0;
+    this.bytesWritten = 0;
+  }
+  toString() {
+    return this.path;
+  }
+  writeLine(text) {
+    text += os$1.EOL;
+    if (this.writeAsync) {
+      this.asyncWriteQueue.push(text);
+      this.nextAsyncWrite();
+      return;
+    }
+    try {
+      fs$3.writeFileSync(this.path, text, this.writeOptions);
+      this.increaseBytesWrittenCounter(text);
+    } catch (e) {
+      this.emit(
+        "error",
+        new Error(`Couldn't write to ${this.path}. ${e.message}`),
+        this
+      );
+    }
+  }
+};
+var File_1 = File$2;
+function readFileSyncFromEnd(filePath, bytesCount) {
+  const buffer = Buffer.alloc(bytesCount);
+  const stats = fs$3.statSync(filePath);
+  const readLength = Math.min(stats.size, bytesCount);
+  const offset = Math.max(0, stats.size - bytesCount);
+  const fd = fs$3.openSync(filePath, "r");
+  const totalBytes = fs$3.readSync(fd, buffer, 0, readLength, offset);
+  fs$3.closeSync(fd);
+  return buffer.toString("utf8", 0, totalBytes);
+}
+const File$1 = File_1;
+let NullFile$1 = class NullFile extends File$1 {
+  clear() {
+  }
+  crop() {
+  }
+  getSize() {
+    return 0;
+  }
+  isNull() {
+    return true;
+  }
+  writeLine() {
+  }
+};
+var NullFile_1 = NullFile$1;
+const EventEmitter$1 = require$$4;
+const fs$2 = fs$a;
+const path$1 = path$7;
+const File2 = File_1;
+const NullFile2 = NullFile_1;
+let FileRegistry$1 = class FileRegistry extends EventEmitter$1 {
+  constructor() {
+    super();
+    __publicField(this, "store", {});
+    this.emitError = this.emitError.bind(this);
+  }
+  /**
+   * Provide a File object corresponding to the filePath
+   * @param {string} filePath
+   * @param {WriteOptions} [writeOptions]
+   * @param {boolean} [writeAsync]
+   * @return {File}
+   */
+  provide({ filePath, writeOptions = {}, writeAsync = false }) {
+    let file2;
+    try {
+      filePath = path$1.resolve(filePath);
+      if (this.store[filePath]) {
+        return this.store[filePath];
+      }
+      file2 = this.createFile({ filePath, writeOptions, writeAsync });
+    } catch (e) {
+      file2 = new NullFile2({ path: filePath });
+      this.emitError(e, file2);
+    }
+    file2.on("error", this.emitError);
+    this.store[filePath] = file2;
+    return file2;
+  }
+  /**
+   * @param {string} filePath
+   * @param {WriteOptions} writeOptions
+   * @param {boolean} async
+   * @return {File}
+   * @private
+   */
+  createFile({ filePath, writeOptions, writeAsync }) {
+    this.testFileWriting({ filePath, writeOptions });
+    return new File2({ path: filePath, writeOptions, writeAsync });
+  }
+  /**
+   * @param {Error} error
+   * @param {File} file
+   * @private
+   */
+  emitError(error, file2) {
+    this.emit("error", error, file2);
+  }
+  /**
+   * @param {string} filePath
+   * @param {WriteOptions} writeOptions
+   * @private
+   */
+  testFileWriting({ filePath, writeOptions }) {
+    fs$2.mkdirSync(path$1.dirname(filePath), { recursive: true });
+    fs$2.writeFileSync(filePath, "", { flag: "a", mode: writeOptions.mode });
+  }
+};
+var FileRegistry_1 = FileRegistry$1;
+const fs$1 = fs$a;
+const os = require$$1$1;
+const path = path$7;
+const FileRegistry2 = FileRegistry_1;
+const { transform: transform$2 } = transform_1;
+const { removeStyles: removeStyles$1 } = style;
+const {
+  format,
+  concatFirstStringElements
+} = format$2;
+const { toString: toString2 } = objectExports;
+var file = fileTransportFactory;
+const globalRegistry = new FileRegistry2();
+function fileTransportFactory(logger, { registry = globalRegistry, externalApi: externalApi2 } = {}) {
+  let pathVariables;
+  if (registry.listenerCount("error") < 1) {
+    registry.on("error", (e, file2) => {
+      logConsole(`Can't write to ${file2}`, e);
+    });
+  }
+  return Object.assign(transport, {
+    fileName: getDefaultFileName(logger.variables.processType),
+    format: "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}]{scope} {text}",
+    getFile,
+    inspectOptions: { depth: 5 },
+    level: "silly",
+    maxSize: 1024 ** 2,
+    readAllLogs,
+    sync: true,
+    transforms: [removeStyles$1, format, concatFirstStringElements, toString2],
+    writeOptions: { flag: "a", mode: 438, encoding: "utf8" },
+    archiveLogFn(file2) {
+      const oldPath = file2.toString();
+      const inf = path.parse(oldPath);
+      try {
+        fs$1.renameSync(oldPath, path.join(inf.dir, `${inf.name}.old${inf.ext}`));
+      } catch (e) {
+        logConsole("Could not rotate log", e);
+        const quarterOfMaxSize = Math.round(transport.maxSize / 4);
+        file2.crop(Math.min(quarterOfMaxSize, 256 * 1024));
+      }
+    },
+    resolvePathFn(vars) {
+      return path.join(vars.libraryDefaultDir, vars.fileName);
+    },
+    setAppName(name) {
+      logger.dependencies.externalApi.setAppName(name);
+    }
+  });
+  function transport(message) {
+    const file2 = getFile(message);
+    const needLogRotation = transport.maxSize > 0 && file2.size > transport.maxSize;
+    if (needLogRotation) {
+      transport.archiveLogFn(file2);
+      file2.reset();
+    }
+    const content = transform$2({ logger, message, transport });
+    file2.writeLine(content);
+  }
+  function initializeOnFirstAccess() {
+    if (pathVariables) {
+      return;
+    }
+    pathVariables = Object.create(
+      Object.prototype,
+      {
+        ...Object.getOwnPropertyDescriptors(
+          externalApi2.getPathVariables()
+        ),
+        fileName: {
+          get() {
+            return transport.fileName;
+          },
+          enumerable: true
+        }
+      }
+    );
+    if (typeof transport.archiveLog === "function") {
+      transport.archiveLogFn = transport.archiveLog;
+      logConsole("archiveLog is deprecated. Use archiveLogFn instead");
+    }
+    if (typeof transport.resolvePath === "function") {
+      transport.resolvePathFn = transport.resolvePath;
+      logConsole("resolvePath is deprecated. Use resolvePathFn instead");
+    }
+  }
+  function logConsole(message, error = null, level = "error") {
+    const data = [`electron-log.transports.file: ${message}`];
+    if (error) {
+      data.push(error);
+    }
+    logger.transports.console({ data, date: /* @__PURE__ */ new Date(), level });
+  }
+  function getFile(msg) {
+    initializeOnFirstAccess();
+    const filePath = transport.resolvePathFn(pathVariables, msg);
+    return registry.provide({
+      filePath,
+      writeAsync: !transport.sync,
+      writeOptions: transport.writeOptions
+    });
+  }
+  function readAllLogs({ fileFilter = (f) => f.endsWith(".log") } = {}) {
+    initializeOnFirstAccess();
+    const logsPath = path.dirname(transport.resolvePathFn(pathVariables));
+    if (!fs$1.existsSync(logsPath)) {
+      return [];
+    }
+    return fs$1.readdirSync(logsPath).map((fileName) => path.join(logsPath, fileName)).filter(fileFilter).map((logPath) => {
+      try {
+        return {
+          path: logPath,
+          lines: fs$1.readFileSync(logPath, "utf8").split(os.EOL)
+        };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  }
+}
+function getDefaultFileName(processType = process.type) {
+  switch (processType) {
+    case "renderer":
+      return "renderer.log";
+    case "worker":
+      return "worker.log";
+    default:
+      return "main.log";
+  }
+}
+const { maxDepth: maxDepth$1, toJSON: toJSON$1 } = objectExports;
+const { transform: transform$1 } = transform_1;
+var ipc = ipcTransportFactory;
+function ipcTransportFactory(logger, { externalApi: externalApi2 }) {
+  Object.assign(transport, {
+    depth: 3,
+    eventId: "__ELECTRON_LOG_IPC__",
+    level: logger.isDev ? "silly" : false,
+    transforms: [toJSON$1, maxDepth$1]
+  });
+  return (externalApi2 == null ? void 0 : externalApi2.isElectron()) ? transport : void 0;
+  function transport(message) {
+    var _a2;
+    if (((_a2 = message == null ? void 0 : message.variables) == null ? void 0 : _a2.processType) === "renderer") {
+      return;
+    }
+    externalApi2 == null ? void 0 : externalApi2.sendIpc(transport.eventId, {
+      ...message,
+      data: transform$1({ logger, message, transport })
+    });
+  }
+}
+const http = require$$0$3;
+const https = require$$1$4;
+const { transform } = transform_1;
+const { removeStyles } = style;
+const { toJSON, maxDepth } = objectExports;
+var remote = remoteTransportFactory;
+function remoteTransportFactory(logger) {
+  return Object.assign(transport, {
+    client: { name: "electron-application" },
+    depth: 6,
+    level: false,
+    requestOptions: {},
+    transforms: [removeStyles, toJSON, maxDepth],
+    makeBodyFn({ message }) {
+      return JSON.stringify({
+        client: transport.client,
+        data: message.data,
+        date: message.date.getTime(),
+        level: message.level,
+        scope: message.scope,
+        variables: message.variables
+      });
+    },
+    processErrorFn({ error }) {
+      logger.processMessage(
+        {
+          data: [`electron-log: can't POST ${transport.url}`, error],
+          level: "warn"
+        },
+        { transports: ["console", "file"] }
+      );
+    },
+    sendRequestFn({ serverUrl, requestOptions, body }) {
+      const httpTransport = serverUrl.startsWith("https:") ? https : http;
+      const request = httpTransport.request(serverUrl, {
+        method: "POST",
+        ...requestOptions,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": body.length,
+          ...requestOptions.headers
+        }
+      });
+      request.write(body);
+      request.end();
+      return request;
+    }
+  });
+  function transport(message) {
+    if (!transport.url) {
+      return;
+    }
+    const body = transport.makeBodyFn({
+      logger,
+      message: { ...message, data: transform({ logger, message, transport }) },
+      transport
+    });
+    const request = transport.sendRequestFn({
+      serverUrl: transport.url,
+      requestOptions: transport.requestOptions,
+      body: Buffer.from(body, "utf8")
+    });
+    request.on("error", (error) => transport.processErrorFn({
+      error,
+      logger,
+      message,
+      request,
+      transport
+    }));
+  }
+}
+const Logger = Logger_1;
+const ErrorHandler2 = ErrorHandler_1;
+const EventLogger2 = EventLogger_1;
+const transportConsole = console_1;
+const transportFile = file;
+const transportIpc = ipc;
+const transportRemote = remote;
+var createDefaultLogger_1 = createDefaultLogger$1;
+function createDefaultLogger$1({ dependencies, initializeFn }) {
+  var _a2;
+  const defaultLogger2 = new Logger({
+    dependencies,
+    errorHandler: new ErrorHandler2(),
+    eventLogger: new EventLogger2(),
+    initializeFn,
+    isDev: (_a2 = dependencies.externalApi) == null ? void 0 : _a2.isDev(),
+    logId: "default",
+    transportFactories: {
+      console: transportConsole,
+      file: transportFile,
+      ipc: transportIpc,
+      remote: transportRemote
+    },
+    variables: {
+      processType: "main"
+    }
+  });
+  defaultLogger2.default = defaultLogger2;
+  defaultLogger2.Logger = Logger;
+  defaultLogger2.processInternalErrorFn = (e) => {
+    defaultLogger2.transports.console.writeFn({
+      message: {
+        data: ["Unhandled electron-log error", e],
+        level: "error"
+      }
+    });
+  };
+  return defaultLogger2;
+}
+const electron = require$$0$1;
+const ElectronExternalApi2 = ElectronExternalApi_1;
+const { initialize } = initialize$1;
+const createDefaultLogger = createDefaultLogger_1;
+const externalApi = new ElectronExternalApi2({ electron });
+const defaultLogger = createDefaultLogger({
+  dependencies: { externalApi },
+  initializeFn: initialize
+});
+var main$1 = defaultLogger;
+externalApi.onIpc("__ELECTRON_LOG__", (_, message) => {
+  if (message.scope) {
+    defaultLogger.Logger.getInstance(message).scope(message.scope);
+  }
+  const date = new Date(message.date);
+  processMessage({
+    ...message,
+    date: date.getTime() ? date : /* @__PURE__ */ new Date()
+  });
+});
+externalApi.onIpcInvoke("__ELECTRON_LOG__", (_, { cmd = "", logId }) => {
+  switch (cmd) {
+    case "getOptions": {
+      const logger = defaultLogger.Logger.getInstance({ logId });
+      return {
+        levels: logger.levels,
+        logId
+      };
+    }
+    default: {
+      processMessage({ data: [`Unknown cmd '${cmd}'`], level: "error" });
+      return {};
+    }
+  }
+});
+function processMessage(message) {
+  var _a2;
+  (_a2 = defaultLogger.Logger.getInstance(message)) == null ? void 0 : _a2.processMessage(message);
+}
+const main = main$1;
+var main_1 = main;
+const log = /* @__PURE__ */ getDefaultExportFromCjs$1(main_1);
+function getLogFilePath() {
+  return log.transports.file.getFile().path;
+}
+var yazl = {};
+function getDefaultExportFromCjs(x) {
+  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
+}
+const CRC_TABLE = new Int32Array([
+  0,
+  1996959894,
+  3993919788,
+  2567524794,
+  124634137,
+  1886057615,
+  3915621685,
+  2657392035,
+  249268274,
+  2044508324,
+  3772115230,
+  2547177864,
+  162941995,
+  2125561021,
+  3887607047,
+  2428444049,
+  498536548,
+  1789927666,
+  4089016648,
+  2227061214,
+  450548861,
+  1843258603,
+  4107580753,
+  2211677639,
+  325883990,
+  1684777152,
+  4251122042,
+  2321926636,
+  335633487,
+  1661365465,
+  4195302755,
+  2366115317,
+  997073096,
+  1281953886,
+  3579855332,
+  2724688242,
+  1006888145,
+  1258607687,
+  3524101629,
+  2768942443,
+  901097722,
+  1119000684,
+  3686517206,
+  2898065728,
+  853044451,
+  1172266101,
+  3705015759,
+  2882616665,
+  651767980,
+  1373503546,
+  3369554304,
+  3218104598,
+  565507253,
+  1454621731,
+  3485111705,
+  3099436303,
+  671266974,
+  1594198024,
+  3322730930,
+  2970347812,
+  795835527,
+  1483230225,
+  3244367275,
+  3060149565,
+  1994146192,
+  31158534,
+  2563907772,
+  4023717930,
+  1907459465,
+  112637215,
+  2680153253,
+  3904427059,
+  2013776290,
+  251722036,
+  2517215374,
+  3775830040,
+  2137656763,
+  141376813,
+  2439277719,
+  3865271297,
+  1802195444,
+  476864866,
+  2238001368,
+  4066508878,
+  1812370925,
+  453092731,
+  2181625025,
+  4111451223,
+  1706088902,
+  314042704,
+  2344532202,
+  4240017532,
+  1658658271,
+  366619977,
+  2362670323,
+  4224994405,
+  1303535960,
+  984961486,
+  2747007092,
+  3569037538,
+  1256170817,
+  1037604311,
+  2765210733,
+  3554079995,
+  1131014506,
+  879679996,
+  2909243462,
+  3663771856,
+  1141124467,
+  855842277,
+  2852801631,
+  3708648649,
+  1342533948,
+  654459306,
+  3188396048,
+  3373015174,
+  1466479909,
+  544179635,
+  3110523913,
+  3462522015,
+  1591671054,
+  702138776,
+  2966460450,
+  3352799412,
+  1504918807,
+  783551873,
+  3082640443,
+  3233442989,
+  3988292384,
+  2596254646,
+  62317068,
+  1957810842,
+  3939845945,
+  2647816111,
+  81470997,
+  1943803523,
+  3814918930,
+  2489596804,
+  225274430,
+  2053790376,
+  3826175755,
+  2466906013,
+  167816743,
+  2097651377,
+  4027552580,
+  2265490386,
+  503444072,
+  1762050814,
+  4150417245,
+  2154129355,
+  426522225,
+  1852507879,
+  4275313526,
+  2312317920,
+  282753626,
+  1742555852,
+  4189708143,
+  2394877945,
+  397917763,
+  1622183637,
+  3604390888,
+  2714866558,
+  953729732,
+  1340076626,
+  3518719985,
+  2797360999,
+  1068828381,
+  1219638859,
+  3624741850,
+  2936675148,
+  906185462,
+  1090812512,
+  3747672003,
+  2825379669,
+  829329135,
+  1181335161,
+  3412177804,
+  3160834842,
+  628085408,
+  1382605366,
+  3423369109,
+  3138078467,
+  570562233,
+  1426400815,
+  3317316542,
+  2998733608,
+  733239954,
+  1555261956,
+  3268935591,
+  3050360625,
+  752459403,
+  1541320221,
+  2607071920,
+  3965973030,
+  1969922972,
+  40735498,
+  2617837225,
+  3943577151,
+  1913087877,
+  83908371,
+  2512341634,
+  3803740692,
+  2075208622,
+  213261112,
+  2463272603,
+  3855990285,
+  2094854071,
+  198958881,
+  2262029012,
+  4057260610,
+  1759359992,
+  534414190,
+  2176718541,
+  4139329115,
+  1873836001,
+  414664567,
+  2282248934,
+  4279200368,
+  1711684554,
+  285281116,
+  2405801727,
+  4167216745,
+  1634467795,
+  376229701,
+  2685067896,
+  3608007406,
+  1308918612,
+  956543938,
+  2808555105,
+  3495958263,
+  1231636301,
+  1047427035,
+  2932959818,
+  3654703836,
+  1088359270,
+  936918e3,
+  2847714899,
+  3736837829,
+  1202900863,
+  817233897,
+  3183342108,
+  3401237130,
+  1404277552,
+  615818150,
+  3134207493,
+  3453421203,
+  1423857449,
+  601450431,
+  3009837614,
+  3294710456,
+  1567103746,
+  711928724,
+  3020668471,
+  3272380065,
+  1510334235,
+  755167117
+]);
+function ensureBuffer(input) {
+  if (Buffer.isBuffer(input)) {
+    return input;
+  }
+  if (typeof input === "number") {
+    return Buffer.alloc(input);
+  } else if (typeof input === "string") {
+    return Buffer.from(input);
+  } else {
+    throw new Error("input must be buffer, number, or string, received " + typeof input);
+  }
+}
+function bufferizeInt(num) {
+  const tmp = ensureBuffer(4);
+  tmp.writeInt32BE(num, 0);
+  return tmp;
+}
+function _crc32(buf, previous) {
+  buf = ensureBuffer(buf);
+  if (Buffer.isBuffer(previous)) {
+    previous = previous.readUInt32BE(0);
+  }
+  let crc = ~~previous ^ -1;
+  for (var n = 0; n < buf.length; n++) {
+    crc = CRC_TABLE[(crc ^ buf[n]) & 255] ^ crc >>> 8;
+  }
+  return crc ^ -1;
+}
+function crc32$1() {
+  return bufferizeInt(_crc32.apply(null, arguments));
+}
+crc32$1.signed = function() {
+  return _crc32.apply(null, arguments);
+};
+crc32$1.unsigned = function() {
+  return _crc32.apply(null, arguments) >>> 0;
+};
+var bufferCrc32 = crc32$1;
+const index = /* @__PURE__ */ getDefaultExportFromCjs(bufferCrc32);
+var dist = index;
+var fs = fs$a;
+var Transform = require$$6.Transform;
+var PassThrough = require$$6.PassThrough;
+var zlib = require$$1$3;
+var util = require$$1$2;
+var EventEmitter = require$$4.EventEmitter;
+var errorMonitor = require$$4.errorMonitor;
+var crc32 = dist;
+yazl.ZipFile = ZipFile;
+yazl.dateToDosDateTime = dateToDosDateTime;
+util.inherits(ZipFile, EventEmitter);
+function ZipFile() {
+  this.outputStream = new PassThrough();
+  this.entries = [];
+  this.outputStreamCursor = 0;
+  this.ended = false;
+  this.allDone = false;
+  this.forceZip64Eocd = false;
+  this.errored = false;
+  this.on(errorMonitor, function() {
+    this.errored = true;
+  });
+}
+ZipFile.prototype.addFile = function(realPath, metadataPath, options) {
+  var self2 = this;
+  metadataPath = validateMetadataPath(metadataPath, false);
+  if (options == null) options = {};
+  if (shouldIgnoreAdding(self2)) return;
+  var entry = new Entry(metadataPath, false, options);
+  self2.entries.push(entry);
+  fs.stat(realPath, function(err, stats) {
+    if (err) return self2.emit("error", err);
+    if (!stats.isFile()) return self2.emit("error", new Error("not a file: " + realPath));
+    entry.uncompressedSize = stats.size;
+    if (options.mtime == null) entry.setLastModDate(stats.mtime);
+    if (options.mode == null) entry.setFileAttributesMode(stats.mode);
+    entry.setFileDataPumpFunction(function() {
+      var readStream = fs.createReadStream(realPath);
+      entry.state = Entry.FILE_DATA_IN_PROGRESS;
+      readStream.on("error", function(err2) {
+        self2.emit("error", err2);
+      });
+      pumpFileDataReadStream(self2, entry, readStream);
+    });
+    pumpEntries(self2);
+  });
+};
+ZipFile.prototype.addReadStream = function(readStream, metadataPath, options) {
+  this.addReadStreamLazy(metadataPath, options, function(cb) {
+    cb(null, readStream);
+  });
+};
+ZipFile.prototype.addReadStreamLazy = function(metadataPath, options, getReadStreamFunction) {
+  var self2 = this;
+  if (typeof options === "function") {
+    getReadStreamFunction = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  metadataPath = validateMetadataPath(metadataPath, false);
+  if (shouldIgnoreAdding(self2)) return;
+  var entry = new Entry(metadataPath, false, options);
+  self2.entries.push(entry);
+  entry.setFileDataPumpFunction(function() {
+    entry.state = Entry.FILE_DATA_IN_PROGRESS;
+    getReadStreamFunction(function(err, readStream) {
+      if (err) return self2.emit("error", err);
+      pumpFileDataReadStream(self2, entry, readStream);
+    });
+  });
+  pumpEntries(self2);
+};
+ZipFile.prototype.addBuffer = function(buffer, metadataPath, options) {
+  var self2 = this;
+  metadataPath = validateMetadataPath(metadataPath, false);
+  if (buffer.length > 1073741823) throw new Error("buffer too large: " + buffer.length + " > 1073741823");
+  if (options == null) options = {};
+  if (options.size != null) throw new Error("options.size not allowed");
+  if (shouldIgnoreAdding(self2)) return;
+  var entry = new Entry(metadataPath, false, options);
+  entry.uncompressedSize = buffer.length;
+  entry.crc32 = crc32.unsigned(buffer);
+  entry.crcAndFileSizeKnown = true;
+  self2.entries.push(entry);
+  if (entry.compressionLevel === 0) {
+    setCompressedBuffer(buffer);
+  } else {
+    zlib.deflateRaw(buffer, { level: entry.compressionLevel }, function(err, compressedBuffer) {
+      setCompressedBuffer(compressedBuffer);
+    });
+  }
+  function setCompressedBuffer(compressedBuffer) {
+    entry.compressedSize = compressedBuffer.length;
+    entry.setFileDataPumpFunction(function() {
+      writeToOutputStream(self2, compressedBuffer);
+      writeToOutputStream(self2, entry.getDataDescriptor());
+      entry.state = Entry.FILE_DATA_DONE;
+      setImmediate(function() {
+        pumpEntries(self2);
+      });
+    });
+    pumpEntries(self2);
+  }
+};
+ZipFile.prototype.addEmptyDirectory = function(metadataPath, options) {
+  var self2 = this;
+  metadataPath = validateMetadataPath(metadataPath, true);
+  if (options == null) options = {};
+  if (options.size != null) throw new Error("options.size not allowed");
+  if (options.compress != null) throw new Error("options.compress not allowed");
+  if (options.compressionLevel != null) throw new Error("options.compressionLevel not allowed");
+  if (shouldIgnoreAdding(self2)) return;
+  var entry = new Entry(metadataPath, true, options);
+  self2.entries.push(entry);
+  entry.setFileDataPumpFunction(function() {
+    writeToOutputStream(self2, entry.getDataDescriptor());
+    entry.state = Entry.FILE_DATA_DONE;
+    pumpEntries(self2);
+  });
+  pumpEntries(self2);
+};
+var eocdrSignatureBuffer = bufferFrom([80, 75, 5, 6]);
+ZipFile.prototype.end = function(options, calculatedTotalSizeCallback) {
+  if (typeof options === "function") {
+    calculatedTotalSizeCallback = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  if (this.ended) return;
+  this.ended = true;
+  if (this.errored) return;
+  this.calculatedTotalSizeCallback = calculatedTotalSizeCallback;
+  this.forceZip64Eocd = !!options.forceZip64Format;
+  if (options.comment) {
+    if (typeof options.comment === "string") {
+      this.comment = encodeCp437(options.comment);
+    } else {
+      this.comment = options.comment;
+    }
+    if (this.comment.length > 65535) throw new Error("comment is too large");
+    if (bufferIncludes(this.comment, eocdrSignatureBuffer)) throw new Error("comment contains end of central directory record signature");
+  } else {
+    this.comment = EMPTY_BUFFER;
+  }
+  pumpEntries(this);
+};
+function writeToOutputStream(self2, buffer) {
+  self2.outputStream.write(buffer);
+  self2.outputStreamCursor += buffer.length;
+}
+function pumpFileDataReadStream(self2, entry, readStream) {
+  var crc32Watcher = new Crc32Watcher();
+  var uncompressedSizeCounter = new ByteCounter();
+  var compressor = entry.compressionLevel !== 0 ? new zlib.DeflateRaw({ level: entry.compressionLevel }) : new PassThrough();
+  var compressedSizeCounter = new ByteCounter();
+  readStream.pipe(crc32Watcher).pipe(uncompressedSizeCounter).pipe(compressor).pipe(compressedSizeCounter).pipe(self2.outputStream, { end: false });
+  compressedSizeCounter.on("end", function() {
+    entry.crc32 = crc32Watcher.crc32;
+    if (entry.uncompressedSize == null) {
+      entry.uncompressedSize = uncompressedSizeCounter.byteCount;
+    } else {
+      if (entry.uncompressedSize !== uncompressedSizeCounter.byteCount) return self2.emit("error", new Error("file data stream has unexpected number of bytes"));
+    }
+    entry.compressedSize = compressedSizeCounter.byteCount;
+    self2.outputStreamCursor += entry.compressedSize;
+    writeToOutputStream(self2, entry.getDataDescriptor());
+    entry.state = Entry.FILE_DATA_DONE;
+    pumpEntries(self2);
+  });
+}
+function determineCompressionLevel(options) {
+  if (options.compress != null && options.compressionLevel != null) {
+    if (!!options.compress !== !!options.compressionLevel) throw new Error("conflicting settings for compress and compressionLevel");
+  }
+  if (options.compressionLevel != null) return options.compressionLevel;
+  if (options.compress === false) return 0;
+  return 6;
+}
+function pumpEntries(self2) {
+  if (self2.allDone || self2.errored) return;
+  if (self2.ended && self2.calculatedTotalSizeCallback != null) {
+    var calculatedTotalSize = calculateTotalSize(self2);
+    if (calculatedTotalSize != null) {
+      self2.calculatedTotalSizeCallback(calculatedTotalSize);
+      self2.calculatedTotalSizeCallback = null;
+    }
+  }
+  var entry = getFirstNotDoneEntry();
+  function getFirstNotDoneEntry() {
+    for (var i = 0; i < self2.entries.length; i++) {
+      var entry2 = self2.entries[i];
+      if (entry2.state < Entry.FILE_DATA_DONE) return entry2;
+    }
+    return null;
+  }
+  if (entry != null) {
+    if (entry.state < Entry.READY_TO_PUMP_FILE_DATA) return;
+    if (entry.state === Entry.FILE_DATA_IN_PROGRESS) return;
+    entry.relativeOffsetOfLocalHeader = self2.outputStreamCursor;
+    var localFileHeader = entry.getLocalFileHeader();
+    writeToOutputStream(self2, localFileHeader);
+    entry.doFileDataPump();
+  } else {
+    if (self2.ended) {
+      self2.offsetOfStartOfCentralDirectory = self2.outputStreamCursor;
+      self2.entries.forEach(function(entry2) {
+        var centralDirectoryRecord = entry2.getCentralDirectoryRecord();
+        writeToOutputStream(self2, centralDirectoryRecord);
+      });
+      writeToOutputStream(self2, getEndOfCentralDirectoryRecord(self2));
+      self2.outputStream.end();
+      self2.allDone = true;
+    }
+  }
+}
+function calculateTotalSize(self2) {
+  var pretendOutputCursor = 0;
+  var centralDirectorySize = 0;
+  for (var i = 0; i < self2.entries.length; i++) {
+    var entry = self2.entries[i];
+    if (entry.compressionLevel !== 0) return -1;
+    if (entry.state >= Entry.READY_TO_PUMP_FILE_DATA) {
+      if (entry.uncompressedSize == null) return -1;
+    } else {
+      if (entry.uncompressedSize == null) return null;
+    }
+    entry.relativeOffsetOfLocalHeader = pretendOutputCursor;
+    var useZip64Format = entry.useZip64Format();
+    pretendOutputCursor += LOCAL_FILE_HEADER_FIXED_SIZE + entry.utf8FileName.length;
+    pretendOutputCursor += entry.uncompressedSize;
+    if (!entry.crcAndFileSizeKnown) {
+      if (useZip64Format) {
+        pretendOutputCursor += ZIP64_DATA_DESCRIPTOR_SIZE;
+      } else {
+        pretendOutputCursor += DATA_DESCRIPTOR_SIZE;
+      }
+    }
+    centralDirectorySize += CENTRAL_DIRECTORY_RECORD_FIXED_SIZE + entry.utf8FileName.length + entry.fileComment.length;
+    if (!entry.forceDosTimestamp) {
+      centralDirectorySize += INFO_ZIP_UNIVERSAL_TIMESTAMP_EXTRA_FIELD_SIZE;
+    }
+    if (useZip64Format) {
+      centralDirectorySize += ZIP64_EXTENDED_INFORMATION_EXTRA_FIELD_SIZE;
+    }
+  }
+  var endOfCentralDirectorySize = 0;
+  if (self2.forceZip64Eocd || self2.entries.length >= 65535 || centralDirectorySize >= 65535 || pretendOutputCursor >= 4294967295) {
+    endOfCentralDirectorySize += ZIP64_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE + ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIZE;
+  }
+  endOfCentralDirectorySize += END_OF_CENTRAL_DIRECTORY_RECORD_SIZE + self2.comment.length;
+  return pretendOutputCursor + centralDirectorySize + endOfCentralDirectorySize;
+}
+function shouldIgnoreAdding(self2) {
+  if (self2.ended) throw new Error("cannot add entries after calling end()");
+  if (self2.errored) return true;
+  return false;
+}
+var ZIP64_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE = 56;
+var ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIZE = 20;
+var END_OF_CENTRAL_DIRECTORY_RECORD_SIZE = 22;
+function getEndOfCentralDirectoryRecord(self2, actuallyJustTellMeHowLongItWouldBe) {
+  var needZip64Format = false;
+  var normalEntriesLength = self2.entries.length;
+  if (self2.forceZip64Eocd || self2.entries.length >= 65535) {
+    normalEntriesLength = 65535;
+    needZip64Format = true;
+  }
+  var sizeOfCentralDirectory = self2.outputStreamCursor - self2.offsetOfStartOfCentralDirectory;
+  var normalSizeOfCentralDirectory = sizeOfCentralDirectory;
+  if (self2.forceZip64Eocd || sizeOfCentralDirectory >= 4294967295) {
+    normalSizeOfCentralDirectory = 4294967295;
+    needZip64Format = true;
+  }
+  var normalOffsetOfStartOfCentralDirectory = self2.offsetOfStartOfCentralDirectory;
+  if (self2.forceZip64Eocd || self2.offsetOfStartOfCentralDirectory >= 4294967295) {
+    normalOffsetOfStartOfCentralDirectory = 4294967295;
+    needZip64Format = true;
+  }
+  var eocdrBuffer = bufferAlloc(END_OF_CENTRAL_DIRECTORY_RECORD_SIZE + self2.comment.length);
+  eocdrBuffer.writeUInt32LE(101010256, 0);
+  eocdrBuffer.writeUInt16LE(0, 4);
+  eocdrBuffer.writeUInt16LE(0, 6);
+  eocdrBuffer.writeUInt16LE(normalEntriesLength, 8);
+  eocdrBuffer.writeUInt16LE(normalEntriesLength, 10);
+  eocdrBuffer.writeUInt32LE(normalSizeOfCentralDirectory, 12);
+  eocdrBuffer.writeUInt32LE(normalOffsetOfStartOfCentralDirectory, 16);
+  eocdrBuffer.writeUInt16LE(self2.comment.length, 20);
+  self2.comment.copy(eocdrBuffer, 22);
+  if (!needZip64Format) return eocdrBuffer;
+  var zip64EocdrBuffer = bufferAlloc(ZIP64_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE);
+  zip64EocdrBuffer.writeUInt32LE(101075792, 0);
+  writeUInt64LE(zip64EocdrBuffer, ZIP64_END_OF_CENTRAL_DIRECTORY_RECORD_SIZE - 12, 4);
+  zip64EocdrBuffer.writeUInt16LE(VERSION_MADE_BY, 12);
+  zip64EocdrBuffer.writeUInt16LE(VERSION_NEEDED_TO_EXTRACT_ZIP64, 14);
+  zip64EocdrBuffer.writeUInt32LE(0, 16);
+  zip64EocdrBuffer.writeUInt32LE(0, 20);
+  writeUInt64LE(zip64EocdrBuffer, self2.entries.length, 24);
+  writeUInt64LE(zip64EocdrBuffer, self2.entries.length, 32);
+  writeUInt64LE(zip64EocdrBuffer, sizeOfCentralDirectory, 40);
+  writeUInt64LE(zip64EocdrBuffer, self2.offsetOfStartOfCentralDirectory, 48);
+  var zip64EocdlBuffer = bufferAlloc(ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIZE);
+  zip64EocdlBuffer.writeUInt32LE(117853008, 0);
+  zip64EocdlBuffer.writeUInt32LE(0, 4);
+  writeUInt64LE(zip64EocdlBuffer, self2.outputStreamCursor, 8);
+  zip64EocdlBuffer.writeUInt32LE(1, 16);
+  return Buffer.concat([
+    zip64EocdrBuffer,
+    zip64EocdlBuffer,
+    eocdrBuffer
+  ]);
+}
+function validateMetadataPath(metadataPath, isDirectory) {
+  if (metadataPath === "") throw new Error("empty metadataPath");
+  metadataPath = metadataPath.replace(/\\/g, "/");
+  if (/^[a-zA-Z]:/.test(metadataPath) || /^\//.test(metadataPath)) throw new Error("absolute path: " + metadataPath);
+  if (metadataPath.split("/").indexOf("..") !== -1) throw new Error("invalid relative path: " + metadataPath);
+  var looksLikeDirectory = /\/$/.test(metadataPath);
+  if (isDirectory) {
+    if (!looksLikeDirectory) metadataPath += "/";
+  } else {
+    if (looksLikeDirectory) throw new Error("file path cannot end with '/': " + metadataPath);
+  }
+  return metadataPath;
+}
+var EMPTY_BUFFER = bufferAlloc(0);
+function Entry(metadataPath, isDirectory, options) {
+  this.utf8FileName = bufferFrom(metadataPath);
+  if (this.utf8FileName.length > 65535) throw new Error("utf8 file name too long. " + utf8FileName.length + " > 65535");
+  this.isDirectory = isDirectory;
+  this.state = Entry.WAITING_FOR_METADATA;
+  this.setLastModDate(options.mtime != null ? options.mtime : /* @__PURE__ */ new Date());
+  this.forceDosTimestamp = !!options.forceDosTimestamp;
+  if (options.mode != null) {
+    this.setFileAttributesMode(options.mode);
+  } else {
+    this.setFileAttributesMode(isDirectory ? 16893 : 33204);
+  }
+  if (isDirectory) {
+    this.crcAndFileSizeKnown = true;
+    this.crc32 = 0;
+    this.uncompressedSize = 0;
+    this.compressedSize = 0;
+  } else {
+    this.crcAndFileSizeKnown = false;
+    this.crc32 = null;
+    this.uncompressedSize = null;
+    this.compressedSize = null;
+    if (options.size != null) this.uncompressedSize = options.size;
+  }
+  if (isDirectory) {
+    this.compressionLevel = 0;
+  } else {
+    this.compressionLevel = determineCompressionLevel(options);
+  }
+  this.forceZip64Format = !!options.forceZip64Format;
+  if (options.fileComment) {
+    if (typeof options.fileComment === "string") {
+      this.fileComment = bufferFrom(options.fileComment, "utf-8");
+    } else {
+      this.fileComment = options.fileComment;
+    }
+    if (this.fileComment.length > 65535) throw new Error("fileComment is too large");
+  } else {
+    this.fileComment = EMPTY_BUFFER;
+  }
+}
+Entry.WAITING_FOR_METADATA = 0;
+Entry.READY_TO_PUMP_FILE_DATA = 1;
+Entry.FILE_DATA_IN_PROGRESS = 2;
+Entry.FILE_DATA_DONE = 3;
+Entry.prototype.setLastModDate = function(date) {
+  this.mtime = date;
+  var dosDateTime = dateToDosDateTime(date);
+  this.lastModFileTime = dosDateTime.time;
+  this.lastModFileDate = dosDateTime.date;
+};
+Entry.prototype.setFileAttributesMode = function(mode) {
+  if ((mode & 65535) !== mode) throw new Error("invalid mode. expected: 0 <= " + mode + " <= 65535");
+  this.externalFileAttributes = mode << 16 >>> 0;
+};
+Entry.prototype.setFileDataPumpFunction = function(doFileDataPump) {
+  this.doFileDataPump = doFileDataPump;
+  this.state = Entry.READY_TO_PUMP_FILE_DATA;
+};
+Entry.prototype.useZip64Format = function() {
+  return this.forceZip64Format || this.uncompressedSize != null && this.uncompressedSize > 4294967294 || this.compressedSize != null && this.compressedSize > 4294967294 || this.relativeOffsetOfLocalHeader != null && this.relativeOffsetOfLocalHeader > 4294967294;
+};
+var LOCAL_FILE_HEADER_FIXED_SIZE = 30;
+var VERSION_NEEDED_TO_EXTRACT_UTF8 = 20;
+var VERSION_NEEDED_TO_EXTRACT_ZIP64 = 45;
+var VERSION_MADE_BY = 3 << 8 | 63;
+var FILE_NAME_IS_UTF8 = 1 << 11;
+var UNKNOWN_CRC32_AND_FILE_SIZES = 1 << 3;
+Entry.prototype.getLocalFileHeader = function() {
+  var crc322 = 0;
+  var compressedSize = 0;
+  var uncompressedSize = 0;
+  if (this.crcAndFileSizeKnown) {
+    crc322 = this.crc32;
+    compressedSize = this.compressedSize;
+    uncompressedSize = this.uncompressedSize;
+  }
+  var fixedSizeStuff = bufferAlloc(LOCAL_FILE_HEADER_FIXED_SIZE);
+  var generalPurposeBitFlag = FILE_NAME_IS_UTF8;
+  if (!this.crcAndFileSizeKnown) generalPurposeBitFlag |= UNKNOWN_CRC32_AND_FILE_SIZES;
+  fixedSizeStuff.writeUInt32LE(67324752, 0);
+  fixedSizeStuff.writeUInt16LE(VERSION_NEEDED_TO_EXTRACT_UTF8, 4);
+  fixedSizeStuff.writeUInt16LE(generalPurposeBitFlag, 6);
+  fixedSizeStuff.writeUInt16LE(this.getCompressionMethod(), 8);
+  fixedSizeStuff.writeUInt16LE(this.lastModFileTime, 10);
+  fixedSizeStuff.writeUInt16LE(this.lastModFileDate, 12);
+  fixedSizeStuff.writeUInt32LE(crc322, 14);
+  fixedSizeStuff.writeUInt32LE(compressedSize, 18);
+  fixedSizeStuff.writeUInt32LE(uncompressedSize, 22);
+  fixedSizeStuff.writeUInt16LE(this.utf8FileName.length, 26);
+  fixedSizeStuff.writeUInt16LE(0, 28);
+  return Buffer.concat([
+    fixedSizeStuff,
+    // file name (variable size)
+    this.utf8FileName
+    // extra field (variable size)
+    // no extra fields
+  ]);
+};
+var DATA_DESCRIPTOR_SIZE = 16;
+var ZIP64_DATA_DESCRIPTOR_SIZE = 24;
+Entry.prototype.getDataDescriptor = function() {
+  if (this.crcAndFileSizeKnown) {
+    return EMPTY_BUFFER;
+  }
+  if (!this.useZip64Format()) {
+    var buffer = bufferAlloc(DATA_DESCRIPTOR_SIZE);
+    buffer.writeUInt32LE(134695760, 0);
+    buffer.writeUInt32LE(this.crc32, 4);
+    buffer.writeUInt32LE(this.compressedSize, 8);
+    buffer.writeUInt32LE(this.uncompressedSize, 12);
+    return buffer;
+  } else {
+    var buffer = bufferAlloc(ZIP64_DATA_DESCRIPTOR_SIZE);
+    buffer.writeUInt32LE(134695760, 0);
+    buffer.writeUInt32LE(this.crc32, 4);
+    writeUInt64LE(buffer, this.compressedSize, 8);
+    writeUInt64LE(buffer, this.uncompressedSize, 16);
+    return buffer;
+  }
+};
+var CENTRAL_DIRECTORY_RECORD_FIXED_SIZE = 46;
+var INFO_ZIP_UNIVERSAL_TIMESTAMP_EXTRA_FIELD_SIZE = 9;
+var ZIP64_EXTENDED_INFORMATION_EXTRA_FIELD_SIZE = 28;
+Entry.prototype.getCentralDirectoryRecord = function() {
+  var fixedSizeStuff = bufferAlloc(CENTRAL_DIRECTORY_RECORD_FIXED_SIZE);
+  var generalPurposeBitFlag = FILE_NAME_IS_UTF8;
+  if (!this.crcAndFileSizeKnown) generalPurposeBitFlag |= UNKNOWN_CRC32_AND_FILE_SIZES;
+  var izutefBuffer = EMPTY_BUFFER;
+  if (!this.forceDosTimestamp) {
+    izutefBuffer = bufferAlloc(INFO_ZIP_UNIVERSAL_TIMESTAMP_EXTRA_FIELD_SIZE);
+    izutefBuffer.writeUInt16LE(21589, 0);
+    izutefBuffer.writeUInt16LE(INFO_ZIP_UNIVERSAL_TIMESTAMP_EXTRA_FIELD_SIZE - 4, 2);
+    var EB_UT_FL_MTIME = 1 << 0;
+    var EB_UT_FL_ATIME = 1 << 1;
+    izutefBuffer.writeUInt8(EB_UT_FL_MTIME | EB_UT_FL_ATIME, 4);
+    var timestamp2 = Math.floor(this.mtime.getTime() / 1e3);
+    if (timestamp2 < -2147483648) timestamp2 = -2147483648;
+    if (timestamp2 > 2147483647) timestamp2 = 2147483647;
+    izutefBuffer.writeUInt32LE(timestamp2, 5);
+  }
+  var normalCompressedSize = this.compressedSize;
+  var normalUncompressedSize = this.uncompressedSize;
+  var normalRelativeOffsetOfLocalHeader = this.relativeOffsetOfLocalHeader;
+  var versionNeededToExtract = VERSION_NEEDED_TO_EXTRACT_UTF8;
+  var zeiefBuffer = EMPTY_BUFFER;
+  if (this.useZip64Format()) {
+    normalCompressedSize = 4294967295;
+    normalUncompressedSize = 4294967295;
+    normalRelativeOffsetOfLocalHeader = 4294967295;
+    versionNeededToExtract = VERSION_NEEDED_TO_EXTRACT_ZIP64;
+    zeiefBuffer = bufferAlloc(ZIP64_EXTENDED_INFORMATION_EXTRA_FIELD_SIZE);
+    zeiefBuffer.writeUInt16LE(1, 0);
+    zeiefBuffer.writeUInt16LE(ZIP64_EXTENDED_INFORMATION_EXTRA_FIELD_SIZE - 4, 2);
+    writeUInt64LE(zeiefBuffer, this.uncompressedSize, 4);
+    writeUInt64LE(zeiefBuffer, this.compressedSize, 12);
+    writeUInt64LE(zeiefBuffer, this.relativeOffsetOfLocalHeader, 20);
+  }
+  fixedSizeStuff.writeUInt32LE(33639248, 0);
+  fixedSizeStuff.writeUInt16LE(VERSION_MADE_BY, 4);
+  fixedSizeStuff.writeUInt16LE(versionNeededToExtract, 6);
+  fixedSizeStuff.writeUInt16LE(generalPurposeBitFlag, 8);
+  fixedSizeStuff.writeUInt16LE(this.getCompressionMethod(), 10);
+  fixedSizeStuff.writeUInt16LE(this.lastModFileTime, 12);
+  fixedSizeStuff.writeUInt16LE(this.lastModFileDate, 14);
+  fixedSizeStuff.writeUInt32LE(this.crc32, 16);
+  fixedSizeStuff.writeUInt32LE(normalCompressedSize, 20);
+  fixedSizeStuff.writeUInt32LE(normalUncompressedSize, 24);
+  fixedSizeStuff.writeUInt16LE(this.utf8FileName.length, 28);
+  fixedSizeStuff.writeUInt16LE(izutefBuffer.length + zeiefBuffer.length, 30);
+  fixedSizeStuff.writeUInt16LE(this.fileComment.length, 32);
+  fixedSizeStuff.writeUInt16LE(0, 34);
+  fixedSizeStuff.writeUInt16LE(0, 36);
+  fixedSizeStuff.writeUInt32LE(this.externalFileAttributes, 38);
+  fixedSizeStuff.writeUInt32LE(normalRelativeOffsetOfLocalHeader, 42);
+  return Buffer.concat([
+    fixedSizeStuff,
+    // file name (variable size)
+    this.utf8FileName,
+    // extra field (variable size)
+    izutefBuffer,
+    zeiefBuffer,
+    // file comment (variable size)
+    this.fileComment
+  ]);
+};
+Entry.prototype.getCompressionMethod = function() {
+  var NO_COMPRESSION = 0;
+  var DEFLATE_COMPRESSION = 8;
+  return this.compressionLevel === 0 ? NO_COMPRESSION : DEFLATE_COMPRESSION;
+};
+var minDosDate = new Date(1980, 0, 1);
+var maxDosDate = new Date(2107, 11, 31, 23, 59, 58);
+function dateToDosDateTime(jsDate) {
+  if (jsDate < minDosDate) jsDate = minDosDate;
+  else if (jsDate > maxDosDate) jsDate = maxDosDate;
+  var date = 0;
+  date |= jsDate.getDate() & 31;
+  date |= (jsDate.getMonth() + 1 & 15) << 5;
+  date |= (jsDate.getFullYear() - 1980 & 127) << 9;
+  var time = 0;
+  time |= Math.floor(jsDate.getSeconds() / 2);
+  time |= (jsDate.getMinutes() & 63) << 5;
+  time |= (jsDate.getHours() & 31) << 11;
+  return { date, time };
+}
+function writeUInt64LE(buffer, n, offset) {
+  var high = Math.floor(n / 4294967296);
+  var low = n % 4294967296;
+  buffer.writeUInt32LE(low, offset);
+  buffer.writeUInt32LE(high, offset + 4);
+}
+util.inherits(ByteCounter, Transform);
+function ByteCounter(options) {
+  Transform.call(this, options);
+  this.byteCount = 0;
+}
+ByteCounter.prototype._transform = function(chunk, encoding, cb) {
+  this.byteCount += chunk.length;
+  cb(null, chunk);
+};
+util.inherits(Crc32Watcher, Transform);
+function Crc32Watcher(options) {
+  Transform.call(this, options);
+  this.crc32 = 0;
+}
+Crc32Watcher.prototype._transform = function(chunk, encoding, cb) {
+  this.crc32 = crc32.unsigned(chunk, this.crc32);
+  cb(null, chunk);
+};
+var cp437 = "\0☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+if (cp437.length !== 256) throw new Error("assertion failure");
+var reverseCp437 = null;
+function encodeCp437(string) {
+  if (/^[\x20-\x7e]*$/.test(string)) {
+    return bufferFrom(string, "utf-8");
+  }
+  if (reverseCp437 == null) {
+    reverseCp437 = {};
+    for (var i = 0; i < cp437.length; i++) {
+      reverseCp437[cp437[i]] = i;
+    }
+  }
+  var result = bufferAlloc(string.length);
+  for (var i = 0; i < string.length; i++) {
+    var b = reverseCp437[string[i]];
+    if (b == null) throw new Error("character not encodable in CP437: " + JSON.stringify(string[i]));
+    result[i] = b;
+  }
+  return result;
+}
+function bufferAlloc(size) {
+  bufferAlloc = modern;
+  try {
+    return bufferAlloc(size);
+  } catch (e) {
+    bufferAlloc = legacy;
+    return bufferAlloc(size);
+  }
+  function modern(size2) {
+    return Buffer.allocUnsafe(size2);
+  }
+  function legacy(size2) {
+    return new Buffer(size2);
+  }
+}
+function bufferFrom(something, encoding) {
+  bufferFrom = modern;
+  try {
+    return bufferFrom(something, encoding);
+  } catch (e) {
+    bufferFrom = legacy;
+    return bufferFrom(something, encoding);
+  }
+  function modern(something2, encoding2) {
+    return Buffer.from(something2, encoding2);
+  }
+  function legacy(something2, encoding2) {
+    return new Buffer(something2, encoding2);
+  }
+}
+function bufferIncludes(buffer, content) {
+  bufferIncludes = modern;
+  try {
+    return bufferIncludes(buffer, content);
+  } catch (e) {
+    bufferIncludes = legacy;
+    return bufferIncludes(buffer, content);
+  }
+  function modern(buffer2, content2) {
+    return buffer2.includes(content2);
+  }
+  function legacy(buffer2, content2) {
+    for (var i = 0; i <= buffer2.length - content2.length; i++) {
+      for (var j = 0; ; j++) {
+        if (j === content2.length) return true;
+        if (buffer2[i + j] !== content2[j]) break;
+      }
+    }
+    return false;
+  }
+}
+async function exportLogsZip(input) {
+  const zipFile = new yazl.ZipFile();
+  const missingEntries = [];
+  for (const entry of input.entries) {
+    if (fs$a.existsSync(entry.filePath) && fs$a.statSync(entry.filePath).isFile()) {
+      zipFile.addFile(entry.filePath, entry.archiveName);
+      continue;
+    }
+    missingEntries.push(entry.archiveName);
+    zipFile.addBuffer(Buffer.alloc(0), entry.archiveName);
+  }
+  const outputStream = fs$a.createWriteStream(input.outputPath);
+  const pipelinePromise = promises.pipeline(zipFile.outputStream, outputStream);
+  zipFile.end();
+  await pipelinePromise;
+  return { missingEntries };
+}
+function getAutoLaunchEnabled() {
+  try {
+    const settings = require$$0$1.app.getLoginItemSettings({
+      args: ["--auto-launched"]
+    });
+    return settings.openAtLogin;
+  } catch (error) {
+    console.error("Failed to get auto-launch settings:", error);
+    return false;
+  }
+}
+function setAutoLaunchEnabled(enabled) {
+  const isMac2 = process.platform === "darwin";
+  try {
+    require$$0$1.app.setLoginItemSettings({
+      openAtLogin: enabled,
+      // macOS: 自启后窗口不显示，M芯片和Intel均兼容
+      openAsHidden: isMac2 ? enabled : false,
+      // Windows: 通过命令行参数标记自启动
+      args: enabled ? ["--auto-launched"] : []
+    });
+  } catch (error) {
+    console.error("Failed to set auto-launch settings:", error);
+    throw error;
+  }
+}
+require$$0$1.app.name = APP_NAME;
+require$$0$1.app.setName(APP_NAME);
 const isDev = process.env.NODE_ENV === "development";
 process.platform === "linux";
 const isMac = process.platform === "darwin";
 const isWindows = process.platform === "win32";
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || "http://localhost:5176";
-const PRELOAD_PATH = electron.app.isPackaged ? path$2.join(__dirname, "preload.js") : path$2.join(__dirname, "../dist-electron/preload.js");
+const safeDecodeURIComponent = (value) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+const normalizeWindowsShellPath = (inputPath) => {
+  if (!isWindows) return inputPath;
+  const trimmed = inputPath.trim();
+  if (!trimmed) return inputPath;
+  let normalized = trimmed;
+  if (/^file:\/\//i.test(normalized)) {
+    normalized = safeDecodeURIComponent(normalized.replace(/^file:\/\//i, ""));
+  }
+  if (/^\/[A-Za-z]:/.test(normalized)) {
+    normalized = normalized.slice(1);
+  }
+  const unixDriveMatch = normalized.match(/^[/\\]([A-Za-z])[/\\](.+)$/);
+  if (unixDriveMatch) {
+    const drive = unixDriveMatch[1].toUpperCase();
+    const rest = unixDriveMatch[2].replace(/[/\\]+/g, "\\");
+    return `${drive}:\\${rest}`;
+  }
+  if (/^[A-Za-z]:[/\\]/.test(normalized)) {
+    const drive = normalized[0].toUpperCase();
+    const rest = normalized.slice(1).replace(/\//g, "\\");
+    return `${drive}${rest}`;
+  }
+  return normalized;
+};
+const padTwoDigits = (value) => value.toString().padStart(2, "0");
+const buildLogExportFileName = () => {
+  const now = /* @__PURE__ */ new Date();
+  const datePart = `${now.getFullYear()}${padTwoDigits(now.getMonth() + 1)}${padTwoDigits(now.getDate())}`;
+  const timePart = `${padTwoDigits(now.getHours())}${padTwoDigits(now.getMinutes())}${padTwoDigits(now.getSeconds())}`;
+  return `lobsterai-logs-${datePart}-${timePart}.zip`;
+};
+const ensureZipFileName = (value) => {
+  return value.toLowerCase().endsWith(".zip") ? value : `${value}.zip`;
+};
+const PRELOAD_PATH = require$$0$1.app.isPackaged ? path$8.join(__dirname, "preload.js") : path$8.join(__dirname, "../dist-electron/preload.js");
 const getAppIconPath = () => {
   if (process.platform !== "win32" && process.platform !== "linux") return void 0;
-  const basePath = electron.app.isPackaged ? path$2.join(process.resourcesPath, "tray") : path$2.join(__dirname, "..", "resources", "tray");
-  return process.platform === "win32" ? path$2.join(basePath, "tray-icon.ico") : path$2.join(basePath, "tray-icon.png");
+  const basePath = require$$0$1.app.isPackaged ? path$8.join(process.resourcesPath, "tray") : path$8.join(__dirname, "..", "resources", "tray");
+  return process.platform === "win32" ? path$8.join(basePath, "tray-icon.ico") : path$8.join(basePath, "tray-icon.png");
 };
 let mainWindow = null;
-const gotTheLock = isDev ? true : electron.app.requestSingleInstanceLock();
+const gotTheLock = isDev ? true : require$$0$1.app.requestSingleInstanceLock();
 let store = null;
 let coworkStore = null;
 let skillManager = null;
 let storeInitPromise = null;
 const initStore = async () => {
   if (!storeInitPromise) {
-    if (!electron.app.isReady()) {
+    if (!require$$0$1.app.isReady()) {
       throw new Error("Store accessed before app is ready.");
     }
     storeInitPromise = Promise.race([
-      SqliteStore.create(electron.app.getPath("userData")),
+      SqliteStore.create(require$$0$1.app.getPath("userData")),
       new Promise((_, reject) => setTimeout(() => reject(new Error("Store initialization timed out after 15s")), 15e3))
     ]);
   }
@@ -8734,25 +11760,25 @@ const getSkillManager = () => {
   return skillManager;
 };
 if (!gotTheLock) {
-  electron.app.quit();
+  require$$0$1.app.quit();
 } else {
-  electron.ipcMain.on("window-minimize", () => {
+  require$$0$1.ipcMain.on("window-minimize", () => {
     mainWindow == null ? void 0 : mainWindow.minimize();
   });
-  electron.ipcMain.on("window-maximize", () => {
+  require$$0$1.ipcMain.on("window-maximize", () => {
     if (mainWindow == null ? void 0 : mainWindow.isMaximized()) {
       mainWindow.unmaximize();
     } else {
       mainWindow == null ? void 0 : mainWindow.maximize();
     }
   });
-  electron.ipcMain.on("window-close", () => {
+  require$$0$1.ipcMain.on("window-close", () => {
     mainWindow == null ? void 0 : mainWindow.close();
   });
-  electron.ipcMain.handle("window:isMaximized", () => {
+  require$$0$1.ipcMain.handle("window:isMaximized", () => {
     return (mainWindow == null ? void 0 : mainWindow.isMaximized()) ?? false;
   });
-  electron.ipcMain.handle("skills:list", () => {
+  require$$0$1.ipcMain.handle("skills:list", () => {
     try {
       const skills = getSkillManager().listSkills();
       return { success: true, skills };
@@ -8763,20 +11789,20 @@ if (!gotTheLock) {
       };
     }
   });
-  electron.ipcMain.handle("skills:getConfig", (_event, skillId) => {
+  require$$0$1.ipcMain.handle("skills:getConfig", (_event, skillId) => {
     return getSkillManager().getSkillConfig(skillId);
   });
-  electron.ipcMain.handle("skills:setConfig", (_event, skillId, config) => {
+  require$$0$1.ipcMain.handle("skills:setConfig", (_event, skillId, config) => {
     return getSkillManager().setSkillConfig(skillId, config);
   });
-  electron.ipcMain.handle("skills:testEmailConnectivity", async (_event, skillId, config) => {
+  require$$0$1.ipcMain.handle("skills:testEmailConnectivity", async (_event, skillId, config) => {
     return getSkillManager().testEmailConnectivity(skillId, config);
   });
-  electron.ipcMain.handle(
+  require$$0$1.ipcMain.handle(
     "api:fetch",
     async (_event, options) => {
       try {
-        const response = await electron.session.defaultSession.fetch(options.url, {
+        const response = await require$$0$1.session.defaultSession.fetch(options.url, {
           method: options.method,
           headers: options.headers,
           body: options.body
@@ -8809,7 +11835,7 @@ if (!gotTheLock) {
       }
     }
   );
-  electron.ipcMain.handle(
+  require$$0$1.ipcMain.handle(
     "cowork:memory:createEntry",
     async (_event, input) => {
       try {
@@ -8827,7 +11853,7 @@ if (!gotTheLock) {
       }
     }
   );
-  electron.ipcMain.handle(
+  require$$0$1.ipcMain.handle(
     "cowork:memory:updateEntry",
     async (_event, input) => {
       try {
@@ -8850,13 +11876,13 @@ if (!gotTheLock) {
       }
     }
   );
-  electron.ipcMain.handle(
+  require$$0$1.ipcMain.handle(
     "cowork:memory:listEntries",
     async (_event, input) => {
-      var _a;
+      var _a2;
       try {
         const entries = getCoworkStore().listUserMemories({
-          query: ((_a = input == null ? void 0 : input.query) == null ? void 0 : _a.trim()) || void 0,
+          query: ((_a2 = input == null ? void 0 : input.query) == null ? void 0 : _a2.trim()) || void 0,
           status: (input == null ? void 0 : input.status) || "all",
           includeDeleted: Boolean(input == null ? void 0 : input.includeDeleted),
           limit: input == null ? void 0 : input.limit,
@@ -8871,7 +11897,7 @@ if (!gotTheLock) {
       }
     }
   );
-  electron.ipcMain.handle("cowork:memory:getStats", async () => {
+  require$$0$1.ipcMain.handle("cowork:memory:getStats", async () => {
     try {
       const stats = getCoworkStore().getUserMemoryStats();
       return { success: true, stats };
@@ -8882,7 +11908,7 @@ if (!gotTheLock) {
       };
     }
   });
-  electron.ipcMain.handle(
+  require$$0$1.ipcMain.handle(
     "cowork:memory:deleteEntry",
     async (_event, input) => {
       try {
@@ -8896,10 +11922,10 @@ if (!gotTheLock) {
       }
     }
   );
-  electron.ipcMain.handle("cowork:sandbox:status", async () => {
+  require$$0$1.ipcMain.handle("cowork:sandbox:status", async () => {
     return getSandboxStatus();
   });
-  electron.ipcMain.handle("cowork:sandbox:install", async () => {
+  require$$0$1.ipcMain.handle("cowork:sandbox:install", async () => {
     const result = await ensureSandboxReady();
     return {
       success: result.ok,
@@ -8907,7 +11933,100 @@ if (!gotTheLock) {
       error: result.ok ? void 0 : "error" in result ? result.error : void 0
     };
   });
-  electron.app.on("second-instance", (_event, commandLine, workingDirectory) => {
+  require$$0$1.ipcMain.handle("shell:openPath", async (_event, filePath) => {
+    try {
+      const normalizedPath = normalizeWindowsShellPath(filePath);
+      const result = await require$$0$1.shell.openPath(normalizedPath);
+      if (result) {
+        return { success: false, error: result };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  require$$0$1.ipcMain.handle("shell:showItemInFolder", async (_event, filePath) => {
+    try {
+      const normalizedPath = normalizeWindowsShellPath(filePath);
+      require$$0$1.shell.showItemInFolder(normalizedPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  require$$0$1.ipcMain.handle("shell:openExternal", async (_event, url) => {
+    try {
+      await require$$0$1.shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  require$$0$1.ipcMain.handle("log:getPath", () => {
+    return getLogFilePath();
+  });
+  require$$0$1.ipcMain.handle("log:openFolder", () => {
+    const logPath = getLogFilePath();
+    if (logPath) {
+      require$$0$1.shell.showItemInFolder(logPath);
+    }
+  });
+  require$$0$1.ipcMain.handle("log:exportZip", async (event) => {
+    try {
+      const ownerWindow = require$$0$1.BrowserWindow.fromWebContents(event.sender);
+      const saveOptions = {
+        title: "Export Logs",
+        defaultPath: path$8.join(require$$0$1.app.getPath("downloads"), buildLogExportFileName()),
+        filters: [{ name: "Zip Archive", extensions: ["zip"] }]
+      };
+      const saveResult = ownerWindow ? await require$$0$1.dialog.showSaveDialog(ownerWindow, saveOptions) : await require$$0$1.dialog.showSaveDialog(saveOptions);
+      if (saveResult.canceled || !saveResult.filePath) {
+        return { success: true, canceled: true };
+      }
+      const outputPath = ensureZipFileName(saveResult.filePath);
+      const archiveResult = await exportLogsZip({
+        outputPath,
+        entries: [
+          { archiveName: "main.log", filePath: getLogFilePath() },
+          { archiveName: "cowork.log", filePath: getCoworkLogPath() }
+        ]
+      });
+      return {
+        success: true,
+        canceled: false,
+        path: outputPath,
+        missingEntries: archiveResult.missingEntries
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to export logs"
+      };
+    }
+  });
+  require$$0$1.ipcMain.handle("app:getAutoLaunch", () => {
+    const stored = getStore().get("auto_launch_enabled");
+    const enabled = stored ?? getAutoLaunchEnabled();
+    return { enabled };
+  });
+  require$$0$1.ipcMain.handle("app:setAutoLaunch", (_event, enabled) => {
+    if (typeof enabled !== "boolean") {
+      return { success: false, error: "Invalid parameter: enabled must be boolean" };
+    }
+    try {
+      setAutoLaunchEnabled(enabled);
+      getStore().set("auto_launch_enabled", enabled);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to set auto-launch"
+      };
+    }
+  });
+  require$$0$1.ipcMain.handle("app:getVersion", () => require$$0$1.app.getVersion());
+  require$$0$1.ipcMain.handle("app:getSystemLocale", () => require$$0$1.app.getLocale());
+  require$$0$1.app.on("second-instance", (_event, commandLine, workingDirectory) => {
     console.log("[Main] second-instance event", {
       commandLine,
       workingDirectory
@@ -8919,9 +12038,9 @@ if (!gotTheLock) {
     }
   });
   const setContentSecurityPolicy = () => {
-    electron.session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-      var _a, _b;
-      const devPort = ((_b = (_a = process.env.ELECTRON_START_URL) == null ? void 0 : _a.match(/:(\d+)/)) == null ? void 0 : _b[1]) || "5176";
+    require$$0$1.session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      var _a2, _b;
+      const devPort = ((_b = (_a2 = process.env.ELECTRON_START_URL) == null ? void 0 : _a2.match(/:(\d+)/)) == null ? void 0 : _b[1]) || "5176";
       const cspDirectives = [
         "default-src 'self'",
         isDev ? `script-src 'self' 'unsafe-inline' http://localhost:${devPort} ws://localhost:${devPort}` : "script-src 'self'",
@@ -8949,7 +12068,7 @@ if (!gotTheLock) {
       if (!mainWindow.isFocused()) mainWindow.focus();
       return;
     }
-    mainWindow = new electron.BrowserWindow({
+    mainWindow = new require$$0$1.BrowserWindow({
       width: 1200,
       height: 800,
       title: APP_NAME,
@@ -8984,9 +12103,9 @@ if (!gotTheLock) {
       enableLargerThanScreen: false
     });
     if (isMac && isDev) {
-      const iconPath = path$2.join(__dirname, "../build/icons/png/512x512.png");
-      if (fs$5.existsSync(iconPath)) {
-        electron.app.dock.setIcon(electron.nativeImage.createFromPath(iconPath));
+      const iconPath = path$8.join(__dirname, "../build/icons/png/512x512.png");
+      if (fs$b.existsSync(iconPath)) {
+        require$$0$1.app.dock.setIcon(require$$0$1.nativeImage.createFromPath(iconPath));
       }
     }
     mainWindow.setMenu(null);
@@ -9004,7 +12123,7 @@ if (!gotTheLock) {
           } else {
             console.error("Failed to load URL after maximum retries");
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.loadFile(path$2.join(__dirname, "../resources/error.html"));
+              mainWindow.loadFile(path$8.join(__dirname, "../resources/error.html"));
             }
           }
         });
@@ -9012,7 +12131,7 @@ if (!gotTheLock) {
       tryLoadURL();
       mainWindow.webContents.openDevTools();
     } else {
-      mainWindow.loadFile(path$2.join(__dirname, "../dist/index.html"));
+      mainWindow.loadFile(path$8.join(__dirname, "../dist/index.html"));
     }
     mainWindow.on("closed", () => {
       mainWindow = null;
@@ -9020,13 +12139,13 @@ if (!gotTheLock) {
     mainWindow.once("ready-to-show", () => {
       mainWindow == null ? void 0 : mainWindow.show();
     });
-    electron.app.on("activate", () => {
+    require$$0$1.app.on("activate", () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         if (!mainWindow.isVisible()) mainWindow.show();
         if (!mainWindow.isFocused()) mainWindow.focus();
         return;
       }
-      if (electron.BrowserWindow.getAllWindows().length === 0) {
+      if (require$$0$1.BrowserWindow.getAllWindows().length === 0) {
         createWindow();
       }
     });
@@ -9040,13 +12159,13 @@ if (!gotTheLock) {
     console.error("[Main] initApp: syncBundledSkillsToUserData failed:", error);
   }
   const initApp = async () => {
-    console.log('app.getPath("userData")', electron.app.getPath("userData"));
+    console.log('app.getPath("userData")', require$$0$1.app.getPath("userData"));
     console.log("[Main] initApp: waiting for app.whenReady()");
-    await electron.app.whenReady();
+    await require$$0$1.app.whenReady();
     console.log("[Main] initApp: app is ready");
-    const defaultProjectDir = path$2.join(os.homedir(), "lobsterai", "project");
-    if (!fs$5.existsSync(defaultProjectDir)) {
-      fs$5.mkdirSync(defaultProjectDir, { recursive: true });
+    const defaultProjectDir = path$8.join(os$4.homedir(), "lobsterai", "project");
+    if (!fs$b.existsSync(defaultProjectDir)) {
+      fs$b.mkdirSync(defaultProjectDir, { recursive: true });
       console.log("Created default project directory:", defaultProjectDir);
     }
     console.log("[Main] initApp: default project dir ensured");
@@ -9057,21 +12176,21 @@ if (!gotTheLock) {
     console.log("[Main] initApp: creating window");
     createWindow();
     console.log("[Main] initApp: window created");
-    electron.app.on("activate", () => {
+    require$$0$1.app.on("activate", () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         if (!mainWindow.isVisible()) mainWindow.show();
         if (!mainWindow.isFocused()) mainWindow.focus();
         return;
       }
-      if (electron.BrowserWindow.getAllWindows().length === 0) {
+      if (require$$0$1.BrowserWindow.getAllWindows().length === 0) {
         createWindow();
       }
     });
   };
   initApp().catch(console.error);
-  electron.app.on("window-all-closed", () => {
+  require$$0$1.app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-      electron.app.quit();
+      require$$0$1.app.quit();
     }
   });
 }

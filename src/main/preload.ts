@@ -111,5 +111,23 @@ contextBridge.exposeInMainWorld('electron', {
     }) => ipcRenderer.invoke('cowork:memory:listEntries', input),
     getSandboxStatus: () => ipcRenderer.invoke('cowork:sandbox:status'),
     installSandbox: () => ipcRenderer.invoke('cowork:sandbox:install')
+  },
+  appInfo: {
+    getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    getSystemLocale: () => ipcRenderer.invoke('app:getSystemLocale')
+  },
+  autoLaunch: {
+    get: () => ipcRenderer.invoke('app:getAutoLaunch'),
+    set: (enabled: boolean) => ipcRenderer.invoke('app:setAutoLaunch', enabled)
+  },
+  shell: {
+    openPath: (filePath: string) => ipcRenderer.invoke('shell:openPath', filePath),
+    showItemInFolder: (filePath: string) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
+    openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
+  },
+  log: {
+    getPath: () => ipcRenderer.invoke('log:getPath'),
+    openFolder: () => ipcRenderer.invoke('log:openFolder'),
+    exportZip: () => ipcRenderer.invoke('log:exportZip')
   }
 })

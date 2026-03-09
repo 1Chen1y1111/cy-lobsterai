@@ -95,6 +95,22 @@ interface IElectronAPI {
     get: () => Promise<{ enabled: boolean }>
     set: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
   }
+  shell: {
+    openPath: (filePath: string) => Promise<{ success: boolean; error?: string }>
+    showItemInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>
+    openExternal: (url: string) => Promise<{ success: boolean; error?: string }>
+  }
+  log: {
+    getPath: () => Promise<string>
+    openFolder: () => Promise<void>
+    exportZip: () => Promise<{
+      success: boolean
+      canceled?: boolean
+      path?: string
+      missingEntries?: string[]
+      error?: string
+    }>
+  }
 }
 
 declare global {
