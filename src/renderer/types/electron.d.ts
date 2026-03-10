@@ -95,6 +95,20 @@ interface IElectronAPI {
     get: () => Promise<{ enabled: boolean }>
     set: (enabled: boolean) => Promise<{ success: boolean; error?: string }>
   }
+  dialog: {
+    selectDirectory: () => Promise<{ success: boolean; path: string | null }>
+    selectFile: (options?: {
+      title?: string
+      filters?: { name: string; extensions: string[] }[]
+    }) => Promise<{ success: boolean; path: string | null }>
+    saveInlineFile: (options: {
+      dataBase64: string
+      fileName?: string
+      mimeType?: string
+      cwd?: string
+    }) => Promise<{ success: boolean; path: string | null; error?: string }>
+    readFileAsDataUrl: (filePath: string) => Promise<{ success: boolean; dataUrl?: string; error?: string }>
+  }
   shell: {
     openPath: (filePath: string) => Promise<{ success: boolean; error?: string }>
     showItemInFolder: (filePath: string) => Promise<{ success: boolean; error?: string }>

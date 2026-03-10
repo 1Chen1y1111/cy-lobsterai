@@ -125,6 +125,14 @@ contextBridge.exposeInMainWorld('electron', {
     get: () => ipcRenderer.invoke('app:getAutoLaunch'),
     set: (enabled: boolean) => ipcRenderer.invoke('app:setAutoLaunch', enabled)
   },
+  dialog: {
+    selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
+    selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
+      ipcRenderer.invoke('dialog:selectFile', options),
+    saveInlineFile: (options: { dataBase64: string; fileName?: string; mimeType?: string; cwd?: string }) =>
+      ipcRenderer.invoke('dialog:saveInlineFile', options),
+    readFileAsDataUrl: (filePath: string) => ipcRenderer.invoke('dialog:readFileAsDataUrl', filePath)
+  },
   shell: {
     openPath: (filePath: string) => ipcRenderer.invoke('shell:openPath', filePath),
     showItemInFolder: (filePath: string) => ipcRenderer.invoke('shell:showItemInFolder', filePath),

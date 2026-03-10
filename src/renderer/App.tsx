@@ -10,11 +10,14 @@ import { CoworkView } from './components/cowork'
 import { apiService } from './services/api'
 import { setAvailableModels } from './store/slices/modelSlice'
 import { useDispatch } from 'react-redux'
+import SkillsView from './components/skills/SkillsView'
+import { ScheduledTasksView } from './components/scheduledTasks'
+import { McpView } from './components/mcp'
 
 const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [settingsOptions, setSettingsOptions] = useState<SettingsOpenOptions>({})
-  const [mainView, setMainView] = useState<'cowork' | 'skills' | 'scheduledTasks'>('cowork')
+  const [mainView, setMainView] = useState<'cowork' | 'skills' | 'scheduledTasks' | 'mcp'>('cowork')
   const [isInitialized, setIsInitialized] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -92,6 +95,10 @@ const App: React.FC = () => {
     setIsSidebarCollapsed((prev) => !prev)
   }, [])
 
+  const handleShowSkills = useCallback(() => {
+    setMainView('skills')
+  }, [])
+
   const isOverlayActive = showSettings || showUpdateModal
 
   const windowsStandaloneTitleBar = isWindows ? (
@@ -151,6 +158,7 @@ const App: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           activeView={mainView}
+          onShowSkills={handleShowSkills}
           onShowSettings={handleShowSettings}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
@@ -158,11 +166,19 @@ const App: React.FC = () => {
 
         <div className={`flex-1 min-w-0 py-1.5 pr-1.5 ${isSidebarCollapsed ? 'pl-1.5' : ''}`}>
           <div className="h-full rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden">
-            <CoworkView
-              onRequestAppSettings={handleShowSettings}
-              isSidebarCollapsed={isSidebarCollapsed}
-              onToggleSidebar={handleToggleSidebar}
-            />
+            {mainView === 'skills' ? (
+              <SkillsView />
+            ) : mainView === 'scheduledTasks' ? (
+              <ScheduledTasksView />
+            ) : mainView === 'mcp' ? (
+              <McpView />
+            ) : (
+              <CoworkView
+                onRequestAppSettings={handleShowSettings}
+                isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={handleToggleSidebar}
+              />
+            )}
           </div>
         </div>
       </div>

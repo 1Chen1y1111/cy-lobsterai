@@ -3,12 +3,13 @@ import { MagnifyingGlassIcon, PuzzlePieceIcon, ClockIcon } from '@heroicons/reac
 import SidebarToggleIcon from './icons/SidebarToggleIcon'
 import ComposeIcon from './icons/ComposeIcon'
 import SettingsIcon from './icons/SettingsIcon'
+import { useState } from 'react'
 
 interface SidebarProps {
   onShowSettings: () => void
   onShowLogin?: () => void
-  activeView: 'cowork' | 'skills' | 'scheduledTasks'
-  onShowSkills?: () => void
+  activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'mcp'
+  onShowSkills: () => void
   onShowCowork?: () => void
   onShowScheduledTasks?: () => void
   onNewChat?: () => void
@@ -29,6 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   updateBadge
 }) => {
   const isMac = window.electron.platform === 'darwin'
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   return (
     <aside
@@ -78,6 +81,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => {
+              setIsSearchOpen(false)
+              onShowSkills()
+            }}
             className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
               activeView === 'skills'
                 ? 'dark:text-claude-darkText text-claude-text dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover'

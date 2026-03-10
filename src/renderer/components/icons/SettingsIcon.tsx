@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react'
 
 /**
  * SettingsIcon
@@ -22,7 +22,7 @@ const SettingsIcon: React.FC<{ className?: string }> = ({ className }) => {
       <circle cx="17" cy="17" r="3" />
       <circle cx="7" cy="7" r="3" />
     </svg>
-  );
-};
+  )
+}
 
-export default SettingsIcon;
+export default SettingsIcon

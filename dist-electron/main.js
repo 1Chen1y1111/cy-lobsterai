@@ -5206,9 +5206,7 @@ function hasCommand(command, env) {
     timeout: 5e3
   });
   if (result.status !== 0) {
-    console.log(
-      `[skills] hasCommand('${command}'): not found (status=${result.status}, error=${((_a2 = result.error) == null ? void 0 : _a2.message) || "none"})`
-    );
+    console.log(`[skills] hasCommand('${command}'): not found (status=${result.status}, error=${((_a2 = result.error) == null ? void 0 : _a2.message) || "none"})`);
   }
   return result.status === 0;
 }
@@ -5238,10 +5236,11 @@ function normalizePathKey(env) {
 function resolveWindowsRegistryPath() {
   if (process.platform !== "win32") return null;
   try {
-    const machinePath = require$$0$2.execSync(
-      'reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v Path',
-      { encoding: "utf-8", timeout: 5e3, stdio: ["ignore", "pipe", "ignore"] }
-    );
+    const machinePath = require$$0$2.execSync('reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v Path', {
+      encoding: "utf-8",
+      timeout: 5e3,
+      stdio: ["ignore", "pipe", "ignore"]
+    });
     const userPath = require$$0$2.execSync('reg query "HKCU\\Environment" /v Path', {
       encoding: "utf-8",
       timeout: 5e3,
@@ -5283,9 +5282,7 @@ function buildSkillEnv() {
         }
         if (extra.length > 0) {
           env.PATH = currentPath ? `${currentPath};${extra.join(";")}` : extra.join(";");
-          console.log(
-            "[skills] Merged registry PATH entries for skill scripts"
-          );
+          console.log("[skills] Merged registry PATH entries for skill scripts");
         }
       }
       const commonWinPaths = [
@@ -5297,9 +5294,7 @@ function buildSkillEnv() {
       const pathSet = new Set(
         (env.PATH || "").toLowerCase().split(";").map((s) => s.trim().replace(/[\\/]+$/, ""))
       );
-      const missingPaths = commonWinPaths.filter(
-        (p) => !pathSet.has(p.toLowerCase().replace(/[\\/]+$/, ""))
-      );
+      const missingPaths = commonWinPaths.filter((p) => !pathSet.has(p.toLowerCase().replace(/[\\/]+$/, "")));
       if (missingPaths.length > 0) {
         env.PATH = env.PATH ? `${env.PATH};${missingPaths.join(";")}` : missingPaths.join(";");
       }
@@ -5447,10 +5442,7 @@ const resolveWindowsGitExecutable = () => {
       return normalized;
     }
   }
-  const bundledRoots = require$$0$1.app.isPackaged ? [path$7.join(process.resourcesPath, "mingit")] : [
-    path$7.join(__dirname, "..", "..", "resources", "mingit"),
-    path$7.join(process.cwd(), "resources", "mingit")
-  ];
+  const bundledRoots = require$$0$1.app.isPackaged ? [path$7.join(process.resourcesPath, "mingit")] : [path$7.join(__dirname, "..", "..", "resources", "mingit"), path$7.join(process.cwd(), "resources", "mingit")];
   for (const root of bundledRoots) {
     const bundledCandidates = [
       path$7.join(root, "cmd", "git.exe"),
@@ -5504,9 +5496,7 @@ const runCommand = (command, args, options) => new Promise((resolve, reject) => 
       resolve();
       return;
     }
-    reject(
-      new Error(stderr.trim() || `Command failed with exit code ${code}`)
-    );
+    reject(new Error(stderr.trim() || `Command failed with exit code ${code}`));
   });
 });
 const runScriptWithTimeout = (options) => new Promise((resolve) => {
@@ -5578,11 +5568,7 @@ const cleanupPathSafely = (targetPath) => {
       retryDelay: process.platform === "win32" ? 200 : 0
     });
   } catch (error) {
-    console.warn(
-      "[skills] Failed to cleanup temporary directory:",
-      targetPath,
-      error
-    );
+    console.warn("[skills] Failed to cleanup temporary directory:", targetPath, error);
   }
 };
 const listSkillDirs = (root) => {
@@ -5671,9 +5657,7 @@ const extractErrorMessage = (error) => {
 };
 const parseGithubRepoSource = (repoUrl) => {
   const trimmed = repoUrl.trim();
-  const sshMatch = trimmed.match(
-    /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/i
-  );
+  const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/i);
   if (sshMatch) {
     return {
       owner: sshMatch[1],
@@ -5682,9 +5666,7 @@ const parseGithubRepoSource = (repoUrl) => {
   }
   try {
     const parsedUrl = new URL(trimmed);
-    if (!["github.com", "www.github.com"].includes(
-      parsedUrl.hostname.toLowerCase()
-    )) {
+    if (!["github.com", "www.github.com"].includes(parsedUrl.hostname.toLowerCase())) {
       return null;
     }
     const segments = parsedUrl.pathname.replace(/\.git$/i, "").split("/").filter(Boolean);
@@ -5779,9 +5761,7 @@ const downloadZipUrl = async (zipUrl, tempRoot) => {
     headers: { "User-Agent": "LobsterAI Skill Downloader" }
   });
   if (!response.ok) {
-    throw new Error(
-      `Download failed (${response.status} ${response.statusText})`
-    );
+    throw new Error(`Download failed (${response.status} ${response.statusText})`);
   }
   const buffer = Buffer.from(await response.arrayBuffer());
   const zipPath = path$7.join(tempRoot, "remote-skill.zip");
@@ -5924,23 +5904,14 @@ class SkillManager {
     const userRoot = this.ensureSkillsRoot();
     console.log("[skills] syncBundledSkillsToUserData: userRoot =", userRoot);
     const bundledRoot = this.getBundledSkillsRoot();
-    console.log(
-      "[skills] syncBundledSkillsToUserData: bundledRoot =",
-      bundledRoot
-    );
+    console.log("[skills] syncBundledSkillsToUserData: bundledRoot =", bundledRoot);
     if (!bundledRoot || bundledRoot === userRoot || !fs$a.existsSync(bundledRoot)) {
-      console.log(
-        "[skills] syncBundledSkillsToUserData: bundledRoot skipped (missing or same as userRoot)"
-      );
+      console.log("[skills] syncBundledSkillsToUserData: bundledRoot skipped (missing or same as userRoot)");
       return;
     }
     try {
       const bundledSkillDirs = listSkillDirs(bundledRoot);
-      console.log(
-        "[skills] syncBundledSkillsToUserData: found",
-        bundledSkillDirs.length,
-        "bundled skills"
-      );
+      console.log("[skills] syncBundledSkillsToUserData: found", bundledSkillDirs.length, "bundled skills");
       bundledSkillDirs.forEach((dir) => {
         const id = path$7.basename(dir);
         const targetDir = path$7.join(userRoot, id);
@@ -5949,10 +5920,7 @@ class SkillManager {
         let needsCleanCopy = false;
         if (targetExists) {
           const bundledVer = this.getSkillVersion(dir);
-          if (bundledVer && compareVersions(
-            bundledVer,
-            this.getSkillVersion(targetDir) || "0.0.0"
-          ) > 0) {
+          if (bundledVer && compareVersions(bundledVer, this.getSkillVersion(targetDir) || "0.0.0") > 0) {
             shouldRepair = true;
             needsCleanCopy = true;
           } else if (id === "web-search" && isWebSearchSkillBroken(targetDir)) {
@@ -5963,9 +5931,7 @@ class SkillManager {
         }
         if (targetExists && !shouldRepair) return;
         try {
-          console.log(
-            `[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`
-          );
+          console.log(`[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`);
           let envBackup = null;
           const envPath = path$7.join(targetDir, ".env");
           if (needsCleanCopy && fs$a.existsSync(envPath)) {
@@ -5981,9 +5947,7 @@ class SkillManager {
           if (envBackup !== null) {
             fs$a.writeFileSync(envPath, envBackup);
           }
-          console.log(
-            `[skills] syncBundledSkillsToUserData: copied "${id}" successfully`
-          );
+          console.log(`[skills] syncBundledSkillsToUserData: copied "${id}" successfully`);
           if (shouldRepair) {
             console.log(`[skills] Repaired bundled skill "${id}" in user data`);
           }
@@ -5995,9 +5959,7 @@ class SkillManager {
       const targetConfig = path$7.join(userRoot, SKILLS_CONFIG_FILE);
       if (fs$a.existsSync(bundledConfig)) {
         if (!fs$a.existsSync(targetConfig)) {
-          console.log(
-            "[skills] syncBundledSkillsToUserData: copying skills.config.json"
-          );
+          console.log("[skills] syncBundledSkillsToUserData: copying skills.config.json");
           cpRecursiveSync(bundledConfig, targetConfig);
         } else {
           this.mergeSkillsConfig(bundledConfig, targetConfig);
@@ -6050,15 +6012,9 @@ class SkillManager {
       }
       if (changed) {
         const tmpPath = targetPath + ".tmp";
-        fs$a.writeFileSync(
-          tmpPath,
-          JSON.stringify(target, null, 2) + "\n",
-          "utf-8"
-        );
+        fs$a.writeFileSync(tmpPath, JSON.stringify(target, null, 2) + "\n", "utf-8");
         fs$a.renameSync(tmpPath, targetPath);
-        console.log(
-          "[skills] mergeSkillsConfig: merged new skill entries into user config"
-        );
+        console.log("[skills] mergeSkillsConfig: merged new skill entries into user config");
       }
     } catch (e) {
       console.warn("[skills] Failed to merge skills config:", e);
@@ -6079,12 +6035,7 @@ class SkillManager {
       if (!fs$a.existsSync(root)) return;
       const skillDirs = listSkillDirs(root);
       skillDirs.forEach((dir) => {
-        const skill = this.parseSkillDir(
-          dir,
-          state,
-          defaults,
-          builtInSkillIds.has(path$7.basename(dir))
-        );
+        const skill = this.parseSkillDir(dir, state, defaults, builtInSkillIds.has(path$7.basename(dir)));
         if (!skill) return;
         skillMap.set(skill.id, skill);
       });
@@ -6162,9 +6113,7 @@ class SkillManager {
         const stat = fs$a.statSync(localSource);
         if (stat.isFile()) {
           if (isZipFile(localSource)) {
-            const tempRoot = fs$a.mkdtempSync(
-              path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-")
-            );
+            const tempRoot = fs$a.mkdtempSync(path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-"));
             await extractZip$1(localSource, { dir: tempRoot });
             localSource = tempRoot;
             cleanupPath = tempRoot;
@@ -6178,9 +6127,7 @@ class SkillManager {
           }
         }
       } else if (isRemoteZipUrl(trimmed)) {
-        const tempRoot = fs$a.mkdtempSync(
-          path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-")
-        );
+        const tempRoot = fs$a.mkdtempSync(path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-zip-"));
         cleanupPath = tempRoot;
         localSource = await downloadZipUrl(trimmed, tempRoot);
       } else {
@@ -6191,13 +6138,9 @@ class SkillManager {
             error: "Invalid skill source. Use owner/repo, repo URL, or a GitHub tree/blob URL."
           };
         }
-        const tempRoot = fs$a.mkdtempSync(
-          path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-")
-        );
+        const tempRoot = fs$a.mkdtempSync(path$7.join(require$$0$1.app.getPath("temp"), "lobsterai-skill-"));
         cleanupPath = tempRoot;
-        const repoName = normalizeFolderName(
-          normalized.repoNameHint || deriveRepoName(normalized.repoUrl)
-        );
+        const repoName = normalizeFolderName(normalized.repoNameHint || deriveRepoName(normalized.repoUrl));
         const clonePath = path$7.join(tempRoot, repoName);
         const cloneArgs = ["clone", "--depth", "1"];
         if (normalized.ref) {
@@ -6215,11 +6158,7 @@ class SkillManager {
           const errno = error == null ? void 0 : error.code;
           if (githubSource) {
             try {
-              downloadedSourceRoot = await downloadGithubArchive(
-                githubSource,
-                tempRoot,
-                normalized.ref
-              );
+              downloadedSourceRoot = await downloadGithubArchive(githubSource, tempRoot, normalized.ref);
             } catch (archiveError) {
               const gitMessage = extractErrorMessage(error);
               const archiveMessage = extractErrorMessage(archiveError);
@@ -6228,23 +6167,16 @@ class SkillManager {
                   `Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit. Archive fallback also failed: ${archiveMessage}`
                 );
               }
-              throw new Error(
-                `Git clone failed: ${gitMessage}. Archive fallback failed: ${archiveMessage}`
-              );
+              throw new Error(`Git clone failed: ${gitMessage}. Archive fallback failed: ${archiveMessage}`);
             }
           } else if (errno === "ENOENT" && process.platform === "win32") {
-            throw new Error(
-              "Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit."
-            );
+            throw new Error("Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit.");
           } else {
             throw error;
           }
         }
         if (normalized.sourceSubpath) {
-          const scopedSource = resolveWithin(
-            downloadedSourceRoot,
-            normalized.sourceSubpath
-          );
+          const scopedSource = resolveWithin(downloadedSourceRoot, normalized.sourceSubpath);
           if (!fs$a.existsSync(scopedSource)) {
             return {
               success: false,
@@ -6424,11 +6356,7 @@ class SkillManager {
           }
         }
       } catch (error) {
-        console.warn(
-          "[skills] Failed to load skills config:",
-          configPath,
-          error
-        );
+        console.warn("[skills] Failed to load skills config:", configPath, error);
       }
     }
     return merged;
@@ -6452,10 +6380,7 @@ class SkillManager {
   }
   getBundledSkillsRoot() {
     if (require$$0$1.app.isPackaged) {
-      const resourcesRoot = path$7.resolve(
-        process.resourcesPath,
-        SKILLS_DIR_NAME
-      );
+      const resourcesRoot = path$7.resolve(process.resourcesPath, SKILLS_DIR_NAME);
       if (fs$a.existsSync(resourcesRoot)) {
         return resourcesRoot;
       }
@@ -6516,9 +6441,7 @@ class SkillManager {
     }
     const bundledNodeModules = path$7.join(bundledPath, "node_modules");
     if (!fs$a.existsSync(bundledNodeModules)) {
-      console.log(
-        `[skills] Bundled ${skillId} does not have node_modules, skipping repair`
-      );
+      console.log(`[skills] Bundled ${skillId} does not have node_modules, skipping repair`);
       return false;
     }
     try {
@@ -6532,10 +6455,7 @@ class SkillManager {
       console.log(`[skills] Repaired ${skillId} from bundled resources`);
       return true;
     } catch (error) {
-      console.warn(
-        `[skills] Failed to repair ${skillId} from bundled resources:`,
-        error
-      );
+      console.warn(`[skills] Failed to repair ${skillId} from bundled resources:`, error);
       return false;
     }
   }
@@ -6545,37 +6465,27 @@ class SkillManager {
     const packageJsonPath = path$7.join(skillDir, "package.json");
     const skillId = path$7.basename(skillDir);
     console.log(`[skills] Checking dependencies for ${skillId}...`);
-    console.log(
-      `[skills]   node_modules exists: ${fs$a.existsSync(nodeModulesPath)}`
-    );
-    console.log(
-      `[skills]   package.json exists: ${fs$a.existsSync(packageJsonPath)}`
-    );
+    console.log(`[skills]   node_modules exists: ${fs$a.existsSync(nodeModulesPath)}`);
+    console.log(`[skills]   package.json exists: ${fs$a.existsSync(packageJsonPath)}`);
     console.log(`[skills]   skillDir: ${skillDir}`);
     if (fs$a.existsSync(nodeModulesPath)) {
       console.log(`[skills] Dependencies already installed for ${skillId}`);
       return { success: true };
     }
     if (!fs$a.existsSync(packageJsonPath)) {
-      console.log(
-        `[skills] No package.json found for ${skillId}, skipping install`
-      );
+      console.log(`[skills] No package.json found for ${skillId}, skipping install`);
       return { success: true };
     }
     if (this.repairSkillFromBundled(skillId, skillDir)) {
       if (fs$a.existsSync(nodeModulesPath)) {
-        console.log(
-          `[skills] Dependencies restored from bundled resources for ${skillId}`
-        );
+        console.log(`[skills] Dependencies restored from bundled resources for ${skillId}`);
         return { success: true };
       }
     }
     const env = buildSkillEnv();
     const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
     console.log(`[skills]   PATH keys in env: ${JSON.stringify(pathKeys)}`);
-    console.log(
-      `[skills]   PATH (first 300 chars): ${(_a2 = env.PATH) == null ? void 0 : _a2.substring(0, 300)}`
-    );
+    console.log(`[skills]   PATH (first 300 chars): ${(_a2 = env.PATH) == null ? void 0 : _a2.substring(0, 300)}`);
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     if (!hasCommand(npmCommand, env) && !hasCommand("npm", env)) {
       const errorMsg = "npm is not available and skill cannot be repaired from bundled resources. Please install Node.js from https://nodejs.org/";
@@ -6598,21 +6508,14 @@ class SkillManager {
       });
       console.log(`[skills] npm install exit code: ${result.status}`);
       if (result.stdout) {
-        console.log(
-          `[skills] npm install stdout: ${result.stdout.substring(0, 500)}`
-        );
+        console.log(`[skills] npm install stdout: ${result.stdout.substring(0, 500)}`);
       }
       if (result.stderr) {
-        console.log(
-          `[skills] npm install stderr: ${result.stderr.substring(0, 500)}`
-        );
+        console.log(`[skills] npm install stderr: ${result.stderr.substring(0, 500)}`);
       }
       if (result.status !== 0) {
         const errorMsg = result.stderr || result.stdout || "npm install failed";
-        console.error(
-          `[skills] Failed to install dependencies for ${skillId}:`,
-          errorMsg
-        );
+        console.error(`[skills] Failed to install dependencies for ${skillId}:`, errorMsg);
         return {
           success: false,
           error: `Failed to install dependencies: ${errorMsg}`
@@ -6623,16 +6526,11 @@ class SkillManager {
         console.error(`[skills] ${errorMsg}`);
         return { success: false, error: errorMsg };
       }
-      console.log(
-        `[skills] Dependencies installed successfully for ${skillId}`
-      );
+      console.log(`[skills] Dependencies installed successfully for ${skillId}`);
       return { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(
-        `[skills] Error installing dependencies for ${skillId}:`,
-        errorMsg
-      );
+      console.error(`[skills] Error installing dependencies for ${skillId}:`, errorMsg);
       return {
         success: false,
         error: `Failed to install dependencies: ${errorMsg}`
@@ -6645,10 +6543,7 @@ class SkillManager {
       const skillDir = this.resolveSkillDir(skillId);
       const depsResult = this.ensureSkillDependencies(skillDir);
       if (!depsResult.success) {
-        console.error(
-          "[email-connectivity] Dependency install failed:",
-          depsResult.error
-        );
+        console.error("[email-connectivity] Dependency install failed:", depsResult.error);
         return { success: false, error: depsResult.error };
       }
       const imapScript = path$7.join(skillDir, "scripts", "imap.js");
@@ -6666,21 +6561,12 @@ class SkillManager {
       const safeConfig = { ...config };
       if (safeConfig.IMAP_PASS) safeConfig.IMAP_PASS = "***";
       if (safeConfig.SMTP_PASS) safeConfig.SMTP_PASS = "***";
-      console.log(
-        "[email-connectivity] Testing with config:",
-        JSON.stringify(safeConfig, null, 2)
-      );
+      console.log("[email-connectivity] Testing with config:", JSON.stringify(safeConfig, null, 2));
       const envOverrides = Object.fromEntries(
         Object.entries(config ?? {}).filter(([key]) => key.trim()).map(([key, value]) => [key, String(value ?? "")])
       );
       console.log("[email-connectivity] Running IMAP test (list-mailboxes)...");
-      const imapResult = await this.runSkillScriptWithEnv(
-        skillDir,
-        imapScript,
-        ["list-mailboxes"],
-        envOverrides,
-        2e4
-      );
+      const imapResult = await this.runSkillScriptWithEnv(skillDir, imapScript, ["list-mailboxes"], envOverrides, 2e4);
       console.log(
         "[email-connectivity] IMAP result:",
         JSON.stringify(
@@ -6699,13 +6585,7 @@ class SkillManager {
         )
       );
       console.log("[email-connectivity] Running SMTP test (verify)...");
-      const smtpResult = await this.runSkillScriptWithEnv(
-        skillDir,
-        smtpScript,
-        ["verify"],
-        envOverrides,
-        2e4
-      );
+      const smtpResult = await this.runSkillScriptWithEnv(skillDir, smtpScript, ["verify"], envOverrides, 2e4);
       console.log(
         "[email-connectivity] SMTP result:",
         JSON.stringify(
@@ -6727,15 +6607,8 @@ class SkillManager {
         this.buildEmailConnectivityCheck("imap_connection", imapResult),
         this.buildEmailConnectivityCheck("smtp_connection", smtpResult)
       ];
-      const verdict = checks.every(
-        (check) => check.level === "pass"
-      ) ? "pass" : "fail";
-      console.log(
-        "[email-connectivity] Final verdict:",
-        verdict,
-        "checks:",
-        JSON.stringify(checks, null, 2)
-      );
+      const verdict = checks.every((check) => check.level === "pass") ? "pass" : "fail";
+      console.log("[email-connectivity] Final verdict:", verdict, "checks:", JSON.stringify(checks, null, 2));
       return {
         success: true,
         result: {
@@ -11666,11 +11539,26 @@ function setAutoLaunchEnabled(enabled) {
 }
 require$$0$1.app.name = APP_NAME;
 require$$0$1.app.setName(APP_NAME);
+const INVALID_FILE_NAME_PATTERN = /[<>:"/\\|?*\u0000-\u001F]/g;
 const isDev = process.env.NODE_ENV === "development";
 process.platform === "linux";
 const isMac = process.platform === "darwin";
 const isWindows = process.platform === "win32";
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || "http://localhost:5176";
+const MAX_INLINE_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MIME_EXTENSION_MAP = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
+  "image/bmp": ".bmp",
+  "application/pdf": ".pdf",
+  "text/plain": ".txt",
+  "text/markdown": ".md",
+  "application/json": ".json",
+  "text/csv": ".csv"
+};
 const safeDecodeURIComponent = (value) => {
   try {
     return decodeURIComponent(value);
@@ -11711,6 +11599,34 @@ const buildLogExportFileName = () => {
 };
 const ensureZipFileName = (value) => {
   return value.toLowerCase().endsWith(".zip") ? value : `${value}.zip`;
+};
+const resolveInlineAttachmentDir = (cwd) => {
+  const trimmed = typeof cwd === "string" ? cwd.trim() : "";
+  if (trimmed) {
+    const resolved = path$8.resolve(trimmed);
+    if (fs$b.existsSync(resolved) && fs$b.statSync(resolved).isDirectory()) {
+      return path$8.join(resolved, ".cowork-temp", "attachments", "manual");
+    }
+  }
+  return path$8.join(require$$0$1.app.getPath("temp"), "lobsterai", "attachments");
+};
+const sanitizeAttachmentFileName = (value) => {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return "attachment";
+  const fileName = path$8.basename(raw);
+  const sanitized = fileName.replace(INVALID_FILE_NAME_PATTERN, " ").replace(/\s+/g, " ").trim();
+  return sanitized || "attachment";
+};
+const inferAttachmentExtension = (fileName, mimeType) => {
+  const fromName = path$8.extname(fileName).toLowerCase();
+  if (fromName) {
+    return fromName;
+  }
+  if (typeof mimeType === "string") {
+    const normalized = mimeType.toLowerCase().split(";")[0].trim();
+    return MIME_EXTENSION_MAP[normalized] ?? "";
+  }
+  return "";
 };
 const PRELOAD_PATH = require$$0$1.app.isPackaged ? path$8.join(__dirname, "preload.js") : path$8.join(__dirname, "../dist-electron/preload.js");
 const getAppIconPath = () => {
@@ -11806,6 +11722,25 @@ if (!gotTheLock) {
   });
   require$$0$1.ipcMain.handle("skills:testEmailConnectivity", async (_event, skillId, config) => {
     return getSkillManager().testEmailConnectivity(skillId, config);
+  });
+  require$$0$1.ipcMain.handle("skills:setEnabled", (_event, options) => {
+    try {
+      const skills = getSkillManager().setSkillEnabled(options.id, options.enabled);
+      return { success: true, skills };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to update skill" };
+    }
+  });
+  require$$0$1.ipcMain.handle("skills:download", async (_event, source) => {
+    return getSkillManager().downloadSkill(source);
+  });
+  require$$0$1.ipcMain.handle("skills:delete", (_event, id) => {
+    try {
+      const skills = getSkillManager().deleteSkill(id);
+      return { success: true, skills };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to delete skill" };
+    }
   });
   require$$0$1.ipcMain.handle(
     "api:fetch",
@@ -12033,6 +11968,68 @@ if (!gotTheLock) {
       };
     }
   });
+  require$$0$1.ipcMain.handle("dialog:selectDirectory", async (event) => {
+    const ownerWindow = require$$0$1.BrowserWindow.fromWebContents(event.sender);
+    const dialogOptions = {
+      properties: ["openDirectory", "createDirectory"]
+    };
+    const result = ownerWindow ? await require$$0$1.dialog.showOpenDialog(ownerWindow, dialogOptions) : await require$$0$1.dialog.showOpenDialog(dialogOptions);
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: true, path: null };
+    }
+    return { success: true, path: result.filePaths[0] };
+  });
+  require$$0$1.ipcMain.handle("dialog:selectFile", async (event, options) => {
+    const ownerWindow = require$$0$1.BrowserWindow.fromWebContents(event.sender);
+    const dialogOptions = {
+      properties: ["openFile"],
+      title: options == null ? void 0 : options.title,
+      filters: options == null ? void 0 : options.filters
+    };
+    const result = ownerWindow ? await require$$0$1.dialog.showOpenDialog(ownerWindow, dialogOptions) : await require$$0$1.dialog.showOpenDialog(dialogOptions);
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: true, path: null };
+    }
+    return { success: true, path: result.filePaths[0] };
+  });
+  require$$0$1.ipcMain.handle(
+    "dialog:saveInlineFile",
+    async (_event, options) => {
+      try {
+        const dataBase64 = typeof (options == null ? void 0 : options.dataBase64) === "string" ? options.dataBase64.trim() : "";
+        if (!dataBase64) {
+          return { success: false, path: null, error: "Missing file data" };
+        }
+        const buffer = Buffer.from(dataBase64, "base64");
+        if (!buffer.length) {
+          return { success: false, path: null, error: "Invalid file data" };
+        }
+        if (buffer.length > MAX_INLINE_ATTACHMENT_BYTES) {
+          return {
+            success: false,
+            path: null,
+            error: `File too large (max ${Math.floor(MAX_INLINE_ATTACHMENT_BYTES / (1024 * 1024))}MB)`
+          };
+        }
+        const dir = resolveInlineAttachmentDir(options == null ? void 0 : options.cwd);
+        await fs$b.promises.mkdir(dir, { recursive: true });
+        const safeFileName = sanitizeAttachmentFileName(options == null ? void 0 : options.fileName);
+        const extension = inferAttachmentExtension(safeFileName, options == null ? void 0 : options.mimeType);
+        const baseName = extension ? safeFileName.slice(0, -extension.length) : safeFileName;
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const finalName = `${baseName || "attachment"}-${uniqueSuffix}${extension}`;
+        const outputPath = path$8.join(dir, finalName);
+        await fs$b.promises.writeFile(outputPath, buffer);
+        return { success: true, path: outputPath };
+      } catch (error) {
+        return {
+          success: false,
+          path: null,
+          error: error instanceof Error ? error.message : "Failed to save inline file"
+        };
+      }
+    }
+  );
   require$$0$1.ipcMain.handle("app:getVersion", () => require$$0$1.app.getVersion());
   require$$0$1.ipcMain.handle("app:getSystemLocale", () => require$$0$1.app.getLocale());
   require$$0$1.app.on("second-instance", (_event, commandLine, workingDirectory) => {

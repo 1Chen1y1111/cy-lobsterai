@@ -1,175 +1,208 @@
-import { Skill } from "../types/skill";
+import { Skill, MarketplaceSkill, MarketTag, LocalSkillInfo, LocalizedText } from '../types/skill'
+import { getSkillStoreUrl } from './endpoints'
+import { i18nService } from './i18n'
+
+export function resolveLocalizedText(text: string | LocalizedText): string {
+  if (!text) return ''
+  if (typeof text === 'string') return text
+  const lang = i18nService.getLanguage()
+  return text[lang] || text.en || ''
+}
 
 type EmailConnectivityCheck = {
-  code: "imap_connection" | "smtp_connection";
-  level: "pass" | "fail";
-  message: string;
-  durationMs: number;
-};
+  code: 'imap_connection' | 'smtp_connection'
+  level: 'pass' | 'fail'
+  message: string
+  durationMs: number
+}
 
 type EmailConnectivityTestResult = {
-  testedAt: number;
-  verdict: "pass" | "fail";
-  checks: EmailConnectivityCheck[];
-};
+  testedAt: number
+  verdict: 'pass' | 'fail'
+  checks: EmailConnectivityCheck[]
+}
 
 class SkillService {
-  private skills: Skill[] = [];
-  private initialized = false;
+  private skills: Skill[] = []
+  private initialized = false
+  private localSkillDescriptions: Map<string, string | LocalizedText> = new Map()
+  private marketplaceSkillDescriptions: Map<string, string | LocalizedText> = new Map()
 
   async init(): Promise<void> {
-    if (this.initialized) return;
-    await this.loadSkills();
-    this.initialized = true;
+    if (this.initialized) return
+    await this.loadSkills()
+    this.initialized = true
   }
 
   async loadSkills(): Promise<Skill[]> {
     try {
-      const result = await window.electron.skills.list();
+      const result = await window.electron.skills.list()
       if (result.success && result.skills) {
-        this.skills = result.skills;
+        this.skills = result.skills
       } else {
-        this.skills = [];
+        this.skills = []
       }
-      return this.skills;
+      return this.skills
     } catch (error) {
-      console.error("Failed to load skills:", error);
-      this.skills = [];
-      return this.skills;
+      console.error('Failed to load skills:', error)
+      this.skills = []
+      return this.skills
     }
   }
 
   async setSkillEnabled(id: string, enabled: boolean): Promise<Skill[]> {
     try {
-      const result = await window.electron.skills.setEnabled({ id, enabled });
+      const result = await window.electron.skills.setEnabled({ id, enabled })
       if (result.success && result.skills) {
-        this.skills = result.skills;
-        return this.skills;
+        this.skills = result.skills
+        return this.skills
       }
-      throw new Error(result.error || "Failed to update skill");
+      throw new Error(result.error || 'Failed to update skill')
     } catch (error) {
-      console.error("Failed to update skill:", error);
-      throw error;
+      console.error('Failed to update skill:', error)
+      throw error
     }
   }
 
-  async deleteSkill(
-    id: string,
-  ): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
+  async deleteSkill(id: string): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
     try {
-      const result = await window.electron.skills.delete(id);
+      const result = await window.electron.skills.delete(id)
       if (result.success && result.skills) {
-        this.skills = result.skills;
+        this.skills = result.skills
       }
-      return result;
+      return result
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to delete skill";
-      console.error("Failed to delete skill:", error);
-      return { success: false, error: message };
+      const message = error instanceof Error ? error.message : 'Failed to delete skill'
+      console.error('Failed to delete skill:', error)
+      return { success: false, error: message }
     }
   }
 
-  async downloadSkill(
-    source: string,
-  ): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
+  async downloadSkill(source: string): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
     try {
-      const result = await window.electron.skills.download(source);
+      const result = await window.electron.skills.download(source)
       if (result.success && result.skills) {
-        this.skills = result.skills;
+        this.skills = result.skills
       }
-      return result;
+      return result
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to download skill";
-      console.error("Failed to download skill:", error);
-      return { success: false, error: message };
+      const message = error instanceof Error ? error.message : 'Failed to download skill'
+      console.error('Failed to download skill:', error)
+      return { success: false, error: message }
     }
   }
 
   async getSkillsRoot(): Promise<string | null> {
     try {
-      const result = await window.electron.skills.getRoot();
+      const result = await window.electron.skills.getRoot()
       if (result.success && result.path) {
-        return result.path;
+        return result.path
       }
-      return null;
+      return null
     } catch (error) {
-      console.error("Failed to get skills root:", error);
-      return null;
+      console.error('Failed to get skills root:', error)
+      return null
     }
   }
 
   onSkillsChanged(callback: () => void): () => void {
-    return window.electron.skills.onChanged(callback);
+    return window.electron.skills.onChanged(callback)
   }
 
   getSkills(): Skill[] {
-    return this.skills;
+    return this.skills
   }
 
   getEnabledSkills(): Skill[] {
-    return this.skills.filter((s) => s.enabled);
+    return this.skills.filter((s) => s.enabled)
   }
 
   getSkillById(id: string): Skill | undefined {
-    return this.skills.find((s) => s.id === id);
+    return this.skills.find((s) => s.id === id)
   }
 
   async getSkillConfig(skillId: string): Promise<Record<string, string>> {
     try {
-      const result = await window.electron.skills.getConfig(skillId);
+      const result = await window.electron.skills.getConfig(skillId)
       if (result.success && result.config) {
-        return result.config;
+        return result.config
       }
-      return {};
+      return {}
     } catch (error) {
-      console.error("Failed to get skill config:", error);
-      return {};
+      console.error('Failed to get skill config:', error)
+      return {}
     }
   }
 
-  async setSkillConfig(
-    skillId: string,
-    config: Record<string, string>,
-  ): Promise<boolean> {
+  async setSkillConfig(skillId: string, config: Record<string, string>): Promise<boolean> {
     try {
-      const result = await window.electron.skills.setConfig(skillId, config);
-      return result.success;
+      const result = await window.electron.skills.setConfig(skillId, config)
+      return result.success
     } catch (error) {
-      console.error("Failed to set skill config:", error);
-      return false;
+      console.error('Failed to set skill config:', error)
+      return false
     }
   }
 
-  async testEmailConnectivity(
-    skillId: string,
-    config: Record<string, string>,
-  ): Promise<EmailConnectivityTestResult | null> {
+  async testEmailConnectivity(skillId: string, config: Record<string, string>): Promise<EmailConnectivityTestResult | null> {
     try {
-      const result = await window.electron.skills.testEmailConnectivity(
-        skillId,
-        config,
-      );
+      const result = await window.electron.skills.testEmailConnectivity(skillId, config)
       if (result.success && result.result) {
-        return result.result;
+        return result.result
       }
-      return null;
+      return null
     } catch (error) {
-      console.error("Failed to test email connectivity:", error);
-      return null;
+      console.error('Failed to test email connectivity:', error)
+      return null
     }
   }
 
   async getAutoRoutingPrompt(): Promise<string | null> {
     try {
-      const result = await window.electron.skills.autoRoutingPrompt();
-      return result.success ? result.prompt || null : null;
+      const result = await window.electron.skills.autoRoutingPrompt()
+      return result.success ? result.prompt || null : null
     } catch (error) {
-      console.error("Failed to get auto-routing prompt:", error);
-      return null;
+      console.error('Failed to get auto-routing prompt:', error)
+      return null
     }
+  }
+  async fetchMarketplaceSkills(): Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> {
+    try {
+      const response = await fetch(getSkillStoreUrl())
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const json = await response.json()
+      const value = json?.data?.value
+      // Store local skill descriptions for i18n lookup
+      const localSkills: LocalSkillInfo[] = Array.isArray(value?.localSkill) ? value.localSkill : []
+      this.localSkillDescriptions.clear()
+      for (const ls of localSkills) {
+        this.localSkillDescriptions.set(ls.name, ls.description)
+      }
+      const skills: MarketplaceSkill[] = Array.isArray(value?.marketplace) ? value.marketplace : []
+      const tags: MarketTag[] = Array.isArray(value?.marketTags) ? value.marketTags : []
+      // Also store marketplace skill descriptions for i18n lookup (keyed by id)
+      this.marketplaceSkillDescriptions.clear()
+      for (const ms of skills) {
+        if (typeof ms.description === 'object') {
+          this.marketplaceSkillDescriptions.set(ms.id, ms.description)
+        }
+      }
+      return { skills, tags }
+    } catch (error) {
+      console.error('Failed to fetch marketplace skills:', error)
+      return { skills: [], tags: [] }
+    }
+  }
+
+  getLocalizedSkillDescription(skillId: string, skillName: string, fallback: string): string {
+    const localDesc = this.localSkillDescriptions.get(skillName)
+    if (localDesc != null) return resolveLocalizedText(localDesc)
+    const marketDesc = this.marketplaceSkillDescriptions.get(skillId)
+    if (marketDesc != null) return resolveLocalizedText(marketDesc)
+    return fallback
   }
 }
 
-export const skillService = new SkillService();
+export const skillService = new SkillService()

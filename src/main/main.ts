@@ -17,11 +17,26 @@ app.name = APP_NAME
 app.setName(APP_NAME)
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
+const INVALID_FILE_NAME_PATTERN = /[<>:"/\\|?*\u0000-\u001F]/g
 const isDev = process.env.NODE_ENV === 'development'
 const isLinux = process.platform === 'linux'
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || 'http://localhost:5176'
+const MAX_INLINE_ATTACHMENT_BYTES = 25 * 1024 * 1024
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/bmp': '.bmp',
+  'application/pdf': '.pdf',
+  'text/plain': '.txt',
+  'text/markdown': '.md',
+  'application/json': '.json',
+  'text/csv': '.csv'
+}
 
 const safeDecodeURIComponent = (value: string): string => {
   try {
@@ -73,6 +88,42 @@ const buildLogExportFileName = (): string => {
 
 const ensureZipFileName = (value: string): string => {
   return value.toLowerCase().endsWith('.zip') ? value : `${value}.zip`
+}
+
+const resolveInlineAttachmentDir = (cwd?: string): string => {
+  const trimmed = typeof cwd === 'string' ? cwd.trim() : ''
+  if (trimmed) {
+    const resolved = path.resolve(trimmed)
+    if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
+      return path.join(resolved, '.cowork-temp', 'attachments', 'manual')
+    }
+  }
+  return path.join(app.getPath('temp'), 'lobsterai', 'attachments')
+}
+
+const sanitizeExportFileName = (value: string): string => {
+  const sanitized = value.replace(INVALID_FILE_NAME_PATTERN, ' ').replace(/\s+/g, ' ').trim()
+  return sanitized || 'cowork-session'
+}
+
+const sanitizeAttachmentFileName = (value?: string): string => {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw) return 'attachment'
+  const fileName = path.basename(raw)
+  const sanitized = fileName.replace(INVALID_FILE_NAME_PATTERN, ' ').replace(/\s+/g, ' ').trim()
+  return sanitized || 'attachment'
+}
+
+const inferAttachmentExtension = (fileName: string, mimeType?: string): string => {
+  const fromName = path.extname(fileName).toLowerCase()
+  if (fromName) {
+    return fromName
+  }
+  if (typeof mimeType === 'string') {
+    const normalized = mimeType.toLowerCase().split(';')[0].trim()
+    return MIME_EXTENSION_MAP[normalized] ?? ''
+  }
+  return ''
 }
 
 // 获取正确的预加载脚本路径
@@ -196,6 +247,28 @@ if (!gotTheLock) {
 
   ipcMain.handle('skills:testEmailConnectivity', async (_event, skillId: string, config: Record<string, string>) => {
     return getSkillManager().testEmailConnectivity(skillId, config)
+  })
+
+  ipcMain.handle('skills:setEnabled', (_event, options: { id: string; enabled: boolean }) => {
+    try {
+      const skills = getSkillManager().setSkillEnabled(options.id, options.enabled)
+      return { success: true, skills }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update skill' }
+    }
+  })
+
+  ipcMain.handle('skills:download', async (_event, source: string) => {
+    return getSkillManager().downloadSkill(source)
+  })
+
+  ipcMain.handle('skills:delete', (_event, id: string) => {
+    try {
+      const skills = getSkillManager().deleteSkill(id)
+      return { success: true, skills }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to delete skill' }
+    }
   })
 
   /* ------------------- api IPC handlers ------------------- */
@@ -499,6 +572,76 @@ if (!gotTheLock) {
       }
     }
   })
+
+  /* ------------------- Dialog IPC handlers ------------------- */
+  ipcMain.handle('dialog:selectDirectory', async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const dialogOptions = {
+      properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[]
+    }
+    const result = ownerWindow ? await dialog.showOpenDialog(ownerWindow, dialogOptions) : await dialog.showOpenDialog(dialogOptions)
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: true, path: null }
+    }
+    return { success: true, path: result.filePaths[0] }
+  })
+
+  ipcMain.handle('dialog:selectFile', async (event, options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const dialogOptions = {
+      properties: ['openFile'] as 'openFile'[],
+      title: options?.title,
+      filters: options?.filters
+    }
+    const result = ownerWindow ? await dialog.showOpenDialog(ownerWindow, dialogOptions) : await dialog.showOpenDialog(dialogOptions)
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: true, path: null }
+    }
+    return { success: true, path: result.filePaths[0] }
+  })
+
+  ipcMain.handle(
+    'dialog:saveInlineFile',
+    async (_event, options?: { dataBase64?: string; fileName?: string; mimeType?: string; cwd?: string }) => {
+      try {
+        const dataBase64 = typeof options?.dataBase64 === 'string' ? options.dataBase64.trim() : ''
+        if (!dataBase64) {
+          return { success: false, path: null, error: 'Missing file data' }
+        }
+
+        const buffer = Buffer.from(dataBase64, 'base64')
+        if (!buffer.length) {
+          return { success: false, path: null, error: 'Invalid file data' }
+        }
+        if (buffer.length > MAX_INLINE_ATTACHMENT_BYTES) {
+          return {
+            success: false,
+            path: null,
+            error: `File too large (max ${Math.floor(MAX_INLINE_ATTACHMENT_BYTES / (1024 * 1024))}MB)`
+          }
+        }
+
+        const dir = resolveInlineAttachmentDir(options?.cwd)
+        await fs.promises.mkdir(dir, { recursive: true })
+
+        const safeFileName = sanitizeAttachmentFileName(options?.fileName)
+        const extension = inferAttachmentExtension(safeFileName, options?.mimeType)
+        const baseName = extension ? safeFileName.slice(0, -extension.length) : safeFileName
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        const finalName = `${baseName || 'attachment'}-${uniqueSuffix}${extension}`
+        const outputPath = path.join(dir, finalName)
+
+        await fs.promises.writeFile(outputPath, buffer)
+        return { success: true, path: outputPath }
+      } catch (error) {
+        return {
+          success: false,
+          path: null,
+          error: error instanceof Error ? error.message : 'Failed to save inline file'
+        }
+      }
+    }
+  )
 
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:getSystemLocale', () => app.getLocale())

@@ -1,12 +1,12 @@
-import { app, BrowserWindow, session } from "electron";
-import { execSync, spawn, spawnSync } from "child_process";
-import fs from "fs";
-import path from "path";
-import yaml from "js-yaml";
-import extractZip from "extract-zip";
-import { SqliteStore } from "./sqliteStore";
-import { cpRecursiveSync } from "./fsCompat";
-import { appendPythonRuntimeToEnv } from "./libs/pythonRuntime";
+import { app, BrowserWindow, session } from 'electron'
+import { execSync, spawn, spawnSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import yaml from 'js-yaml'
+import extractZip from 'extract-zip'
+import { SqliteStore } from './sqliteStore'
+import { cpRecursiveSync } from './fsCompat'
+import { appendPythonRuntimeToEnv } from './libs/pythonRuntime'
 
 /**
  * Resolve the user's login shell PATH on macOS/Linux.
@@ -14,21 +14,21 @@ import { appendPythonRuntimeToEnv } from "./libs/pythonRuntime";
  * so node/npm won't be in PATH unless we resolve it explicitly.
  */
 function resolveUserShellPath(): string | null {
-  if (process.platform === "win32") return null;
+  if (process.platform === 'win32') return null
 
   try {
-    const shell = process.env.SHELL || "/bin/bash";
+    const shell = process.env.SHELL || '/bin/bash'
     // Use login-interactive shell to source profile, then print PATH
     const result = execSync(`${shell} -ilc 'echo __PATH__=$PATH'`, {
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5000,
-      env: { ...process.env },
-    });
-    const match = result.match(/__PATH__=(.+)/);
-    return match ? match[1].trim() : null;
+      env: { ...process.env }
+    })
+    const match = result.match(/__PATH__=(.+)/)
+    return match ? match[1].trim() : null
   } catch (error) {
-    console.warn("[skills] Failed to resolve user shell PATH:", error);
-    return null;
+    console.warn('[skills] Failed to resolve user shell PATH:', error)
+    return null
   }
 }
 
@@ -36,22 +36,20 @@ function resolveUserShellPath(): string | null {
  * Check if a command exists in the given environment.
  */
 function hasCommand(command: string, env: NodeJS.ProcessEnv): boolean {
-  const isWin = process.platform === "win32";
-  const checker = isWin ? "where" : "which";
+  const isWin = process.platform === 'win32'
+  const checker = isWin ? 'where' : 'which'
   // On Windows, use shell: true so cmd.exe resolves PATH correctly
   // (avoids issues with duplicated PATH/Path keys in env)
   const result = spawnSync(checker, [command], {
-    stdio: "pipe",
+    stdio: 'pipe',
     env,
     shell: isWin,
-    timeout: 5000,
-  });
+    timeout: 5000
+  })
   if (result.status !== 0) {
-    console.log(
-      `[skills] hasCommand('${command}'): not found (status=${result.status}, error=${result.error?.message || "none"})`,
-    );
+    console.log(`[skills] hasCommand('${command}'): not found (status=${result.status}, error=${result.error?.message || 'none'})`)
   }
-  return result.status === 0;
+  return result.status === 0
 }
 
 /**
@@ -61,30 +59,30 @@ function hasCommand(command: string, env: NodeJS.ProcessEnv): boolean {
  * We normalize to "PATH" to avoid issues with duplicate keys.
  */
 function normalizePathKey(env: Record<string, string | undefined>): void {
-  if (process.platform !== "win32") return;
+  if (process.platform !== 'win32') return
 
-  const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
-  if (pathKeys.length <= 1) return;
+  const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === 'path')
+  if (pathKeys.length <= 1) return
 
   // Merge all PATH-like values (separated by ;), then remove duplicates
-  const seen = new Set<string>();
-  const merged: string[] = [];
+  const seen = new Set<string>()
+  const merged: string[] = []
   for (const key of pathKeys) {
-    const value = env[key];
-    if (!value) continue;
-    for (const entry of value.split(";")) {
-      const trimmed = entry.trim();
-      if (!trimmed) continue;
-      const normalized = trimmed.toLowerCase().replace(/[\\/]+$/, "");
-      if (seen.has(normalized)) continue;
-      seen.add(normalized);
-      merged.push(trimmed);
+    const value = env[key]
+    if (!value) continue
+    for (const entry of value.split(';')) {
+      const trimmed = entry.trim()
+      if (!trimmed) continue
+      const normalized = trimmed.toLowerCase().replace(/[\\/]+$/, '')
+      if (seen.has(normalized)) continue
+      seen.add(normalized)
+      merged.push(trimmed)
     }
-    if (key !== "PATH") {
-      delete env[key];
+    if (key !== 'PATH') {
+      delete env[key]
     }
   }
-  env.PATH = merged.join(";");
+  env.PATH = merged.join(';')
 }
 
 /**
@@ -93,30 +91,29 @@ function normalizePathKey(env: Record<string, string | undefined>): void {
  * process.env.PATH may be stale (missing tools installed after Explorer started).
  */
 function resolveWindowsRegistryPath(): string | null {
-  if (process.platform !== "win32") return null;
+  if (process.platform !== 'win32') return null
 
   try {
-    const machinePath = execSync(
-      'reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v Path',
-      { encoding: "utf-8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] },
-    );
-    const userPath = execSync('reg query "HKCU\\Environment" /v Path', {
-      encoding: "utf-8",
+    const machinePath = execSync('reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v Path', {
+      encoding: 'utf-8',
       timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
-    });
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+    const userPath = execSync('reg query "HKCU\\Environment" /v Path', {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
 
     const extract = (output: string): string => {
-      const match = output.match(/Path\s+REG_(?:EXPAND_)?SZ\s+(.+)/i);
-      return match ? match[1].trim() : "";
-    };
+      const match = output.match(/Path\s+REG_(?:EXPAND_)?SZ\s+(.+)/i)
+      return match ? match[1].trim() : ''
+    }
 
-    const combined = [extract(machinePath), extract(userPath)]
-      .filter(Boolean)
-      .join(";");
-    return combined || null;
+    const combined = [extract(machinePath), extract(userPath)].filter(Boolean).join(';')
+    return combined || null
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -125,207 +122,194 @@ function resolveWindowsRegistryPath(): string | null {
  * Merges the user's shell PATH with the current process environment.
  */
 function buildSkillEnv(): Record<string, string | undefined> {
-  const env: Record<string, string | undefined> = { ...process.env };
+  const env: Record<string, string | undefined> = { ...process.env }
 
   // Normalize PATH key casing on Windows to avoid duplicate PATH/Path issues
-  normalizePathKey(env);
+  normalizePathKey(env)
 
   if (app.isPackaged) {
     // Ensure HOME is set (crucial for npm to find its config)
     if (!env.HOME) {
-      env.HOME = app.getPath("home");
+      env.HOME = app.getPath('home')
     }
 
-    if (process.platform === "win32") {
+    if (process.platform === 'win32') {
       // On Windows, merge the latest PATH from the registry to pick up
       // tools installed after the Electron app (or Explorer) was started.
-      const registryPath = resolveWindowsRegistryPath();
+      const registryPath = resolveWindowsRegistryPath()
       if (registryPath) {
-        const currentPath = env.PATH || "";
+        const currentPath = env.PATH || ''
         const seen = new Set(
           currentPath
             .toLowerCase()
-            .split(";")
-            .map((s) => s.trim().replace(/[\\/]+$/, ""))
-            .filter(Boolean),
-        );
-        const extra: string[] = [];
-        for (const entry of registryPath.split(";")) {
-          const trimmed = entry.trim();
-          if (!trimmed) continue;
-          const key = trimmed.toLowerCase().replace(/[\\/]+$/, "");
+            .split(';')
+            .map((s) => s.trim().replace(/[\\/]+$/, ''))
+            .filter(Boolean)
+        )
+        const extra: string[] = []
+        for (const entry of registryPath.split(';')) {
+          const trimmed = entry.trim()
+          if (!trimmed) continue
+          const key = trimmed.toLowerCase().replace(/[\\/]+$/, '')
           if (!seen.has(key)) {
-            seen.add(key);
-            extra.push(trimmed);
+            seen.add(key)
+            extra.push(trimmed)
           }
         }
         if (extra.length > 0) {
-          env.PATH = currentPath
-            ? `${currentPath};${extra.join(";")}`
-            : extra.join(";");
-          console.log(
-            "[skills] Merged registry PATH entries for skill scripts",
-          );
+          env.PATH = currentPath ? `${currentPath};${extra.join(';')}` : extra.join(';')
+          console.log('[skills] Merged registry PATH entries for skill scripts')
         }
       }
 
       // Append common Windows Node.js installation paths as fallback
       const commonWinPaths = [
-        "C:\\Program Files\\nodejs",
-        "C:\\Program Files (x86)\\nodejs",
-        `${env.APPDATA || ""}\\npm`,
-        `${env.LOCALAPPDATA || ""}\\Programs\\nodejs`,
-      ].filter(Boolean);
+        'C:\\Program Files\\nodejs',
+        'C:\\Program Files (x86)\\nodejs',
+        `${env.APPDATA || ''}\\npm`,
+        `${env.LOCALAPPDATA || ''}\\Programs\\nodejs`
+      ].filter(Boolean)
 
       const pathSet = new Set(
-        (env.PATH || "")
+        (env.PATH || '')
           .toLowerCase()
-          .split(";")
-          .map((s) => s.trim().replace(/[\\/]+$/, "")),
-      );
-      const missingPaths = commonWinPaths.filter(
-        (p) => !pathSet.has(p.toLowerCase().replace(/[\\/]+$/, "")),
-      );
+          .split(';')
+          .map((s) => s.trim().replace(/[\\/]+$/, ''))
+      )
+      const missingPaths = commonWinPaths.filter((p) => !pathSet.has(p.toLowerCase().replace(/[\\/]+$/, '')))
       if (missingPaths.length > 0) {
-        env.PATH = env.PATH
-          ? `${env.PATH};${missingPaths.join(";")}`
-          : missingPaths.join(";");
+        env.PATH = env.PATH ? `${env.PATH};${missingPaths.join(';')}` : missingPaths.join(';')
       }
     } else {
       // Resolve user's shell PATH to find npm/node (macOS/Linux)
-      const userPath = resolveUserShellPath();
+      const userPath = resolveUserShellPath()
       if (userPath) {
-        env.PATH = userPath;
-        console.log("[skills] Resolved user shell PATH for skill scripts");
+        env.PATH = userPath
+        console.log('[skills] Resolved user shell PATH for skill scripts')
       } else {
         // Fallback: append common node installation paths
         const commonPaths = [
-          "/usr/local/bin",
-          "/opt/homebrew/bin",
+          '/usr/local/bin',
+          '/opt/homebrew/bin',
           `${env.HOME}/.nvm/current/bin`,
           `${env.HOME}/.volta/bin`,
-          `${env.HOME}/.fnm/current/bin`,
-        ];
-        env.PATH = [env.PATH, ...commonPaths].filter(Boolean).join(":");
-        console.log("[skills] Using fallback PATH for skill scripts");
+          `${env.HOME}/.fnm/current/bin`
+        ]
+        env.PATH = [env.PATH, ...commonPaths].filter(Boolean).join(':')
+        console.log('[skills] Using fallback PATH for skill scripts')
       }
     }
   }
 
   // Expose Electron executable so skill scripts can run JS with ELECTRON_RUN_AS_NODE
   // even when system Node.js is not installed.
-  env.LOBSTERAI_ELECTRON_PATH = process.execPath;
-  appendPythonRuntimeToEnv(env);
+  env.LOBSTERAI_ELECTRON_PATH = process.execPath
+  appendPythonRuntimeToEnv(env)
 
   // Re-normalize after appendPythonRuntimeToEnv may have added a PATH key
-  normalizePathKey(env);
+  normalizePathKey(env)
 
-  return env;
+  return env
 }
 
 export type SkillRecord = {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  isOfficial: boolean;
-  isBuiltIn: boolean;
-  updatedAt: number;
-  prompt: string;
-  skillPath: string;
-  version?: string;
-};
+  id: string
+  name: string
+  description: string
+  enabled: boolean
+  isOfficial: boolean
+  isBuiltIn: boolean
+  updatedAt: number
+  prompt: string
+  skillPath: string
+  version?: string
+}
 
-type SkillStateMap = Record<string, { enabled: boolean }>;
+type SkillStateMap = Record<string, { enabled: boolean }>
 
-type EmailConnectivityCheckCode = "imap_connection" | "smtp_connection";
-type EmailConnectivityCheckLevel = "pass" | "fail";
-type EmailConnectivityVerdict = "pass" | "fail";
+type EmailConnectivityCheckCode = 'imap_connection' | 'smtp_connection'
+type EmailConnectivityCheckLevel = 'pass' | 'fail'
+type EmailConnectivityVerdict = 'pass' | 'fail'
 
 type EmailConnectivityCheck = {
-  code: EmailConnectivityCheckCode;
-  level: EmailConnectivityCheckLevel;
-  message: string;
-  durationMs: number;
-};
+  code: EmailConnectivityCheckCode
+  level: EmailConnectivityCheckLevel
+  message: string
+  durationMs: number
+}
 
 type EmailConnectivityTestResult = {
-  testedAt: number;
-  verdict: EmailConnectivityVerdict;
-  checks: EmailConnectivityCheck[];
-};
+  testedAt: number
+  verdict: EmailConnectivityVerdict
+  checks: EmailConnectivityCheck[]
+}
 
 type SkillDefaultConfig = {
-  order?: number;
-  enabled?: boolean;
-};
+  order?: number
+  enabled?: boolean
+}
 
 type SkillsConfig = {
-  version: number;
-  description?: string;
-  defaults: Record<string, SkillDefaultConfig>;
-};
+  version: number
+  description?: string
+  defaults: Record<string, SkillDefaultConfig>
+}
 
-const SKILLS_DIR_NAME = "SKILLs";
-const SKILL_FILE_NAME = "SKILL.md";
-const SKILLS_CONFIG_FILE = "skills.config.json";
-const SKILL_STATE_KEY = "skills_state";
-const WATCH_DEBOUNCE_MS = 250;
-const CLAUDE_SKILLS_DIR_NAME = ".claude";
-const CLAUDE_SKILLS_SUBDIR = "skills";
+const SKILLS_DIR_NAME = 'SKILLs'
+const SKILL_FILE_NAME = 'SKILL.md'
+const SKILLS_CONFIG_FILE = 'skills.config.json'
+const SKILL_STATE_KEY = 'skills_state'
+const WATCH_DEBOUNCE_MS = 250
+const CLAUDE_SKILLS_DIR_NAME = '.claude'
+const CLAUDE_SKILLS_SUBDIR = 'skills'
 
-const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/
 
-const parseFrontmatter = (
-  raw: string,
-): { frontmatter: Record<string, unknown>; content: string } => {
-  const normalized = raw.replace(/^\uFEFF/, "");
-  const match = normalized.match(FRONTMATTER_RE);
+const parseFrontmatter = (raw: string): { frontmatter: Record<string, unknown>; content: string } => {
+  const normalized = raw.replace(/^\uFEFF/, '')
+  const match = normalized.match(FRONTMATTER_RE)
   if (!match) {
-    return { frontmatter: {}, content: normalized };
+    return { frontmatter: {}, content: normalized }
   }
 
-  let frontmatter: Record<string, unknown> = {};
+  let frontmatter: Record<string, unknown> = {}
   try {
-    const parsed = yaml.load(match[1]);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      frontmatter = parsed as Record<string, unknown>;
+    const parsed = yaml.load(match[1])
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      frontmatter = parsed as Record<string, unknown>
     }
   } catch (e) {
-    console.warn("[skills] Failed to parse YAML frontmatter:", e);
+    console.warn('[skills] Failed to parse YAML frontmatter:', e)
   }
 
-  const content = normalized.slice(match[0].length);
-  return { frontmatter, content };
-};
+  const content = normalized.slice(match[0].length)
+  return { frontmatter, content }
+}
 
 const isTruthy = (value?: unknown): boolean => {
-  if (value === true) return true;
-  if (!value) return false;
-  if (typeof value !== "string") return false;
-  const normalized = value.trim().toLowerCase();
-  return normalized === "true" || normalized === "yes" || normalized === "1";
-};
+  if (value === true) return true
+  if (!value) return false
+  if (typeof value !== 'string') return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'true' || normalized === 'yes' || normalized === '1'
+}
 
 const extractDescription = (content: string): string => {
-  const lines = content.split(/\r?\n/);
+  const lines = content.split(/\r?\n/)
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    return trimmed.replace(/^#+\s*/, "");
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    return trimmed.replace(/^#+\s*/, '')
   }
-  return "";
-};
+  return ''
+}
 
 const normalizeFolderName = (name: string): string => {
-  const normalized = name
-    .replace(/[^a-zA-Z0-9-_]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return normalized || "skill";
-};
+  const normalized = name.replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-+|-+$/g, '')
+  return normalized || 'skill'
+}
 
-const isZipFile = (filePath: string): boolean =>
-  path.extname(filePath).toLowerCase() === ".zip";
+const isZipFile = (filePath: string): boolean => path.extname(filePath).toLowerCase() === '.zip'
 
 /**
  * Compare two semver-like version strings (e.g. "1.0.0" vs "1.0.1").
@@ -333,233 +317,217 @@ const isZipFile = (filePath: string): boolean =>
  * Non-numeric segments are treated as 0.
  */
 const compareVersions = (a: string, b: string): number => {
-  const pa = a.split(".").map((s) => parseInt(s, 10) || 0);
-  const pb = b.split(".").map((s) => parseInt(s, 10) || 0);
+  const pa = a.split('.').map((s) => parseInt(s, 10) || 0)
+  const pb = b.split('.').map((s) => parseInt(s, 10) || 0)
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
-    if (na > nb) return 1;
-    if (na < nb) return -1;
+    const na = pa[i] || 0
+    const nb = pb[i] || 0
+    if (na > nb) return 1
+    if (na < nb) return -1
   }
-  return 0;
-};
+  return 0
+}
 
 const resolveWithin = (root: string, target: string): string => {
-  const resolvedRoot = path.resolve(root);
-  const resolvedTarget = path.resolve(root, target);
-  if (resolvedTarget === resolvedRoot) return resolvedTarget;
+  const resolvedRoot = path.resolve(root)
+  const resolvedTarget = path.resolve(root, target)
+  if (resolvedTarget === resolvedRoot) return resolvedTarget
   if (!resolvedTarget.startsWith(resolvedRoot + path.sep)) {
-    throw new Error("Invalid target path");
+    throw new Error('Invalid target path')
   }
-  return resolvedTarget;
-};
+  return resolvedTarget
+}
 
-const appendEnvPath = (
-  current: string | undefined,
-  entries: string[],
-): string => {
-  const delimiter = process.platform === "win32" ? ";" : ":";
-  const existing = (current || "").split(delimiter).filter(Boolean);
-  const merged = [...existing];
+const appendEnvPath = (current: string | undefined, entries: string[]): string => {
+  const delimiter = process.platform === 'win32' ? ';' : ':'
+  const existing = (current || '').split(delimiter).filter(Boolean)
+  const merged = [...existing]
   entries.forEach((entry) => {
-    if (!entry || merged.includes(entry)) return;
-    merged.push(entry);
-  });
-  return merged.join(delimiter);
-};
+    if (!entry || merged.includes(entry)) return
+    merged.push(entry)
+  })
+  return merged.join(delimiter)
+}
 
 const listWindowsCommandPaths = (command: string): string[] => {
-  if (process.platform !== "win32") return [];
+  if (process.platform !== 'win32') return []
 
   try {
-    const result = spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
-      encoding: "utf8",
-      windowsHide: true,
-    });
-    if (result.status !== 0) return [];
+    const result = spawnSync('cmd.exe', ['/d', '/s', '/c', command], {
+      encoding: 'utf8',
+      windowsHide: true
+    })
+    if (result.status !== 0) return []
     return result.stdout
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter(Boolean);
+      .filter(Boolean)
   } catch {
-    return [];
+    return []
   }
-};
+}
 
 const resolveWindowsGitExecutable = (): string | null => {
-  if (process.platform !== "win32") return null;
+  if (process.platform !== 'win32') return null
 
-  const programFiles = process.env.ProgramFiles || "C:\\Program Files";
-  const programFilesX86 =
-    process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
-  const localAppData = process.env.LOCALAPPDATA || "";
-  const userProfile = process.env.USERPROFILE || "";
+  const programFiles = process.env.ProgramFiles || 'C:\\Program Files'
+  const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'
+  const localAppData = process.env.LOCALAPPDATA || ''
+  const userProfile = process.env.USERPROFILE || ''
 
   const installedCandidates = [
-    path.join(programFiles, "Git", "cmd", "git.exe"),
-    path.join(programFiles, "Git", "bin", "git.exe"),
-    path.join(programFilesX86, "Git", "cmd", "git.exe"),
-    path.join(programFilesX86, "Git", "bin", "git.exe"),
-    path.join(localAppData, "Programs", "Git", "cmd", "git.exe"),
-    path.join(localAppData, "Programs", "Git", "bin", "git.exe"),
-    path.join(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe"),
-    path.join(userProfile, "scoop", "apps", "git", "current", "bin", "git.exe"),
-    "C:\\Git\\cmd\\git.exe",
-    "C:\\Git\\bin\\git.exe",
-  ];
+    path.join(programFiles, 'Git', 'cmd', 'git.exe'),
+    path.join(programFiles, 'Git', 'bin', 'git.exe'),
+    path.join(programFilesX86, 'Git', 'cmd', 'git.exe'),
+    path.join(programFilesX86, 'Git', 'bin', 'git.exe'),
+    path.join(localAppData, 'Programs', 'Git', 'cmd', 'git.exe'),
+    path.join(localAppData, 'Programs', 'Git', 'bin', 'git.exe'),
+    path.join(userProfile, 'scoop', 'apps', 'git', 'current', 'cmd', 'git.exe'),
+    path.join(userProfile, 'scoop', 'apps', 'git', 'current', 'bin', 'git.exe'),
+    'C:\\Git\\cmd\\git.exe',
+    'C:\\Git\\bin\\git.exe'
+  ]
 
   for (const candidate of installedCandidates) {
     if (candidate && fs.existsSync(candidate)) {
-      return candidate;
+      return candidate
     }
   }
 
-  const whereCandidates = listWindowsCommandPaths("where git");
+  const whereCandidates = listWindowsCommandPaths('where git')
   for (const candidate of whereCandidates) {
-    const normalized = candidate.trim();
-    if (!normalized) continue;
-    if (
-      normalized.toLowerCase().endsWith("git.exe") &&
-      fs.existsSync(normalized)
-    ) {
-      return normalized;
+    const normalized = candidate.trim()
+    if (!normalized) continue
+    if (normalized.toLowerCase().endsWith('git.exe') && fs.existsSync(normalized)) {
+      return normalized
     }
   }
 
   const bundledRoots = app.isPackaged
-    ? [path.join(process.resourcesPath, "mingit")]
-    : [
-        path.join(__dirname, "..", "..", "resources", "mingit"),
-        path.join(process.cwd(), "resources", "mingit"),
-      ];
+    ? [path.join(process.resourcesPath, 'mingit')]
+    : [path.join(__dirname, '..', '..', 'resources', 'mingit'), path.join(process.cwd(), 'resources', 'mingit')]
 
   for (const root of bundledRoots) {
     const bundledCandidates = [
-      path.join(root, "cmd", "git.exe"),
-      path.join(root, "bin", "git.exe"),
-      path.join(root, "mingw64", "bin", "git.exe"),
-      path.join(root, "usr", "bin", "git.exe"),
-    ];
+      path.join(root, 'cmd', 'git.exe'),
+      path.join(root, 'bin', 'git.exe'),
+      path.join(root, 'mingw64', 'bin', 'git.exe'),
+      path.join(root, 'usr', 'bin', 'git.exe')
+    ]
     for (const candidate of bundledCandidates) {
       if (fs.existsSync(candidate)) {
-        return candidate;
+        return candidate
       }
     }
   }
 
-  return null;
-};
+  return null
+}
 
 const resolveGitCommand = (): { command: string; env?: NodeJS.ProcessEnv } => {
-  if (process.platform !== "win32") {
-    return { command: "git" };
+  if (process.platform !== 'win32') {
+    return { command: 'git' }
   }
 
-  const gitExe = resolveWindowsGitExecutable();
+  const gitExe = resolveWindowsGitExecutable()
   if (!gitExe) {
-    return { command: "git" };
+    return { command: 'git' }
   }
 
-  const env: NodeJS.ProcessEnv = { ...process.env };
-  const gitDir = path.dirname(gitExe);
-  const gitRoot = path.dirname(gitDir);
+  const env: NodeJS.ProcessEnv = { ...process.env }
+  const gitDir = path.dirname(gitExe)
+  const gitRoot = path.dirname(gitDir)
   const candidateDirs = [
     gitDir,
-    path.join(gitRoot, "cmd"),
-    path.join(gitRoot, "bin"),
-    path.join(gitRoot, "mingw64", "bin"),
-    path.join(gitRoot, "usr", "bin"),
-  ].filter((dir) => fs.existsSync(dir));
+    path.join(gitRoot, 'cmd'),
+    path.join(gitRoot, 'bin'),
+    path.join(gitRoot, 'mingw64', 'bin'),
+    path.join(gitRoot, 'usr', 'bin')
+  ].filter((dir) => fs.existsSync(dir))
 
-  env.PATH = appendEnvPath(env.PATH, candidateDirs);
-  return { command: gitExe, env };
-};
+  env.PATH = appendEnvPath(env.PATH, candidateDirs)
+  return { command: gitExe, env }
+}
 
-const runCommand = (
-  command: string,
-  args: string[],
-  options?: { cwd?: string; env?: NodeJS.ProcessEnv },
-): Promise<void> =>
+const runCommand = (command: string, args: string[], options?: { cwd?: string; env?: NodeJS.ProcessEnv }): Promise<void> =>
   new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: options?.cwd,
       env: options?.env,
       windowsHide: true,
-      stdio: ["ignore", "ignore", "pipe"],
-    });
-    let stderr = "";
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.on("error", (error) => reject(error));
-    child.on("close", (code) => {
+      stdio: ['ignore', 'ignore', 'pipe']
+    })
+    let stderr = ''
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
+    child.on('error', (error) => reject(error))
+    child.on('close', (code) => {
       if (code === 0) {
-        resolve();
-        return;
+        resolve()
+        return
       }
-      reject(
-        new Error(stderr.trim() || `Command failed with exit code ${code}`),
-      );
-    });
-  });
+      reject(new Error(stderr.trim() || `Command failed with exit code ${code}`))
+    })
+  })
 
 type SkillScriptRunResult = {
-  success: boolean;
-  exitCode: number | null;
-  stdout: string;
-  stderr: string;
-  durationMs: number;
-  timedOut: boolean;
-  error?: string;
-  spawnErrorCode?: string;
-};
+  success: boolean
+  exitCode: number | null
+  stdout: string
+  stderr: string
+  durationMs: number
+  timedOut: boolean
+  error?: string
+  spawnErrorCode?: string
+}
 
 const runScriptWithTimeout = (options: {
-  command: string;
-  args: string[];
-  cwd: string;
-  env: NodeJS.ProcessEnv;
-  timeoutMs: number;
+  command: string
+  args: string[]
+  cwd: string
+  env: NodeJS.ProcessEnv
+  timeoutMs: number
 }): Promise<SkillScriptRunResult> =>
   new Promise((resolve) => {
-    const startedAt = Date.now();
+    const startedAt = Date.now()
     const child = spawn(options.command, options.args, {
       cwd: options.cwd,
       env: options.env,
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
 
-    let settled = false;
-    let timedOut = false;
-    let stdout = "";
-    let stderr = "";
-    let forceKillTimer: NodeJS.Timeout | null = null;
+    let settled = false
+    let timedOut = false
+    let stdout = ''
+    let stderr = ''
+    let forceKillTimer: NodeJS.Timeout | null = null
 
     const settle = (result: SkillScriptRunResult) => {
-      if (settled) return;
-      settled = true;
-      resolve(result);
-    };
+      if (settled) return
+      settled = true
+      resolve(result)
+    }
 
     const timeoutTimer = setTimeout(() => {
-      timedOut = true;
-      child.kill("SIGTERM");
+      timedOut = true
+      child.kill('SIGTERM')
       forceKillTimer = setTimeout(() => {
-        child.kill("SIGKILL");
-      }, 2000);
-    }, options.timeoutMs);
+        child.kill('SIGKILL')
+      }, 2000)
+    }, options.timeoutMs)
 
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
+    })
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
 
-    child.on("error", (error: NodeJS.ErrnoException) => {
-      clearTimeout(timeoutTimer);
-      if (forceKillTimer) clearTimeout(forceKillTimer);
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      clearTimeout(timeoutTimer)
+      if (forceKillTimer) clearTimeout(forceKillTimer)
       settle({
         success: false,
         exitCode: null,
@@ -568,13 +536,13 @@ const runScriptWithTimeout = (options: {
         durationMs: Date.now() - startedAt,
         timedOut,
         error: error.message,
-        spawnErrorCode: error.code,
-      });
-    });
+        spawnErrorCode: error.code
+      })
+    })
 
-    child.on("close", (exitCode) => {
-      clearTimeout(timeoutTimer);
-      if (forceKillTimer) clearTimeout(forceKillTimer);
+    child.on('close', (exitCode) => {
+      clearTimeout(timeoutTimer)
+      if (forceKillTimer) clearTimeout(forceKillTimer)
       settle({
         success: !timedOut && exitCode === 0,
         exitCode,
@@ -582,455 +550,426 @@ const runScriptWithTimeout = (options: {
         stderr: stderr.trim(),
         durationMs: Date.now() - startedAt,
         timedOut,
-        error: timedOut
-          ? `Command timed out after ${options.timeoutMs}ms`
-          : undefined,
-      });
-    });
-  });
+        error: timedOut ? `Command timed out after ${options.timeoutMs}ms` : undefined
+      })
+    })
+  })
 
 const cleanupPathSafely = (targetPath: string | null): void => {
-  if (!targetPath) return;
+  if (!targetPath) return
   try {
     fs.rmSync(targetPath, {
       recursive: true,
       force: true,
-      maxRetries: process.platform === "win32" ? 5 : 0,
-      retryDelay: process.platform === "win32" ? 200 : 0,
-    });
+      maxRetries: process.platform === 'win32' ? 5 : 0,
+      retryDelay: process.platform === 'win32' ? 200 : 0
+    })
   } catch (error) {
-    console.warn(
-      "[skills] Failed to cleanup temporary directory:",
-      targetPath,
-      error,
-    );
+    console.warn('[skills] Failed to cleanup temporary directory:', targetPath, error)
   }
-};
+}
 
 const listSkillDirs = (root: string): string[] => {
-  if (!fs.existsSync(root)) return [];
-  const skillFile = path.join(root, SKILL_FILE_NAME);
+  if (!fs.existsSync(root)) return []
+  const skillFile = path.join(root, SKILL_FILE_NAME)
   if (fs.existsSync(skillFile)) {
-    return [root];
+    return [root]
   }
 
-  const entries = fs.readdirSync(root);
+  const entries = fs.readdirSync(root)
   return entries
     .map((entry) => path.join(root, entry))
     .filter((entryPath) => {
       try {
-        const stat = fs.lstatSync(entryPath);
+        const stat = fs.lstatSync(entryPath)
         if (!stat.isDirectory() && !stat.isSymbolicLink()) {
-          return false;
+          return false
         }
-        return fs.existsSync(path.join(entryPath, SKILL_FILE_NAME));
+        return fs.existsSync(path.join(entryPath, SKILL_FILE_NAME))
       } catch {
-        return false;
+        return false
       }
-    });
-};
+    })
+}
 
 const collectSkillDirsFromSource = (source: string): string[] => {
-  const resolved = path.resolve(source);
+  const resolved = path.resolve(source)
   if (fs.existsSync(path.join(resolved, SKILL_FILE_NAME))) {
-    return [resolved];
+    return [resolved]
   }
 
-  const nestedRoot = path.join(resolved, SKILLS_DIR_NAME);
+  const nestedRoot = path.join(resolved, SKILLS_DIR_NAME)
   if (fs.existsSync(nestedRoot) && fs.statSync(nestedRoot).isDirectory()) {
-    const nestedSkills = listSkillDirs(nestedRoot);
+    const nestedSkills = listSkillDirs(nestedRoot)
     if (nestedSkills.length > 0) {
-      return nestedSkills;
+      return nestedSkills
     }
   }
 
-  const directSkills = listSkillDirs(resolved);
+  const directSkills = listSkillDirs(resolved)
   if (directSkills.length > 0) {
-    return directSkills;
+    return directSkills
   }
 
-  return collectSkillDirsRecursively(resolved);
-};
+  return collectSkillDirsRecursively(resolved)
+}
 
 const collectSkillDirsRecursively = (root: string): string[] => {
-  const resolvedRoot = path.resolve(root);
-  if (!fs.existsSync(resolvedRoot)) return [];
+  const resolvedRoot = path.resolve(root)
+  if (!fs.existsSync(resolvedRoot)) return []
 
-  const matchedDirs: string[] = [];
-  const queue: string[] = [resolvedRoot];
-  const seen = new Set<string>();
+  const matchedDirs: string[] = []
+  const queue: string[] = [resolvedRoot]
+  const seen = new Set<string>()
 
   while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) continue;
-    const normalized = path.resolve(current);
-    if (seen.has(normalized)) continue;
-    seen.add(normalized);
+    const current = queue.shift()
+    if (!current) continue
+    const normalized = path.resolve(current)
+    if (seen.has(normalized)) continue
+    seen.add(normalized)
 
-    let stat: fs.Stats;
+    let stat: fs.Stats
     try {
-      stat = fs.lstatSync(normalized);
+      stat = fs.lstatSync(normalized)
     } catch {
-      continue;
+      continue
     }
-    if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+    if (!stat.isDirectory() || stat.isSymbolicLink()) continue
 
     if (fs.existsSync(path.join(normalized, SKILL_FILE_NAME))) {
-      matchedDirs.push(normalized);
-      continue;
+      matchedDirs.push(normalized)
+      continue
     }
 
-    let entries: string[] = [];
+    let entries: string[] = []
     try {
-      entries = fs.readdirSync(normalized);
+      entries = fs.readdirSync(normalized)
     } catch {
-      continue;
+      continue
     }
 
     for (const entry of entries) {
-      if (!entry || entry === ".git" || entry === "node_modules") continue;
-      queue.push(path.join(normalized, entry));
+      if (!entry || entry === '.git' || entry === 'node_modules') continue
+      queue.push(path.join(normalized, entry))
     }
   }
 
-  return matchedDirs;
-};
+  return matchedDirs
+}
 
 const deriveRepoName = (source: string): string => {
-  const cleaned = source.replace(/[#?].*$/, "");
-  const base = cleaned.split("/").filter(Boolean).pop() || "skill";
-  return normalizeFolderName(base.replace(/\.git$/, ""));
-};
+  const cleaned = source.replace(/[#?].*$/, '')
+  const base = cleaned.split('/').filter(Boolean).pop() || 'skill'
+  return normalizeFolderName(base.replace(/\.git$/, ''))
+}
 
 type NormalizedGitSource = {
-  repoUrl: string;
-  sourceSubpath?: string;
-  ref?: string;
-  repoNameHint?: string;
-};
+  repoUrl: string
+  sourceSubpath?: string
+  ref?: string
+  repoNameHint?: string
+}
 
 type GithubRepoSource = {
-  owner: string;
-  repo: string;
-};
+  owner: string
+  repo: string
+}
 
 const extractErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
-    return error.message;
+    return error.message
   }
-  return String(error);
-};
+  return String(error)
+}
 
 const parseGithubRepoSource = (repoUrl: string): GithubRepoSource | null => {
-  const trimmed = repoUrl.trim();
+  const trimmed = repoUrl.trim()
 
-  const sshMatch = trimmed.match(
-    /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/i,
-  );
+  const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/i)
   if (sshMatch) {
     return {
       owner: sshMatch[1],
-      repo: sshMatch[2],
-    };
+      repo: sshMatch[2]
+    }
   }
 
   try {
-    const parsedUrl = new URL(trimmed);
-    if (
-      !["github.com", "www.github.com"].includes(
-        parsedUrl.hostname.toLowerCase(),
-      )
-    ) {
-      return null;
+    const parsedUrl = new URL(trimmed)
+    if (!['github.com', 'www.github.com'].includes(parsedUrl.hostname.toLowerCase())) {
+      return null
     }
 
     const segments = parsedUrl.pathname
-      .replace(/\.git$/i, "")
-      .split("/")
-      .filter(Boolean);
+      .replace(/\.git$/i, '')
+      .split('/')
+      .filter(Boolean)
     if (segments.length < 2) {
-      return null;
+      return null
     }
 
     return {
       owner: segments[0],
-      repo: segments[1],
-    };
+      repo: segments[1]
+    }
   } catch {
-    return null;
+    return null
   }
-};
+}
 
-const downloadGithubArchive = async (
-  source: GithubRepoSource,
-  tempRoot: string,
-  ref?: string,
-): Promise<string> => {
-  const encodedRef = ref ? encodeURIComponent(ref) : "";
+const downloadGithubArchive = async (source: GithubRepoSource, tempRoot: string, ref?: string): Promise<string> => {
+  const encodedRef = ref ? encodeURIComponent(ref) : ''
   const archiveUrlCandidates: Array<{
-    url: string;
-    headers: Record<string, string>;
-  }> = [];
+    url: string
+    headers: Record<string, string>
+  }> = []
 
   if (encodedRef) {
     archiveUrlCandidates.push(
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/heads/${encodedRef}.zip`,
-        headers: { "User-Agent": "LobsterAI Skill Downloader" },
+        headers: { 'User-Agent': 'LobsterAI Skill Downloader' }
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/tags/${encodedRef}.zip`,
-        headers: { "User-Agent": "LobsterAI Skill Downloader" },
+        headers: { 'User-Agent': 'LobsterAI Skill Downloader' }
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/${encodedRef}.zip`,
-        headers: { "User-Agent": "LobsterAI Skill Downloader" },
-      },
-    );
+        headers: { 'User-Agent': 'LobsterAI Skill Downloader' }
+      }
+    )
   }
 
   archiveUrlCandidates.push({
-    url: `https://api.github.com/repos/${source.owner}/${source.repo}/zipball${encodedRef ? `/${encodedRef}` : ""}`,
+    url: `https://api.github.com/repos/${source.owner}/${source.repo}/zipball${encodedRef ? `/${encodedRef}` : ''}`,
     headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "LobsterAI Skill Downloader",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'LobsterAI Skill Downloader',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  })
 
-  let buffer: Buffer | null = null;
-  let lastError: string | null = null;
+  let buffer: Buffer | null = null
+  let lastError: string | null = null
 
   for (const candidate of archiveUrlCandidates) {
     try {
       const response = await session.defaultSession.fetch(candidate.url, {
-        method: "GET",
-        headers: candidate.headers,
-      });
+        method: 'GET',
+        headers: candidate.headers
+      })
 
       if (!response.ok) {
-        const detail = (await response.text()).trim();
-        lastError = `Archive download failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`;
-        continue;
+        const detail = (await response.text()).trim()
+        lastError = `Archive download failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ''}`
+        continue
       }
 
-      buffer = Buffer.from(await response.arrayBuffer());
-      break;
+      buffer = Buffer.from(await response.arrayBuffer())
+      break
     } catch (error) {
-      lastError = extractErrorMessage(error);
+      lastError = extractErrorMessage(error)
     }
   }
 
   if (!buffer) {
-    throw new Error(lastError || "Archive download failed");
+    throw new Error(lastError || 'Archive download failed')
   }
 
-  const zipPath = path.join(tempRoot, "github-archive.zip");
-  const extractRoot = path.join(tempRoot, "github-archive");
-  fs.writeFileSync(zipPath, buffer);
-  fs.mkdirSync(extractRoot, { recursive: true });
-  await extractZip(zipPath, { dir: extractRoot });
+  const zipPath = path.join(tempRoot, 'github-archive.zip')
+  const extractRoot = path.join(tempRoot, 'github-archive')
+  fs.writeFileSync(zipPath, buffer)
+  fs.mkdirSync(extractRoot, { recursive: true })
+  await extractZip(zipPath, { dir: extractRoot })
 
   const extractedDirs = fs
     .readdirSync(extractRoot)
     .map((entry) => path.join(extractRoot, entry))
     .filter((entryPath) => {
       try {
-        return fs.statSync(entryPath).isDirectory();
+        return fs.statSync(entryPath).isDirectory()
       } catch {
-        return false;
+        return false
       }
-    });
+    })
 
   if (extractedDirs.length === 1) {
-    return extractedDirs[0];
+    return extractedDirs[0]
   }
 
-  return extractRoot;
-};
+  return extractRoot
+}
 
 const isRemoteZipUrl = (source: string): boolean => {
   try {
-    const url = new URL(source);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.pathname.toLowerCase().endsWith(".zip")
-    );
+    const url = new URL(source)
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.pathname.toLowerCase().endsWith('.zip')
   } catch {
-    return false;
+    return false
   }
-};
+}
 
-const downloadZipUrl = async (
-  zipUrl: string,
-  tempRoot: string,
-): Promise<string> => {
+const downloadZipUrl = async (zipUrl: string, tempRoot: string): Promise<string> => {
   const response = await session.defaultSession.fetch(zipUrl, {
-    method: "GET",
-    headers: { "User-Agent": "LobsterAI Skill Downloader" },
-  });
+    method: 'GET',
+    headers: { 'User-Agent': 'LobsterAI Skill Downloader' }
+  })
 
   if (!response.ok) {
-    throw new Error(
-      `Download failed (${response.status} ${response.statusText})`,
-    );
+    throw new Error(`Download failed (${response.status} ${response.statusText})`)
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const zipPath = path.join(tempRoot, "remote-skill.zip");
-  const extractRoot = path.join(tempRoot, "remote-skill");
-  fs.writeFileSync(zipPath, buffer);
-  fs.mkdirSync(extractRoot, { recursive: true });
-  await extractZip(zipPath, { dir: extractRoot });
+  const buffer = Buffer.from(await response.arrayBuffer())
+  const zipPath = path.join(tempRoot, 'remote-skill.zip')
+  const extractRoot = path.join(tempRoot, 'remote-skill')
+  fs.writeFileSync(zipPath, buffer)
+  fs.mkdirSync(extractRoot, { recursive: true })
+  await extractZip(zipPath, { dir: extractRoot })
 
   const extractedDirs = fs
     .readdirSync(extractRoot)
     .map((entry) => path.join(extractRoot, entry))
     .filter((entryPath) => {
       try {
-        return fs.statSync(entryPath).isDirectory();
+        return fs.statSync(entryPath).isDirectory()
       } catch {
-        return false;
+        return false
       }
-    });
+    })
 
   if (extractedDirs.length === 1) {
-    return extractedDirs[0];
+    return extractedDirs[0]
   }
 
-  return extractRoot;
-};
+  return extractRoot
+}
 
 const normalizeGithubSubpath = (value: string): string | null => {
-  const trimmed = value.trim().replace(/^\/+|\/+$/g, "");
-  if (!trimmed) return null;
+  const trimmed = value.trim().replace(/^\/+|\/+$/g, '')
+  if (!trimmed) return null
   const segments = trimmed
-    .split("/")
+    .split('/')
     .filter(Boolean)
     .map((segment) => {
       try {
-        return decodeURIComponent(segment);
+        return decodeURIComponent(segment)
       } catch {
-        return segment;
+        return segment
       }
-    });
-  if (segments.some((segment) => segment === "." || segment === "..")) {
-    return null;
+    })
+  if (segments.some((segment) => segment === '.' || segment === '..')) {
+    return null
   }
-  return segments.join("/");
-};
+  return segments.join('/')
+}
 
-const parseGithubTreeOrBlobUrl = (
-  source: string,
-): NormalizedGitSource | null => {
+const parseGithubTreeOrBlobUrl = (source: string): NormalizedGitSource | null => {
   try {
-    const parsedUrl = new URL(source);
-    if (!["github.com", "www.github.com"].includes(parsedUrl.hostname)) {
-      return null;
+    const parsedUrl = new URL(source)
+    if (!['github.com', 'www.github.com'].includes(parsedUrl.hostname)) {
+      return null
     }
 
-    const segments = parsedUrl.pathname.split("/").filter(Boolean);
+    const segments = parsedUrl.pathname.split('/').filter(Boolean)
     if (segments.length < 5) {
-      return null;
+      return null
     }
 
-    const [owner, repoRaw, mode, ref, ...rest] = segments;
-    if (!owner || !repoRaw || !ref || (mode !== "tree" && mode !== "blob")) {
-      return null;
+    const [owner, repoRaw, mode, ref, ...rest] = segments
+    if (!owner || !repoRaw || !ref || (mode !== 'tree' && mode !== 'blob')) {
+      return null
     }
 
-    const repo = repoRaw.replace(/\.git$/i, "");
-    const sourceSubpath = normalizeGithubSubpath(rest.join("/"));
+    const repo = repoRaw.replace(/\.git$/i, '')
+    const sourceSubpath = normalizeGithubSubpath(rest.join('/'))
     if (!repo || !sourceSubpath) {
-      return null;
+      return null
     }
 
     return {
       repoUrl: `https://github.com/${owner}/${repo}.git`,
       sourceSubpath,
       ref: decodeURIComponent(ref),
-      repoNameHint: repo,
-    };
+      repoNameHint: repo
+    }
   } catch {
-    return null;
+    return null
   }
-};
+}
 
 const isWebSearchSkillBroken = (skillRoot: string): boolean => {
-  const startServerScript = path.join(skillRoot, "scripts", "start-server.sh");
-  const searchScript = path.join(skillRoot, "scripts", "search.sh");
-  const serverEntry = path.join(skillRoot, "dist", "server", "index.js");
+  const startServerScript = path.join(skillRoot, 'scripts', 'start-server.sh')
+  const searchScript = path.join(skillRoot, 'scripts', 'search.sh')
+  const serverEntry = path.join(skillRoot, 'dist', 'server', 'index.js')
   const requiredPaths = [
     startServerScript,
     searchScript,
     serverEntry,
-    path.join(skillRoot, "node_modules", "iconv-lite", "encodings", "index.js"),
-  ];
+    path.join(skillRoot, 'node_modules', 'iconv-lite', 'encodings', 'index.js')
+  ]
 
   if (requiredPaths.some((requiredPath) => !fs.existsSync(requiredPath))) {
-    return true;
+    return true
   }
 
   try {
-    const startScript = fs.readFileSync(startServerScript, "utf-8");
-    const searchScriptContent = fs.readFileSync(searchScript, "utf-8");
-    const serverEntryContent = fs.readFileSync(serverEntry, "utf-8");
-    if (!startScript.includes("WEB_SEARCH_FORCE_REPAIR")) {
-      return true;
+    const startScript = fs.readFileSync(startServerScript, 'utf-8')
+    const searchScriptContent = fs.readFileSync(searchScript, 'utf-8')
+    const serverEntryContent = fs.readFileSync(serverEntry, 'utf-8')
+    if (!startScript.includes('WEB_SEARCH_FORCE_REPAIR')) {
+      return true
     }
-    if (!startScript.includes("detect_healthy_bridge_server")) {
-      return true;
+    if (!startScript.includes('detect_healthy_bridge_server')) {
+      return true
     }
-    if (!searchScriptContent.includes("ACTIVE_SERVER_URL")) {
-      return true;
+    if (!searchScriptContent.includes('ACTIVE_SERVER_URL')) {
+      return true
     }
-    if (!searchScriptContent.includes("try_switch_to_local_server")) {
-      return true;
+    if (!searchScriptContent.includes('try_switch_to_local_server')) {
+      return true
     }
-    if (!searchScriptContent.includes("build_search_payload")) {
-      return true;
+    if (!searchScriptContent.includes('build_search_payload')) {
+      return true
     }
-    if (!searchScriptContent.includes("@query_file")) {
-      return true;
+    if (!searchScriptContent.includes('@query_file')) {
+      return true
     }
-    if (!serverEntryContent.includes("decodeJsonRequestBody")) {
-      return true;
+    if (!serverEntryContent.includes('decodeJsonRequestBody')) {
+      return true
     }
     if (!serverEntryContent.includes("TextDecoder('gb18030'")) {
-      return true;
+      return true
     }
-    if (
-      serverEntryContent.includes("scoreDecodedJsonText") &&
-      serverEntryContent.includes("Request body decoded using gb18030 (score")
-    ) {
-      return true;
+    if (serverEntryContent.includes('scoreDecodedJsonText') && serverEntryContent.includes('Request body decoded using gb18030 (score')) {
+      return true
     }
   } catch {
-    return true;
+    return true
   }
 
-  return false;
-};
+  return false
+}
 
 export class SkillManager {
-  private watchers: fs.FSWatcher[] = [];
-  private notifyTimer: NodeJS.Timeout | null = null;
+  private watchers: fs.FSWatcher[] = []
+  private notifyTimer: NodeJS.Timeout | null = null
 
   constructor(private getStore: () => SqliteStore) {}
 
   getSkillsRoot(): string {
-    return path.resolve(app.getPath("userData"), SKILLS_DIR_NAME);
+    return path.resolve(app.getPath('userData'), SKILLS_DIR_NAME)
   }
 
   /**
    * 确保目录存在
    */
   ensureSkillsRoot(): string {
-    const root = this.getSkillsRoot();
+    const root = this.getSkillsRoot()
     if (!fs.existsSync(root)) {
-      fs.mkdirSync(root, { recursive: true });
+      fs.mkdirSync(root, { recursive: true })
     }
-    return root;
+    return root
   }
 
   /**
@@ -1038,125 +977,100 @@ export class SkillManager {
    */
   syncBundledSkillsToUserData(): void {
     if (!app.isPackaged) {
-      return;
+      return
     }
 
-    console.log("[skills] syncBundledSkillsToUserData: start");
-    const userRoot = this.ensureSkillsRoot();
-    console.log("[skills] syncBundledSkillsToUserData: userRoot =", userRoot);
-    const bundledRoot = this.getBundledSkillsRoot();
-    console.log(
-      "[skills] syncBundledSkillsToUserData: bundledRoot =",
-      bundledRoot,
-    );
+    console.log('[skills] syncBundledSkillsToUserData: start')
+    const userRoot = this.ensureSkillsRoot()
+    console.log('[skills] syncBundledSkillsToUserData: userRoot =', userRoot)
+    const bundledRoot = this.getBundledSkillsRoot()
+    console.log('[skills] syncBundledSkillsToUserData: bundledRoot =', bundledRoot)
 
-    if (
-      !bundledRoot ||
-      bundledRoot === userRoot ||
-      !fs.existsSync(bundledRoot)
-    ) {
-      console.log(
-        "[skills] syncBundledSkillsToUserData: bundledRoot skipped (missing or same as userRoot)",
-      );
-      return;
+    if (!bundledRoot || bundledRoot === userRoot || !fs.existsSync(bundledRoot)) {
+      console.log('[skills] syncBundledSkillsToUserData: bundledRoot skipped (missing or same as userRoot)')
+      return
     }
 
     try {
       // 获取所有内置技能目录
-      const bundledSkillDirs = listSkillDirs(bundledRoot);
-      console.log(
-        "[skills] syncBundledSkillsToUserData: found",
-        bundledSkillDirs.length,
-        "bundled skills",
-      );
+      const bundledSkillDirs = listSkillDirs(bundledRoot)
+      console.log('[skills] syncBundledSkillsToUserData: found', bundledSkillDirs.length, 'bundled skills')
       bundledSkillDirs.forEach((dir) => {
-        const id = path.basename(dir);
-        const targetDir = path.join(userRoot, id);
-        const targetExists = fs.existsSync(targetDir);
+        const id = path.basename(dir)
+        const targetDir = path.join(userRoot, id)
+        const targetExists = fs.existsSync(targetDir)
 
         // Check if skill needs repair
-        let shouldRepair = false;
-        let needsCleanCopy = false;
+        let shouldRepair = false
+        let needsCleanCopy = false
         if (targetExists) {
           // Version-based update: if bundled has a version and it's newer, force update
-          const bundledVer = this.getSkillVersion(dir);
+          const bundledVer = this.getSkillVersion(dir)
           // 版本比较更新
-          if (
-            bundledVer &&
-            compareVersions(
-              bundledVer,
-              this.getSkillVersion(targetDir) || "0.0.0",
-            ) > 0
-          ) {
-            shouldRepair = true;
-            needsCleanCopy = true;
+          if (bundledVer && compareVersions(bundledVer, this.getSkillVersion(targetDir) || '0.0.0') > 0) {
+            shouldRepair = true
+            needsCleanCopy = true
           }
           // web-search has specific broken checks
-          else if (id === "web-search" && isWebSearchSkillBroken(targetDir)) {
-            shouldRepair = true;
+          else if (id === 'web-search' && isWebSearchSkillBroken(targetDir)) {
+            shouldRepair = true
           }
           // Generic check: if bundled has node_modules but target doesn't, repair it
           else if (!this.isSkillRuntimeHealthy(targetDir, dir)) {
-            shouldRepair = true;
+            shouldRepair = true
           }
         }
 
-        if (targetExists && !shouldRepair) return;
+        if (targetExists && !shouldRepair) return
         try {
-          console.log(
-            `[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`,
-          );
+          console.log(`[skills] syncBundledSkillsToUserData: copying "${id}" from ${dir} to ${targetDir}`)
 
           // Preserve .env file before clean copy
-          let envBackup: Buffer | null = null;
-          const envPath = path.join(targetDir, ".env");
+          let envBackup: Buffer | null = null
+          const envPath = path.join(targetDir, '.env')
           if (needsCleanCopy && fs.existsSync(envPath)) {
-            envBackup = fs.readFileSync(envPath);
+            envBackup = fs.readFileSync(envPath)
           }
 
           // Version-based update: delete target dir first to remove stale files
           // (e.g. old .py scripts, __pycache__, leftover package-lock.json)
           if (needsCleanCopy) {
-            fs.rmSync(targetDir, { recursive: true, force: true });
+            fs.rmSync(targetDir, { recursive: true, force: true })
           }
 
           // 将内置技能复制到用户目录
           cpRecursiveSync(dir, targetDir, {
             dereference: true,
-            force: shouldRepair,
-          });
+            force: shouldRepair
+          })
 
           // Restore .env file after clean copy
           if (envBackup !== null) {
-            fs.writeFileSync(envPath, envBackup);
+            fs.writeFileSync(envPath, envBackup)
           }
 
-          console.log(
-            `[skills] syncBundledSkillsToUserData: copied "${id}" successfully`,
-          );
+          console.log(`[skills] syncBundledSkillsToUserData: copied "${id}" successfully`)
           if (shouldRepair) {
-            console.log(`[skills] Repaired bundled skill "${id}" in user data`);
+            console.log(`[skills] Repaired bundled skill "${id}" in user data`)
           }
         } catch (error) {
-          console.warn(`[skills] Failed to sync bundled skill "${id}":`, error);
+          console.warn(`[skills] Failed to sync bundled skill "${id}":`, error)
         }
-      });
+      })
 
-      const bundledConfig = path.join(bundledRoot, SKILLS_CONFIG_FILE);
-      const targetConfig = path.join(userRoot, SKILLS_CONFIG_FILE);
+      const bundledConfig = path.join(bundledRoot, SKILLS_CONFIG_FILE)
+      const targetConfig = path.join(userRoot, SKILLS_CONFIG_FILE)
       if (fs.existsSync(bundledConfig)) {
         if (!fs.existsSync(targetConfig)) {
-          console.log(
-            "[skills] syncBundledSkillsToUserData: copying skills.config.json",
-          );
-          cpRecursiveSync(bundledConfig, targetConfig);
+          console.log('[skills] syncBundledSkillsToUserData: copying skills.config.json')
+          cpRecursiveSync(bundledConfig, targetConfig)
         } else {
-          this.mergeSkillsConfig(bundledConfig, targetConfig);
+          this.mergeSkillsConfig(bundledConfig, targetConfig)
         }
       }
-      console.log("[skills] syncBundledSkillsToUserData: done");
+      console.log('[skills] syncBundledSkillsToUserData: done')
     } catch (error) {
-      console.warn("[skills] Failed to sync bundled skills:", error);
+      console.warn('[skills] Failed to sync bundled skills:', error)
     }
   }
 
@@ -1164,73 +1078,64 @@ export class SkillManager {
    * Check if a skill's runtime is healthy by comparing with bundled version.
    * Returns false if bundled has dependencies but target doesn't.
    */
-  private isSkillRuntimeHealthy(
-    targetDir: string,
-    bundledDir: string,
-  ): boolean {
-    const bundledNodeModules = path.join(bundledDir, "node_modules");
-    const targetNodeModules = path.join(targetDir, "node_modules");
-    const targetPackageJson = path.join(targetDir, "package.json");
+  private isSkillRuntimeHealthy(targetDir: string, bundledDir: string): boolean {
+    const bundledNodeModules = path.join(bundledDir, 'node_modules')
+    const targetNodeModules = path.join(targetDir, 'node_modules')
+    const targetPackageJson = path.join(targetDir, 'package.json')
 
     // If target has no package.json, it's a simple skill (no deps needed)
     if (!fs.existsSync(targetPackageJson)) {
-      return true;
+      return true
     }
 
     // If bundled doesn't have node_modules, no deps to sync
     if (!fs.existsSync(bundledNodeModules)) {
-      return true;
+      return true
     }
 
     // If bundled has node_modules but target doesn't, needs repair
     if (!fs.existsSync(targetNodeModules)) {
-      return false;
+      return false
     }
 
-    return true;
+    return true
   }
 
   private getSkillVersion(skillDir: string): string {
     try {
-      const raw = fs.readFileSync(path.join(skillDir, SKILL_FILE_NAME), "utf8");
-      const { frontmatter } = parseFrontmatter(raw);
-      return typeof frontmatter.version === "string"
+      const raw = fs.readFileSync(path.join(skillDir, SKILL_FILE_NAME), 'utf8')
+      const { frontmatter } = parseFrontmatter(raw)
+      return typeof frontmatter.version === 'string'
         ? frontmatter.version
-        : typeof frontmatter.version === "number"
+        : typeof frontmatter.version === 'number'
           ? String(frontmatter.version)
-          : "";
+          : ''
     } catch {
-      return "";
+      return ''
     }
   }
 
   private mergeSkillsConfig(bundledPath: string, targetPath: string): void {
     try {
-      const bundled = JSON.parse(fs.readFileSync(bundledPath, "utf-8"));
-      const target = JSON.parse(fs.readFileSync(targetPath, "utf-8"));
-      if (!bundled.defaults || !target.defaults) return;
-      let changed = false;
+      const bundled = JSON.parse(fs.readFileSync(bundledPath, 'utf-8'))
+      const target = JSON.parse(fs.readFileSync(targetPath, 'utf-8'))
+      if (!bundled.defaults || !target.defaults) return
+      let changed = false
       for (const [id, config] of Object.entries(bundled.defaults)) {
         if (!(id in target.defaults)) {
-          target.defaults[id] = config;
-          changed = true;
+          target.defaults[id] = config
+          changed = true
         }
       }
       if (changed) {
         // Write to temp file first, then rename for atomic update
-        const tmpPath = targetPath + ".tmp";
-        fs.writeFileSync(
-          tmpPath,
-          JSON.stringify(target, null, 2) + "\n",
-          "utf-8",
-        );
-        fs.renameSync(tmpPath, targetPath);
-        console.log(
-          "[skills] mergeSkillsConfig: merged new skill entries into user config",
-        );
+        const tmpPath = targetPath + '.tmp'
+        fs.writeFileSync(tmpPath, JSON.stringify(target, null, 2) + '\n', 'utf-8')
+        fs.renameSync(tmpPath, targetPath)
+        console.log('[skills] mergeSkillsConfig: merged new skill entries into user config')
       }
     } catch (e) {
-      console.warn("[skills] Failed to merge skills config:", e);
+      console.warn('[skills] Failed to merge skills config:', e)
     }
   }
 
@@ -1238,353 +1143,315 @@ export class SkillManager {
    * 获取所有可用技能
    */
   listSkills(): SkillRecord[] {
-    const primaryRoot = this.ensureSkillsRoot();
-    const state = this.loadSkillStateMap();
+    const primaryRoot = this.ensureSkillsRoot()
+    const state = this.loadSkillStateMap()
     // 从用户目录、Claude目录、内置目录获取技能
-    const roots = this.getSkillRoots(primaryRoot);
-    const orderedRoots = roots
-      .filter((root) => root !== primaryRoot)
-      .concat(primaryRoot);
-    const defaults = this.loadSkillsDefaults(roots);
-    const builtInSkillIds = this.listBuiltInSkillIds();
-    const skillMap = new Map<string, SkillRecord>();
+    const roots = this.getSkillRoots(primaryRoot)
+    const orderedRoots = roots.filter((root) => root !== primaryRoot).concat(primaryRoot)
+    const defaults = this.loadSkillsDefaults(roots)
+    const builtInSkillIds = this.listBuiltInSkillIds()
+    const skillMap = new Map<string, SkillRecord>()
 
     orderedRoots.forEach((root) => {
-      if (!fs.existsSync(root)) return;
-      const skillDirs = listSkillDirs(root);
+      if (!fs.existsSync(root)) return
+      const skillDirs = listSkillDirs(root)
       skillDirs.forEach((dir) => {
-        const skill = this.parseSkillDir(
-          dir,
-          state,
-          defaults,
-          builtInSkillIds.has(path.basename(dir)),
-        );
-        if (!skill) return;
-        skillMap.set(skill.id, skill);
-      });
-    });
+        const skill = this.parseSkillDir(dir, state, defaults, builtInSkillIds.has(path.basename(dir)))
+        if (!skill) return
+        skillMap.set(skill.id, skill)
+      })
+    })
 
-    const skills = Array.from(skillMap.values());
+    const skills = Array.from(skillMap.values())
 
     skills.sort((a, b) => {
-      const orderA = defaults[a.id]?.order ?? 999;
-      const orderB = defaults[b.id]?.order ?? 999;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-    return skills;
+      const orderA = defaults[a.id]?.order ?? 999
+      const orderB = defaults[b.id]?.order ?? 999
+      if (orderA !== orderB) return orderA - orderB
+      return a.name.localeCompare(b.name)
+    })
+    return skills
   }
 
   buildAutoRoutingPrompt(): string | null {
-    const skills = this.listSkills();
-    const enabled = skills.filter((s) => s.enabled && s.prompt);
-    if (enabled.length === 0) return null;
+    const skills = this.listSkills()
+    const enabled = skills.filter((s) => s.enabled && s.prompt)
+    if (enabled.length === 0) return null
 
     const skillEntries = enabled
       .map(
         (s) =>
-          `  <skill><id>${s.id}</id><name>${s.name}</name><description>${s.description}</description><location>${s.skillPath}</location></skill>`,
+          `  <skill><id>${s.id}</id><name>${s.name}</name><description>${s.description}</description><location>${s.skillPath}</location></skill>`
       )
-      .join("\n");
+      .join('\n')
 
     return [
-      "## Skills (mandatory)",
-      "Before replying: scan <available_skills> <description> entries.",
-      "- If exactly one skill clearly applies: read its SKILL.md at <location> with the Read tool, then follow it.",
-      "- If multiple could apply: choose the most specific one, then read/follow it.",
-      "- If none clearly apply: do not read any SKILL.md.",
+      '## Skills (mandatory)',
+      'Before replying: scan <available_skills> <description> entries.',
+      '- If exactly one skill clearly applies: read its SKILL.md at <location> with the Read tool, then follow it.',
+      '- If multiple could apply: choose the most specific one, then read/follow it.',
+      '- If none clearly apply: do not read any SKILL.md.',
       '- IMPORTANT: If a description contains "Do NOT use" constraints, strictly respect them. If the user\'s request falls into a "Do NOT" category, treat that skill as non-matching — do NOT read its SKILL.md.',
-      "- For the selected skill, treat <location> as the canonical SKILL.md path.",
-      "- Resolve relative paths mentioned by that SKILL.md against its directory (dirname(<location>)), not the workspace root.",
-      "Constraints: never read more than one skill up front; only read additional skills if the first one explicitly references them.",
-      "",
-      "<available_skills>",
+      '- For the selected skill, treat <location> as the canonical SKILL.md path.',
+      '- Resolve relative paths mentioned by that SKILL.md against its directory (dirname(<location>)), not the workspace root.',
+      'Constraints: never read more than one skill up front; only read additional skills if the first one explicitly references them.',
+      '',
+      '<available_skills>',
       skillEntries,
-      "</available_skills>",
-    ].join("\n");
+      '</available_skills>'
+    ].join('\n')
   }
 
   setSkillEnabled(id: string, enabled: boolean): SkillRecord[] {
-    const state = this.loadSkillStateMap();
-    state[id] = { enabled };
-    this.saveSkillStateMap(state);
-    this.notifySkillsChanged();
-    return this.listSkills();
+    const state = this.loadSkillStateMap()
+    state[id] = { enabled }
+    this.saveSkillStateMap(state)
+    this.notifySkillsChanged()
+    return this.listSkills()
   }
 
   deleteSkill(id: string): SkillRecord[] {
-    const root = this.ensureSkillsRoot();
+    const root = this.ensureSkillsRoot()
     if (id !== path.basename(id)) {
-      throw new Error("Invalid skill id");
+      throw new Error('Invalid skill id')
     }
     if (this.isBuiltInSkillId(id)) {
-      throw new Error("Built-in skills cannot be deleted");
+      throw new Error('Built-in skills cannot be deleted')
     }
 
-    const targetDir = resolveWithin(root, id);
+    const targetDir = resolveWithin(root, id)
     if (!fs.existsSync(targetDir)) {
-      throw new Error("Skill not found");
+      throw new Error('Skill not found')
     }
 
-    fs.rmSync(targetDir, { recursive: true, force: true });
-    const state = this.loadSkillStateMap();
-    delete state[id];
-    this.saveSkillStateMap(state);
-    this.startWatching();
-    this.notifySkillsChanged();
-    return this.listSkills();
+    fs.rmSync(targetDir, { recursive: true, force: true })
+    const state = this.loadSkillStateMap()
+    delete state[id]
+    this.saveSkillStateMap(state)
+    this.startWatching()
+    this.notifySkillsChanged()
+    return this.listSkills()
   }
 
-  async downloadSkill(
-    source: string,
-  ): Promise<{ success: boolean; skills?: SkillRecord[]; error?: string }> {
-    let cleanupPath: string | null = null;
+  async downloadSkill(source: string): Promise<{ success: boolean; skills?: SkillRecord[]; error?: string }> {
+    let cleanupPath: string | null = null
     try {
-      const trimmed = source.trim();
+      const trimmed = source.trim()
       if (!trimmed) {
-        return { success: false, error: "Missing skill source" };
+        return { success: false, error: 'Missing skill source' }
       }
 
-      const root = this.ensureSkillsRoot();
-      let localSource = trimmed;
+      const root = this.ensureSkillsRoot()
+      let localSource = trimmed
       if (fs.existsSync(localSource)) {
-        const stat = fs.statSync(localSource);
+        const stat = fs.statSync(localSource)
         if (stat.isFile()) {
           if (isZipFile(localSource)) {
-            const tempRoot = fs.mkdtempSync(
-              path.join(app.getPath("temp"), "lobsterai-skill-zip-"),
-            );
-            await extractZip(localSource, { dir: tempRoot });
-            localSource = tempRoot;
-            cleanupPath = tempRoot;
+            const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'lobsterai-skill-zip-'))
+            await extractZip(localSource, { dir: tempRoot })
+            localSource = tempRoot
+            cleanupPath = tempRoot
           } else if (path.basename(localSource) === SKILL_FILE_NAME) {
-            localSource = path.dirname(localSource);
+            localSource = path.dirname(localSource)
           } else {
             return {
               success: false,
-              error:
-                "Skill source must be a directory, zip file, or SKILL.md file",
-            };
+              error: 'Skill source must be a directory, zip file, or SKILL.md file'
+            }
           }
         }
       } else if (isRemoteZipUrl(trimmed)) {
-        const tempRoot = fs.mkdtempSync(
-          path.join(app.getPath("temp"), "lobsterai-skill-zip-"),
-        );
-        cleanupPath = tempRoot;
-        localSource = await downloadZipUrl(trimmed, tempRoot);
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'lobsterai-skill-zip-'))
+        cleanupPath = tempRoot
+        localSource = await downloadZipUrl(trimmed, tempRoot)
       } else {
-        const normalized = this.normalizeGitSource(trimmed);
+        const normalized = this.normalizeGitSource(trimmed)
         if (!normalized) {
           return {
             success: false,
-            error:
-              "Invalid skill source. Use owner/repo, repo URL, or a GitHub tree/blob URL.",
-          };
+            error: 'Invalid skill source. Use owner/repo, repo URL, or a GitHub tree/blob URL.'
+          }
         }
-        const tempRoot = fs.mkdtempSync(
-          path.join(app.getPath("temp"), "lobsterai-skill-"),
-        );
-        cleanupPath = tempRoot;
-        const repoName = normalizeFolderName(
-          normalized.repoNameHint || deriveRepoName(normalized.repoUrl),
-        );
-        const clonePath = path.join(tempRoot, repoName);
-        const cloneArgs = ["clone", "--depth", "1"];
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'lobsterai-skill-'))
+        cleanupPath = tempRoot
+        const repoName = normalizeFolderName(normalized.repoNameHint || deriveRepoName(normalized.repoUrl))
+        const clonePath = path.join(tempRoot, repoName)
+        const cloneArgs = ['clone', '--depth', '1']
         if (normalized.ref) {
-          cloneArgs.push("--branch", normalized.ref);
+          cloneArgs.push('--branch', normalized.ref)
         }
-        cloneArgs.push(normalized.repoUrl, clonePath);
-        const gitRuntime = resolveGitCommand();
-        const githubSource = parseGithubRepoSource(normalized.repoUrl);
-        let downloadedSourceRoot = clonePath;
+        cloneArgs.push(normalized.repoUrl, clonePath)
+        const gitRuntime = resolveGitCommand()
+        const githubSource = parseGithubRepoSource(normalized.repoUrl)
+        let downloadedSourceRoot = clonePath
         try {
           await runCommand(gitRuntime.command, cloneArgs, {
-            env: gitRuntime.env,
-          });
+            env: gitRuntime.env
+          })
         } catch (error) {
-          const errno = (error as NodeJS.ErrnoException | null)?.code;
+          const errno = (error as NodeJS.ErrnoException | null)?.code
           if (githubSource) {
             try {
-              downloadedSourceRoot = await downloadGithubArchive(
-                githubSource,
-                tempRoot,
-                normalized.ref,
-              );
+              downloadedSourceRoot = await downloadGithubArchive(githubSource, tempRoot, normalized.ref)
             } catch (archiveError) {
-              const gitMessage = extractErrorMessage(error);
-              const archiveMessage = extractErrorMessage(archiveError);
-              if (errno === "ENOENT" && process.platform === "win32") {
+              const gitMessage = extractErrorMessage(error)
+              const archiveMessage = extractErrorMessage(archiveError)
+              if (errno === 'ENOENT' && process.platform === 'win32') {
                 throw new Error(
-                  "Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit." +
-                    ` Archive fallback also failed: ${archiveMessage}`,
-                );
+                  'Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit.' +
+                    ` Archive fallback also failed: ${archiveMessage}`
+                )
               }
-              throw new Error(
-                `Git clone failed: ${gitMessage}. Archive fallback failed: ${archiveMessage}`,
-              );
+              throw new Error(`Git clone failed: ${gitMessage}. Archive fallback failed: ${archiveMessage}`)
             }
-          } else if (errno === "ENOENT" && process.platform === "win32") {
-            throw new Error(
-              "Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit.",
-            );
+          } else if (errno === 'ENOENT' && process.platform === 'win32') {
+            throw new Error('Git executable not found. Please install Git for Windows or reinstall LobsterAI with bundled PortableGit.')
           } else {
-            throw error;
+            throw error
           }
         }
 
         if (normalized.sourceSubpath) {
-          const scopedSource = resolveWithin(
-            downloadedSourceRoot,
-            normalized.sourceSubpath,
-          );
+          const scopedSource = resolveWithin(downloadedSourceRoot, normalized.sourceSubpath)
           if (!fs.existsSync(scopedSource)) {
             return {
               success: false,
-              error: `Path "${normalized.sourceSubpath}" not found in repository`,
-            };
+              error: `Path "${normalized.sourceSubpath}" not found in repository`
+            }
           }
-          const scopedStat = fs.statSync(scopedSource);
+          const scopedStat = fs.statSync(scopedSource)
           if (scopedStat.isFile()) {
             if (path.basename(scopedSource) === SKILL_FILE_NAME) {
-              localSource = path.dirname(scopedSource);
+              localSource = path.dirname(scopedSource)
             } else {
               return {
                 success: false,
-                error: "GitHub path must point to a directory or SKILL.md file",
-              };
+                error: 'GitHub path must point to a directory or SKILL.md file'
+              }
             }
           } else {
-            localSource = scopedSource;
+            localSource = scopedSource
           }
         } else {
-          localSource = downloadedSourceRoot;
+          localSource = downloadedSourceRoot
         }
       }
 
-      const skillDirs = collectSkillDirsFromSource(localSource);
+      const skillDirs = collectSkillDirsFromSource(localSource)
       if (skillDirs.length === 0) {
-        cleanupPathSafely(cleanupPath);
-        cleanupPath = null;
-        return { success: false, error: "No SKILL.md found in source" };
+        cleanupPathSafely(cleanupPath)
+        cleanupPath = null
+        return { success: false, error: 'No SKILL.md found in source' }
       }
 
       for (const skillDir of skillDirs) {
-        const folderName = normalizeFolderName(path.basename(skillDir));
-        let targetDir = resolveWithin(root, folderName);
-        let suffix = 1;
+        const folderName = normalizeFolderName(path.basename(skillDir))
+        let targetDir = resolveWithin(root, folderName)
+        let suffix = 1
         while (fs.existsSync(targetDir)) {
-          targetDir = resolveWithin(root, `${folderName}-${suffix}`);
-          suffix += 1;
+          targetDir = resolveWithin(root, `${folderName}-${suffix}`)
+          suffix += 1
         }
-        cpRecursiveSync(skillDir, targetDir);
+        cpRecursiveSync(skillDir, targetDir)
       }
 
-      cleanupPathSafely(cleanupPath);
-      cleanupPath = null;
+      cleanupPathSafely(cleanupPath)
+      cleanupPath = null
 
-      this.startWatching();
-      this.notifySkillsChanged();
-      return { success: true, skills: this.listSkills() };
+      this.startWatching()
+      this.notifySkillsChanged()
+      return { success: true, skills: this.listSkills() }
     } catch (error) {
-      cleanupPathSafely(cleanupPath);
+      cleanupPathSafely(cleanupPath)
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to download skill",
-      };
+        error: error instanceof Error ? error.message : 'Failed to download skill'
+      }
     }
   }
 
   startWatching(): void {
-    this.stopWatching();
-    const primaryRoot = this.ensureSkillsRoot();
-    const roots = this.getSkillRoots(primaryRoot);
+    this.stopWatching()
+    const primaryRoot = this.ensureSkillsRoot()
+    const roots = this.getSkillRoots(primaryRoot)
 
-    const watchHandler = () => this.scheduleNotify();
+    const watchHandler = () => this.scheduleNotify()
     roots.forEach((root) => {
-      if (!fs.existsSync(root)) return;
+      if (!fs.existsSync(root)) return
       try {
-        this.watchers.push(fs.watch(root, watchHandler));
+        this.watchers.push(fs.watch(root, watchHandler))
       } catch (error) {
-        console.warn("[skills] Failed to watch skills root:", root, error);
+        console.warn('[skills] Failed to watch skills root:', root, error)
       }
 
-      const skillDirs = listSkillDirs(root);
+      const skillDirs = listSkillDirs(root)
       skillDirs.forEach((dir) => {
         try {
-          this.watchers.push(fs.watch(dir, watchHandler));
+          this.watchers.push(fs.watch(dir, watchHandler))
         } catch (error) {
-          console.warn("[skills] Failed to watch skill directory:", dir, error);
+          console.warn('[skills] Failed to watch skill directory:', dir, error)
         }
-      });
-    });
+      })
+    })
   }
 
   stopWatching(): void {
-    this.watchers.forEach((watcher) => watcher.close());
-    this.watchers = [];
+    this.watchers.forEach((watcher) => watcher.close())
+    this.watchers = []
     if (this.notifyTimer) {
-      clearTimeout(this.notifyTimer);
-      this.notifyTimer = null;
+      clearTimeout(this.notifyTimer)
+      this.notifyTimer = null
     }
   }
 
   handleWorkingDirectoryChange(): void {
-    this.startWatching();
-    this.notifySkillsChanged();
+    this.startWatching()
+    this.notifySkillsChanged()
   }
 
   private scheduleNotify(): void {
     if (this.notifyTimer) {
-      clearTimeout(this.notifyTimer);
+      clearTimeout(this.notifyTimer)
     }
     this.notifyTimer = setTimeout(() => {
-      this.startWatching();
-      this.notifySkillsChanged();
-    }, WATCH_DEBOUNCE_MS);
+      this.startWatching()
+      this.notifySkillsChanged()
+    }, WATCH_DEBOUNCE_MS)
   }
 
   private notifySkillsChanged(): void {
     BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
-        win.webContents.send("skills:changed");
+        win.webContents.send('skills:changed')
       }
-    });
+    })
   }
 
   private parseSkillDir(
     dir: string,
     state: SkillStateMap,
     defaults: Record<string, SkillDefaultConfig>,
-    isBuiltIn: boolean,
+    isBuiltIn: boolean
   ): SkillRecord | null {
-    const skillFile = path.join(dir, SKILL_FILE_NAME);
-    if (!fs.existsSync(skillFile)) return null;
+    const skillFile = path.join(dir, SKILL_FILE_NAME)
+    if (!fs.existsSync(skillFile)) return null
     try {
-      const raw = fs.readFileSync(skillFile, "utf8");
-      const { frontmatter, content } = parseFrontmatter(raw);
-      const name =
-        (String(frontmatter.name || "") || path.basename(dir)).trim() ||
-        path.basename(dir);
-      const description = (
-        String(frontmatter.description || "") ||
-        extractDescription(content) ||
-        name
-      ).trim();
-      const isOfficial =
-        isTruthy(frontmatter.official) || isTruthy(frontmatter.isOfficial);
+      const raw = fs.readFileSync(skillFile, 'utf8')
+      const { frontmatter, content } = parseFrontmatter(raw)
+      const name = (String(frontmatter.name || '') || path.basename(dir)).trim() || path.basename(dir)
+      const description = (String(frontmatter.description || '') || extractDescription(content) || name).trim()
+      const isOfficial = isTruthy(frontmatter.official) || isTruthy(frontmatter.isOfficial)
       const version =
-        typeof frontmatter.version === "string"
+        typeof frontmatter.version === 'string'
           ? frontmatter.version
-          : typeof frontmatter.version === "number"
+          : typeof frontmatter.version === 'number'
             ? String(frontmatter.version)
-            : undefined;
-      const updatedAt = fs.statSync(skillFile).mtimeMs;
-      const id = path.basename(dir);
-      const prompt = content.trim();
-      const defaultEnabled = defaults[id]?.enabled ?? true;
-      const enabled = state[id]?.enabled ?? defaultEnabled;
+            : undefined
+      const updatedAt = fs.statSync(skillFile).mtimeMs
+      const id = path.basename(dir)
+      const prompt = content.trim()
+      const defaultEnabled = defaults[id]?.enabled ?? true
+      const enabled = state[id]?.enabled ?? defaultEnabled
       return {
         id,
         name,
@@ -1595,407 +1462,346 @@ export class SkillManager {
         updatedAt,
         prompt,
         skillPath: skillFile,
-        version,
-      };
+        version
+      }
     } catch (error) {
-      console.warn("[skills] Failed to parse skill:", dir, error);
-      return null;
+      console.warn('[skills] Failed to parse skill:', dir, error)
+      return null
     }
   }
 
   private listBuiltInSkillIds(): Set<string> {
-    const builtInRoot = this.getBundledSkillsRoot();
+    const builtInRoot = this.getBundledSkillsRoot()
     if (!builtInRoot || !fs.existsSync(builtInRoot)) {
-      return new Set();
+      return new Set()
     }
-    return new Set(listSkillDirs(builtInRoot).map((dir) => path.basename(dir)));
+    return new Set(listSkillDirs(builtInRoot).map((dir) => path.basename(dir)))
   }
 
   private isBuiltInSkillId(id: string): boolean {
-    return this.listBuiltInSkillIds().has(id);
+    return this.listBuiltInSkillIds().has(id)
   }
 
   /**
    * 加载技能状态
    */
   private loadSkillStateMap(): SkillStateMap {
-    const store = this.getStore();
-    const raw = store.get(SKILL_STATE_KEY) as
-      | SkillStateMap
-      | SkillRecord[]
-      | undefined;
+    const store = this.getStore()
+    const raw = store.get(SKILL_STATE_KEY) as SkillStateMap | SkillRecord[] | undefined
     if (Array.isArray(raw)) {
-      const migrated: SkillStateMap = {};
+      const migrated: SkillStateMap = {}
       raw.forEach((skill) => {
-        migrated[skill.id] = { enabled: skill.enabled };
-      });
-      store.set(SKILL_STATE_KEY, migrated);
-      return migrated;
+        migrated[skill.id] = { enabled: skill.enabled }
+      })
+      store.set(SKILL_STATE_KEY, migrated)
+      return migrated
     }
-    return raw ?? {};
+    return raw ?? {}
   }
 
   private saveSkillStateMap(map: SkillStateMap): void {
-    this.getStore().set(SKILL_STATE_KEY, map);
+    this.getStore().set(SKILL_STATE_KEY, map)
   }
 
-  private loadSkillsDefaults(
-    roots: string[],
-  ): Record<string, SkillDefaultConfig> {
-    const merged: Record<string, SkillDefaultConfig> = {};
+  private loadSkillsDefaults(roots: string[]): Record<string, SkillDefaultConfig> {
+    const merged: Record<string, SkillDefaultConfig> = {}
 
     // Load from roots in reverse order so higher priority roots override lower ones
     // roots[0] is user directory (highest priority), roots[1] is app-bundled (lower priority)
-    const reversedRoots = [...roots].reverse();
+    const reversedRoots = [...roots].reverse()
 
     for (const root of reversedRoots) {
-      const configPath = path.join(root, SKILLS_CONFIG_FILE);
-      if (!fs.existsSync(configPath)) continue;
+      const configPath = path.join(root, SKILLS_CONFIG_FILE)
+      if (!fs.existsSync(configPath)) continue
 
       try {
-        const raw = fs.readFileSync(configPath, "utf8");
-        const config = JSON.parse(raw) as SkillsConfig;
-        if (config.defaults && typeof config.defaults === "object") {
+        const raw = fs.readFileSync(configPath, 'utf8')
+        const config = JSON.parse(raw) as SkillsConfig
+        if (config.defaults && typeof config.defaults === 'object') {
           for (const [id, settings] of Object.entries(config.defaults)) {
-            merged[id] = { ...merged[id], ...settings };
+            merged[id] = { ...merged[id], ...settings }
           }
         }
       } catch (error) {
-        console.warn(
-          "[skills] Failed to load skills config:",
-          configPath,
-          error,
-        );
+        console.warn('[skills] Failed to load skills config:', configPath, error)
       }
     }
 
-    return merged;
+    return merged
   }
 
   private getSkillRoots(primaryRoot?: string): string[] {
-    const resolvedPrimary = primaryRoot ?? this.getSkillsRoot();
-    const roots: string[] = [resolvedPrimary];
+    const resolvedPrimary = primaryRoot ?? this.getSkillsRoot()
+    const roots: string[] = [resolvedPrimary]
 
-    const claudeSkillsRoot = this.getClaudeSkillsRoot();
+    const claudeSkillsRoot = this.getClaudeSkillsRoot()
     if (claudeSkillsRoot && fs.existsSync(claudeSkillsRoot)) {
-      roots.push(claudeSkillsRoot);
+      roots.push(claudeSkillsRoot)
     }
 
-    const appRoot = this.getBundledSkillsRoot();
+    const appRoot = this.getBundledSkillsRoot()
     if (appRoot !== resolvedPrimary && fs.existsSync(appRoot)) {
-      roots.push(appRoot);
+      roots.push(appRoot)
     }
-    return roots;
+    return roots
   }
 
   private getClaudeSkillsRoot(): string | null {
-    const homeDir = app.getPath("home");
-    return path.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR);
+    const homeDir = app.getPath('home')
+    return path.join(homeDir, CLAUDE_SKILLS_DIR_NAME, CLAUDE_SKILLS_SUBDIR)
   }
 
   private getBundledSkillsRoot(): string {
     if (app.isPackaged) {
       // In production, bundled SKILLs should be in Resources/SKILLs.
-      const resourcesRoot = path.resolve(
-        process.resourcesPath,
-        SKILLS_DIR_NAME,
-      );
+      const resourcesRoot = path.resolve(process.resourcesPath, SKILLS_DIR_NAME)
       if (fs.existsSync(resourcesRoot)) {
-        return resourcesRoot;
+        return resourcesRoot
       }
 
       // Fallback for older packages where SKILLs are inside app.asar.
-      return path.resolve(app.getAppPath(), SKILLS_DIR_NAME);
+      return path.resolve(app.getAppPath(), SKILLS_DIR_NAME)
     }
 
     // In development, use the project root (parent of dist-electron).
     // __dirname is dist-electron/, so we need to go up one level to get to project root
-    const projectRoot = path.resolve(__dirname, "..");
-    return path.resolve(projectRoot, SKILLS_DIR_NAME);
+    const projectRoot = path.resolve(__dirname, '..')
+    return path.resolve(projectRoot, SKILLS_DIR_NAME)
   }
 
   getSkillConfig(skillId: string): {
-    success: boolean;
-    config?: Record<string, string>;
-    error?: string;
+    success: boolean
+    config?: Record<string, string>
+    error?: string
   } {
     try {
-      const skillDir = this.resolveSkillDir(skillId);
-      const envPath = path.join(skillDir, ".env");
+      const skillDir = this.resolveSkillDir(skillId)
+      const envPath = path.join(skillDir, '.env')
       if (!fs.existsSync(envPath)) {
-        return { success: true, config: {} };
+        return { success: true, config: {} }
       }
-      const raw = fs.readFileSync(envPath, "utf8");
-      const config: Record<string, string> = {};
+      const raw = fs.readFileSync(envPath, 'utf8')
+      const config: Record<string, string> = {}
       for (const line of raw.split(/\r?\n/)) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
-        const eqIdx = trimmed.indexOf("=");
-        if (eqIdx < 0) continue;
-        const key = trimmed.slice(0, eqIdx).trim();
-        const value = trimmed.slice(eqIdx + 1).trim();
-        config[key] = value;
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith('#')) continue
+        const eqIdx = trimmed.indexOf('=')
+        if (eqIdx < 0) continue
+        const key = trimmed.slice(0, eqIdx).trim()
+        const value = trimmed.slice(eqIdx + 1).trim()
+        config[key] = value
       }
-      return { success: true, config };
+      return { success: true, config }
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to read skill config",
-      };
+        error: error instanceof Error ? error.message : 'Failed to read skill config'
+      }
     }
   }
 
-  setSkillConfig(
-    skillId: string,
-    config: Record<string, string>,
-  ): { success: boolean; error?: string } {
+  setSkillConfig(skillId: string, config: Record<string, string>): { success: boolean; error?: string } {
     try {
-      const skillDir = this.resolveSkillDir(skillId);
-      const envPath = path.join(skillDir, ".env");
+      const skillDir = this.resolveSkillDir(skillId)
+      const envPath = path.join(skillDir, '.env')
       const lines = Object.entries(config)
         .filter(([key]) => key.trim())
-        .map(([key, value]) => `${key}=${value}`);
-      fs.writeFileSync(envPath, lines.join("\n") + "\n", "utf8");
-      return { success: true };
+        .map(([key, value]) => `${key}=${value}`)
+      fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf8')
+      return { success: true }
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to write skill config",
-      };
+        error: error instanceof Error ? error.message : 'Failed to write skill config'
+      }
     }
   }
 
   private repairSkillFromBundled(skillId: string, skillPath: string): boolean {
-    if (!app.isPackaged) return false;
+    if (!app.isPackaged) return false
 
-    const bundledRoot = this.getBundledSkillsRoot();
+    const bundledRoot = this.getBundledSkillsRoot()
     if (!bundledRoot || !fs.existsSync(bundledRoot)) {
-      return false;
+      return false
     }
 
-    const bundledPath = path.join(bundledRoot, skillId);
+    const bundledPath = path.join(bundledRoot, skillId)
     if (!fs.existsSync(bundledPath) || bundledPath === skillPath) {
-      return false;
+      return false
     }
 
     // Check if bundled version has node_modules
-    const bundledNodeModules = path.join(bundledPath, "node_modules");
+    const bundledNodeModules = path.join(bundledPath, 'node_modules')
     if (!fs.existsSync(bundledNodeModules)) {
-      console.log(
-        `[skills] Bundled ${skillId} does not have node_modules, skipping repair`,
-      );
-      return false;
+      console.log(`[skills] Bundled ${skillId} does not have node_modules, skipping repair`)
+      return false
     }
 
     try {
-      console.log(`[skills] Repairing ${skillId} from bundled resources...`);
+      console.log(`[skills] Repairing ${skillId} from bundled resources...`)
       fs.cpSync(bundledPath, skillPath, {
         recursive: true,
         dereference: true,
         force: true,
-        errorOnExist: false,
-      });
-      console.log(`[skills] Repaired ${skillId} from bundled resources`);
-      return true;
+        errorOnExist: false
+      })
+      console.log(`[skills] Repaired ${skillId} from bundled resources`)
+      return true
     } catch (error) {
-      console.warn(
-        `[skills] Failed to repair ${skillId} from bundled resources:`,
-        error,
-      );
-      return false;
+      console.warn(`[skills] Failed to repair ${skillId} from bundled resources:`, error)
+      return false
     }
   }
 
   private ensureSkillDependencies(skillDir: string): {
-    success: boolean;
-    error?: string;
+    success: boolean
+    error?: string
   } {
-    const nodeModulesPath = path.join(skillDir, "node_modules");
-    const packageJsonPath = path.join(skillDir, "package.json");
-    const skillId = path.basename(skillDir);
+    const nodeModulesPath = path.join(skillDir, 'node_modules')
+    const packageJsonPath = path.join(skillDir, 'package.json')
+    const skillId = path.basename(skillDir)
 
-    console.log(`[skills] Checking dependencies for ${skillId}...`);
-    console.log(
-      `[skills]   node_modules exists: ${fs.existsSync(nodeModulesPath)}`,
-    );
-    console.log(
-      `[skills]   package.json exists: ${fs.existsSync(packageJsonPath)}`,
-    );
-    console.log(`[skills]   skillDir: ${skillDir}`);
+    console.log(`[skills] Checking dependencies for ${skillId}...`)
+    console.log(`[skills]   node_modules exists: ${fs.existsSync(nodeModulesPath)}`)
+    console.log(`[skills]   package.json exists: ${fs.existsSync(packageJsonPath)}`)
+    console.log(`[skills]   skillDir: ${skillDir}`)
 
     // If node_modules exists, assume dependencies are installed
     if (fs.existsSync(nodeModulesPath)) {
-      console.log(`[skills] Dependencies already installed for ${skillId}`);
-      return { success: true };
+      console.log(`[skills] Dependencies already installed for ${skillId}`)
+      return { success: true }
     }
 
     // If no package.json, nothing to install
     if (!fs.existsSync(packageJsonPath)) {
-      console.log(
-        `[skills] No package.json found for ${skillId}, skipping install`,
-      );
-      return { success: true };
+      console.log(`[skills] No package.json found for ${skillId}, skipping install`)
+      return { success: true }
     }
 
     // Try to repair from bundled resources first (works without npm)
     if (this.repairSkillFromBundled(skillId, skillDir)) {
       if (fs.existsSync(nodeModulesPath)) {
-        console.log(
-          `[skills] Dependencies restored from bundled resources for ${skillId}`,
-        );
-        return { success: true };
+        console.log(`[skills] Dependencies restored from bundled resources for ${skillId}`)
+        return { success: true }
       }
     }
 
     // Build environment with user's shell PATH (crucial for packaged apps)
-    const env = buildSkillEnv() as NodeJS.ProcessEnv;
-    const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === "path");
-    console.log(`[skills]   PATH keys in env: ${JSON.stringify(pathKeys)}`);
-    console.log(
-      `[skills]   PATH (first 300 chars): ${env.PATH?.substring(0, 300)}`,
-    );
+    const env = buildSkillEnv() as NodeJS.ProcessEnv
+    const pathKeys = Object.keys(env).filter((k) => k.toLowerCase() === 'path')
+    console.log(`[skills]   PATH keys in env: ${JSON.stringify(pathKeys)}`)
+    console.log(`[skills]   PATH (first 300 chars): ${env.PATH?.substring(0, 300)}`)
 
     // Check if npm is available
-    const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-    if (!hasCommand(npmCommand, env) && !hasCommand("npm", env)) {
+    const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+    if (!hasCommand(npmCommand, env) && !hasCommand('npm', env)) {
       const errorMsg =
-        "npm is not available and skill cannot be repaired from bundled resources. Please install Node.js from https://nodejs.org/";
-      console.error(`[skills] ${errorMsg}`);
-      return { success: false, error: errorMsg };
+        'npm is not available and skill cannot be repaired from bundled resources. Please install Node.js from https://nodejs.org/'
+      console.error(`[skills] ${errorMsg}`)
+      return { success: false, error: errorMsg }
     }
 
-    console.log(`[skills] npm is available`);
+    console.log(`[skills] npm is available`)
 
     // Try to install dependencies
-    console.log(`[skills] Installing dependencies for ${skillId}...`);
-    console.log(`[skills]   Working directory: ${skillDir}`);
+    console.log(`[skills] Installing dependencies for ${skillId}...`)
+    console.log(`[skills]   Working directory: ${skillDir}`)
 
     try {
       // On Windows, use shell: true so cmd.exe resolves npm.cmd correctly
-      const isWin = process.platform === "win32";
-      const result = spawnSync("npm", ["install"], {
+      const isWin = process.platform === 'win32'
+      const result = spawnSync('npm', ['install'], {
         cwd: skillDir,
-        encoding: "utf-8",
-        stdio: "pipe",
+        encoding: 'utf-8',
+        stdio: 'pipe',
         timeout: 120000, // 2 minute timeout
         env,
-        shell: isWin,
-      });
+        shell: isWin
+      })
 
-      console.log(`[skills] npm install exit code: ${result.status}`);
+      console.log(`[skills] npm install exit code: ${result.status}`)
       if (result.stdout) {
-        console.log(
-          `[skills] npm install stdout: ${result.stdout.substring(0, 500)}`,
-        );
+        console.log(`[skills] npm install stdout: ${result.stdout.substring(0, 500)}`)
       }
       if (result.stderr) {
-        console.log(
-          `[skills] npm install stderr: ${result.stderr.substring(0, 500)}`,
-        );
+        console.log(`[skills] npm install stderr: ${result.stderr.substring(0, 500)}`)
       }
 
       if (result.status !== 0) {
-        const errorMsg = result.stderr || result.stdout || "npm install failed";
-        console.error(
-          `[skills] Failed to install dependencies for ${skillId}:`,
-          errorMsg,
-        );
+        const errorMsg = result.stderr || result.stdout || 'npm install failed'
+        console.error(`[skills] Failed to install dependencies for ${skillId}:`, errorMsg)
         return {
           success: false,
-          error: `Failed to install dependencies: ${errorMsg}`,
-        };
+          error: `Failed to install dependencies: ${errorMsg}`
+        }
       }
 
       // Verify node_modules was created
       if (!fs.existsSync(nodeModulesPath)) {
-        const errorMsg =
-          "npm install appeared to succeed but node_modules was not created";
-        console.error(`[skills] ${errorMsg}`);
-        return { success: false, error: errorMsg };
+        const errorMsg = 'npm install appeared to succeed but node_modules was not created'
+        console.error(`[skills] ${errorMsg}`)
+        return { success: false, error: errorMsg }
       }
 
-      console.log(
-        `[skills] Dependencies installed successfully for ${skillId}`,
-      );
-      return { success: true };
+      console.log(`[skills] Dependencies installed successfully for ${skillId}`)
+      return { success: true }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(
-        `[skills] Error installing dependencies for ${skillId}:`,
-        errorMsg,
-      );
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      console.error(`[skills] Error installing dependencies for ${skillId}:`, errorMsg)
       return {
         success: false,
-        error: `Failed to install dependencies: ${errorMsg}`,
-      };
+        error: `Failed to install dependencies: ${errorMsg}`
+      }
     }
   }
 
   async testEmailConnectivity(
     skillId: string,
-    config: Record<string, string>,
+    config: Record<string, string>
   ): Promise<{
-    success: boolean;
-    result?: EmailConnectivityTestResult;
-    error?: string;
+    success: boolean
+    result?: EmailConnectivityTestResult
+    error?: string
   }> {
     try {
-      const skillDir = this.resolveSkillDir(skillId);
+      const skillDir = this.resolveSkillDir(skillId)
 
       // Ensure dependencies are installed before running scripts
-      const depsResult = this.ensureSkillDependencies(skillDir);
+      const depsResult = this.ensureSkillDependencies(skillDir)
       if (!depsResult.success) {
-        console.error(
-          "[email-connectivity] Dependency install failed:",
-          depsResult.error,
-        );
-        return { success: false, error: depsResult.error };
+        console.error('[email-connectivity] Dependency install failed:', depsResult.error)
+        return { success: false, error: depsResult.error }
       }
 
-      const imapScript = path.join(skillDir, "scripts", "imap.js");
-      const smtpScript = path.join(skillDir, "scripts", "smtp.js");
+      const imapScript = path.join(skillDir, 'scripts', 'imap.js')
+      const smtpScript = path.join(skillDir, 'scripts', 'smtp.js')
       if (!fs.existsSync(imapScript) || !fs.existsSync(smtpScript)) {
-        console.error("[email-connectivity] Scripts not found:", {
+        console.error('[email-connectivity] Scripts not found:', {
           imapScript,
-          smtpScript,
-        });
+          smtpScript
+        })
         return {
           success: false,
-          error: "Email connectivity scripts not found",
-        };
+          error: 'Email connectivity scripts not found'
+        }
       }
 
       // Mask password for logging
-      const safeConfig = { ...config };
-      if (safeConfig.IMAP_PASS) safeConfig.IMAP_PASS = "***";
-      if (safeConfig.SMTP_PASS) safeConfig.SMTP_PASS = "***";
-      console.log(
-        "[email-connectivity] Testing with config:",
-        JSON.stringify(safeConfig, null, 2),
-      );
+      const safeConfig = { ...config }
+      if (safeConfig.IMAP_PASS) safeConfig.IMAP_PASS = '***'
+      if (safeConfig.SMTP_PASS) safeConfig.SMTP_PASS = '***'
+      console.log('[email-connectivity] Testing with config:', JSON.stringify(safeConfig, null, 2))
 
       const envOverrides = Object.fromEntries(
         Object.entries(config ?? {})
           .filter(([key]) => key.trim())
-          .map(([key, value]) => [key, String(value ?? "")]),
-      );
+          .map(([key, value]) => [key, String(value ?? '')])
+      )
 
-      console.log("[email-connectivity] Running IMAP test (list-mailboxes)...");
-      const imapResult = await this.runSkillScriptWithEnv(
-        skillDir,
-        imapScript,
-        ["list-mailboxes"],
-        envOverrides,
-        20000,
-      );
+      console.log('[email-connectivity] Running IMAP test (list-mailboxes)...')
+      const imapResult = await this.runSkillScriptWithEnv(skillDir, imapScript, ['list-mailboxes'], envOverrides, 20000)
       console.log(
-        "[email-connectivity] IMAP result:",
+        '[email-connectivity] IMAP result:',
         JSON.stringify(
           {
             success: imapResult.success,
@@ -2005,23 +1811,17 @@ export class SkillManager {
             stdout: imapResult.stdout?.slice(0, 500),
             stderr: imapResult.stderr?.slice(0, 500),
             error: imapResult.error,
-            spawnErrorCode: imapResult.spawnErrorCode,
+            spawnErrorCode: imapResult.spawnErrorCode
           },
           null,
-          2,
-        ),
-      );
+          2
+        )
+      )
 
-      console.log("[email-connectivity] Running SMTP test (verify)...");
-      const smtpResult = await this.runSkillScriptWithEnv(
-        skillDir,
-        smtpScript,
-        ["verify"],
-        envOverrides,
-        20000,
-      );
+      console.log('[email-connectivity] Running SMTP test (verify)...')
+      const smtpResult = await this.runSkillScriptWithEnv(skillDir, smtpScript, ['verify'], envOverrides, 20000)
       console.log(
-        "[email-connectivity] SMTP result:",
+        '[email-connectivity] SMTP result:',
         JSON.stringify(
           {
             success: smtpResult.success,
@@ -2031,73 +1831,60 @@ export class SkillManager {
             stdout: smtpResult.stdout?.slice(0, 500),
             stderr: smtpResult.stderr?.slice(0, 500),
             error: smtpResult.error,
-            spawnErrorCode: smtpResult.spawnErrorCode,
+            spawnErrorCode: smtpResult.spawnErrorCode
           },
           null,
-          2,
-        ),
-      );
+          2
+        )
+      )
 
       const checks: EmailConnectivityCheck[] = [
-        this.buildEmailConnectivityCheck("imap_connection", imapResult),
-        this.buildEmailConnectivityCheck("smtp_connection", smtpResult),
-      ];
-      const verdict: EmailConnectivityVerdict = checks.every(
-        (check) => check.level === "pass",
-      )
-        ? "pass"
-        : "fail";
+        this.buildEmailConnectivityCheck('imap_connection', imapResult),
+        this.buildEmailConnectivityCheck('smtp_connection', smtpResult)
+      ]
+      const verdict: EmailConnectivityVerdict = checks.every((check) => check.level === 'pass') ? 'pass' : 'fail'
 
-      console.log(
-        "[email-connectivity] Final verdict:",
-        verdict,
-        "checks:",
-        JSON.stringify(checks, null, 2),
-      );
+      console.log('[email-connectivity] Final verdict:', verdict, 'checks:', JSON.stringify(checks, null, 2))
 
       return {
         success: true,
         result: {
           testedAt: Date.now(),
           verdict,
-          checks,
-        },
-      };
+          checks
+        }
+      }
     } catch (error) {
-      console.error("[email-connectivity] Unexpected error:", error);
+      console.error('[email-connectivity] Unexpected error:', error)
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to test email connectivity",
-      };
+        error: error instanceof Error ? error.message : 'Failed to test email connectivity'
+      }
     }
   }
 
   private resolveSkillDir(skillId: string): string {
-    const skills = this.listSkills();
-    const skill = skills.find((s) => s.id === skillId);
+    const skills = this.listSkills()
+    const skill = skills.find((s) => s.id === skillId)
     if (!skill) {
-      throw new Error("Skill not found");
+      throw new Error('Skill not found')
     }
-    return path.dirname(skill.skillPath);
+    return path.dirname(skill.skillPath)
   }
 
   private getScriptRuntimeCandidates(): Array<{
-    command: string;
-    extraEnv?: NodeJS.ProcessEnv;
+    command: string
+    extraEnv?: NodeJS.ProcessEnv
   }> {
-    const candidates: Array<{ command: string; extraEnv?: NodeJS.ProcessEnv }> =
-      [];
+    const candidates: Array<{ command: string; extraEnv?: NodeJS.ProcessEnv }> = []
     if (!app.isPackaged) {
-      candidates.push({ command: "node" });
+      candidates.push({ command: 'node' })
     }
     candidates.push({
       command: process.execPath,
-      extraEnv: { ELECTRON_RUN_AS_NODE: "1" },
-    });
-    return candidates;
+      extraEnv: { ELECTRON_RUN_AS_NODE: '1' }
+    })
+    return candidates
   }
 
   private async runSkillScriptWithEnv(
@@ -2105,64 +1892,59 @@ export class SkillManager {
     scriptPath: string,
     scriptArgs: string[],
     envOverrides: Record<string, string>,
-    timeoutMs: number,
+    timeoutMs: number
   ): Promise<SkillScriptRunResult> {
-    let lastResult: SkillScriptRunResult | null = null;
+    let lastResult: SkillScriptRunResult | null = null
 
     // Build base environment with user's shell PATH
-    const baseEnv = buildSkillEnv();
+    const baseEnv = buildSkillEnv()
 
     for (const runtime of this.getScriptRuntimeCandidates()) {
       const env: NodeJS.ProcessEnv = {
         ...baseEnv,
         ...runtime.extraEnv,
-        ...envOverrides,
-      };
+        ...envOverrides
+      }
       const result = await runScriptWithTimeout({
         command: runtime.command,
         args: [scriptPath, ...scriptArgs],
         cwd: skillDir,
         env,
-        timeoutMs,
-      });
-      lastResult = result;
+        timeoutMs
+      })
+      lastResult = result
 
-      if (result.spawnErrorCode === "ENOENT") {
-        continue;
+      if (result.spawnErrorCode === 'ENOENT') {
+        continue
       }
-      return result;
+      return result
     }
 
     return (
       lastResult ?? {
         success: false,
         exitCode: null,
-        stdout: "",
-        stderr: "",
+        stdout: '',
+        stderr: '',
         durationMs: 0,
         timedOut: false,
-        error: "Failed to run skill script",
+        error: 'Failed to run skill script'
       }
-    );
+    )
   }
 
   private parseScriptMessage(stdout: string): string | null {
     if (!stdout) {
-      return null;
+      return null
     }
     try {
-      const parsed = JSON.parse(stdout);
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        typeof parsed.message === "string" &&
-        parsed.message.trim()
-      ) {
-        return parsed.message.trim();
+      const parsed = JSON.parse(stdout)
+      if (parsed && typeof parsed === 'object' && typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim()
       }
-      return null;
+      return null
     } catch {
-      return null;
+      return null
     }
   }
 
@@ -2172,72 +1954,62 @@ export class SkillManager {
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean)
-        .slice(-1)[0] || ""
-    );
+        .slice(-1)[0] || ''
+    )
   }
 
-  private buildEmailConnectivityCheck(
-    code: EmailConnectivityCheckCode,
-    result: SkillScriptRunResult,
-  ): EmailConnectivityCheck {
-    const label = code === "imap_connection" ? "IMAP" : "SMTP";
+  private buildEmailConnectivityCheck(code: EmailConnectivityCheckCode, result: SkillScriptRunResult): EmailConnectivityCheck {
+    const label = code === 'imap_connection' ? 'IMAP' : 'SMTP'
 
     if (result.success) {
-      const parsedMessage = this.parseScriptMessage(result.stdout);
+      const parsedMessage = this.parseScriptMessage(result.stdout)
       return {
         code,
-        level: "pass",
+        level: 'pass',
         message: parsedMessage || `${label} connection successful`,
-        durationMs: result.durationMs,
-      };
+        durationMs: result.durationMs
+      }
     }
 
     const message = result.timedOut
       ? `${label} connectivity check timed out`
-      : result.error ||
-        this.getLastOutputLine(result.stderr) ||
-        this.getLastOutputLine(result.stdout) ||
-        `${label} connection failed`;
+      : result.error || this.getLastOutputLine(result.stderr) || this.getLastOutputLine(result.stdout) || `${label} connection failed`
 
     return {
       code,
-      level: "fail",
+      level: 'fail',
       message,
-      durationMs: result.durationMs,
-    };
+      durationMs: result.durationMs
+    }
   }
 
   private normalizeGitSource(source: string): NormalizedGitSource | null {
-    const githubTreeOrBlob = parseGithubTreeOrBlobUrl(source);
+    const githubTreeOrBlob = parseGithubTreeOrBlobUrl(source)
     if (githubTreeOrBlob) {
-      return githubTreeOrBlob;
+      return githubTreeOrBlob
     }
 
     if (/^[\w.-]+\/[\w.-]+$/.test(source)) {
       return {
-        repoUrl: `https://github.com/${source}.git`,
-      };
+        repoUrl: `https://github.com/${source}.git`
+      }
     }
-    if (
-      source.startsWith("http://") ||
-      source.startsWith("https://") ||
-      source.startsWith("git@")
-    ) {
+    if (source.startsWith('http://') || source.startsWith('https://') || source.startsWith('git@')) {
       return {
-        repoUrl: source,
-      };
+        repoUrl: source
+      }
     }
-    if (source.endsWith(".git")) {
+    if (source.endsWith('.git')) {
       return {
-        repoUrl: source,
-      };
+        repoUrl: source
+      }
     }
-    return null;
+    return null
   }
 }
 
 export const __skillManagerTestUtils = {
   parseFrontmatter,
   isTruthy,
-  extractDescription,
-};
+  extractDescription
+}
