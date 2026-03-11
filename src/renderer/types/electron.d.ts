@@ -12,6 +12,14 @@ interface IElectronAPI {
     set: (key: string, value: any) => Promise<void>
     remove: (key: string) => Promise<void>
   }
+  mcp: {
+    list: () => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>
+    create: (data: any) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>
+    update: (id: string, data: any) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>
+    delete: (id: string) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>
+    setEnabled: (options: { id: string; enabled: boolean }) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>
+    fetchMarketplace: () => Promise<{ success: boolean; data?: McpMarketplaceData; error?: string }>
+  }
   skills: {
     list: () => Promise<{ success: boolean; skills?: Skill[]; error?: string }>
     setEnabled: (options: { id: string; enabled: boolean }) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>

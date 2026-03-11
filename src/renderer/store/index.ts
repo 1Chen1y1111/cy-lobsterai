@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit'
 import { modelReducer } from './slices/modelSlice'
 import { coworkReducer } from './slices/coworkSlice'
 import { skillReducer } from './slices/skillSlice'
+import { mcpReducer } from './slices/mcpSlice'
 
 export const store = configureStore({
   reducer: {
     model: modelReducer,
     cowork: coworkReducer,
-    skill: skillReducer
+    skill: skillReducer,
+    mcp: mcpReducer
   }
 })
 

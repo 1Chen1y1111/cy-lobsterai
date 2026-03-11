@@ -1,6 +1,27 @@
 "use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 var _a;
 const require$$0$1 = require("electron");
@@ -6743,24 +6764,12 @@ function loadWasmBinary() {
 }
 const _SqliteStore = class _SqliteStore {
   constructor(db, dbPath) {
-    // sql.js 的内存数据库句柄。所有 SQL 操作都在该实例上执行。
     __publicField(this, "db");
-    // sqlite 文件持久化路径（通常位于 userData 目录）。
     __publicField(this, "dbPath");
-    // 仅用于 set/delete 后派发 change 事件。
-    __publicField(this, "emitter", new require$$4());
+    __publicField(this, "emitter", new require$$4.EventEmitter());
     this.db = db;
     this.dbPath = dbPath;
   }
-  /**
-   * 工厂方法：创建并初始化 SqliteStore。
-   *
-   * 步骤：
-   * 1. 计算数据库路径。
-   * 2. 初始化 sql.js（首次调用才会加载 wasm）。
-   * 3. 读取已存在的 sqlite 文件，或创建空库。
-   * 4. 建表并执行迁移。
-   */
   static async create(userDataPath) {
     const basePath = userDataPath ?? require$$0$1.app.getPath("userData");
     const dbPath = path$7.join(basePath, DB_FILENAME);
@@ -6782,14 +6791,6 @@ const _SqliteStore = class _SqliteStore {
     store2.initializeTables(basePath);
     return store2;
   }
-  /**
-   * 初始化所有业务表并执行历史迁移。
-   *
-   * 迁移策略：
-   * - 先 CREATE TABLE IF NOT EXISTS，保证冷启动可用。
-   * - 对列级变更通过 PRAGMA table_info 检查后再 ALTER。
-   * - 迁移失败尽量降级处理，避免阻塞启动。
-   */
   initializeTables(basePath) {
     var _a2, _b;
     this.db.run(`
@@ -6922,6 +6923,18 @@ const _SqliteStore = class _SqliteStore {
       CREATE INDEX IF NOT EXISTS idx_task_runs_task_id
         ON scheduled_task_runs(task_id, started_at DESC);
     `);
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS mcp_servers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL DEFAULT '',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        transport_type TEXT NOT NULL DEFAULT 'stdio',
+        config_json TEXT NOT NULL DEFAULT '{}',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
     try {
       const colsResult = this.db.exec("PRAGMA table_info(cowork_sessions);");
       const columns = ((_a2 = colsResult[0]) == null ? void 0 : _a2.values.map((row) => row[1])) || [];
@@ -6961,9 +6974,7 @@ const _SqliteStore = class _SqliteStore {
     } catch {
     }
     try {
-      this.db.run(
-        `UPDATE cowork_sessions SET execution_mode = 'sandbox' WHERE execution_mode = 'container';`
-      );
+      this.db.run(`UPDATE cowork_sessions SET execution_mode = 'sandbox' WHERE execution_mode = 'container';`);
       this.db.run(`
         UPDATE cowork_config
         SET value = 'sandbox'
@@ -6981,9 +6992,7 @@ const _SqliteStore = class _SqliteStore {
           this.save();
         }
         if (!stColumns.includes("notify_platforms_json")) {
-          this.db.run(
-            "ALTER TABLE scheduled_tasks ADD COLUMN notify_platforms_json TEXT NOT NULL DEFAULT '[]'"
-          );
+          this.db.run("ALTER TABLE scheduled_tasks ADD COLUMN notify_platforms_json TEXT NOT NULL DEFAULT '[]'");
           this.save();
         }
       }
@@ -6993,10 +7002,100 @@ const _SqliteStore = class _SqliteStore {
     this.migrateFromElectronStore(basePath);
     this.save();
   }
-  /**
-   * 将旧版 MEMORY.md 的列表项迁移到 user_memories / user_memory_sources。
-   * 使用 kv 标记保证该迁移只执行一次。
-   */
+  save() {
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    fs$a.writeFileSync(this.dbPath, buffer);
+  }
+  onDidChange(key, callback) {
+    const handler = (payload) => {
+      if (payload.key !== key) return;
+      callback(payload.newValue, payload.oldValue);
+    };
+    this.emitter.on("change", handler);
+    return () => this.emitter.off("change", handler);
+  }
+  get(key) {
+    var _a2;
+    const result = this.db.exec("SELECT value FROM kv WHERE key = ?", [key]);
+    if (!((_a2 = result[0]) == null ? void 0 : _a2.values[0])) return void 0;
+    const value = result[0].values[0][0];
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.warn(`Failed to parse store value for ${key}`, error);
+      return void 0;
+    }
+  }
+  set(key, value) {
+    const oldValue = this.get(key);
+    const now = Date.now();
+    this.db.run(
+      `
+      INSERT INTO kv (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `,
+      [key, JSON.stringify(value), now]
+    );
+    this.save();
+    this.emitter.emit("change", { key, newValue: value, oldValue });
+  }
+  delete(key) {
+    const oldValue = this.get(key);
+    this.db.run("DELETE FROM kv WHERE key = ?", [key]);
+    this.save();
+    this.emitter.emit("change", { key, newValue: void 0, oldValue });
+  }
+  // Expose database for cowork operations
+  getDatabase() {
+    return this.db;
+  }
+  // Expose save method for external use (e.g., CoworkStore)
+  getSaveFunction() {
+    return () => this.save();
+  }
+  tryReadLegacyMemoryText() {
+    const candidates = [
+      path$7.join(process.cwd(), "MEMORY.md"),
+      path$7.join(require$$0$1.app.getAppPath(), "MEMORY.md"),
+      path$7.join(process.cwd(), "memory.md"),
+      path$7.join(require$$0$1.app.getAppPath(), "memory.md")
+    ];
+    for (const candidate of candidates) {
+      try {
+        if (fs$a.existsSync(candidate) && fs$a.statSync(candidate).isFile()) {
+          return fs$a.readFileSync(candidate, "utf8");
+        }
+      } catch {
+      }
+    }
+    return "";
+  }
+  parseLegacyMemoryEntries(raw) {
+    const normalized = raw.replace(/```[\s\S]*?```/g, " ");
+    const lines = normalized.split(/\r?\n/);
+    const entries = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const line of lines) {
+      const match = line.trim().match(/^-+\s*(?:\[[^\]]+\]\s*)?(.+)$/);
+      if (!(match == null ? void 0 : match[1])) continue;
+      const text = match[1].replace(/\s+/g, " ").trim();
+      if (!text || text.length < 6) continue;
+      if (/^\(empty\)$/i.test(text)) continue;
+      const key = text.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push(text.length > 360 ? `${text.slice(0, 359)}…` : text);
+    }
+    return entries.slice(0, 200);
+  }
+  memoryFingerprint(text) {
+    const normalized = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+    return crypto.createHash("sha1").update(normalized).digest("hex");
+  }
   migrateLegacyMemoryFileToUserMemories() {
     var _a2, _b, _c;
     if (this.get(USER_MEMORIES_MIGRATION_KEY) === "1") {
@@ -7017,10 +7116,7 @@ const _SqliteStore = class _SqliteStore {
     try {
       for (const text of entries) {
         const fingerprint = this.memoryFingerprint(text);
-        const existing = this.db.exec(
-          `SELECT id FROM user_memories WHERE fingerprint = ? AND status != 'deleted' LIMIT 1`,
-          [fingerprint]
-        );
+        const existing = this.db.exec(`SELECT id FROM user_memories WHERE fingerprint = ? AND status != 'deleted' LIMIT 1`, [fingerprint]);
         if ((_c = (_b = (_a2 = existing[0]) == null ? void 0 : _a2.values) == null ? void 0 : _b[0]) == null ? void 0 : _c[0]) {
           continue;
         }
@@ -7048,25 +7144,6 @@ const _SqliteStore = class _SqliteStore {
     }
     this.set(USER_MEMORIES_MIGRATION_KEY, "1");
   }
-  /**
-   * 生成记忆文本指纹，用于迁移与去重。
-   *
-   * 处理步骤：
-   * 1. 转小写，降低大小写差异带来的重复。
-   * 2. 将标点/符号归一为空格，仅保留字母、数字和空白。
-   * 3. 合并连续空白并 trim，减少格式噪声影响。
-   * 4. 对规范化结果计算 SHA-1，得到稳定短指纹。
-   *
-   * 这里使用 SHA-1 不是用于安全场景，只用于内容相等性近似去重。
-   */
-  memoryFingerprint(text) {
-    const normalized = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-    return crypto.createHash("sha1").update(normalized).digest("hex");
-  }
-  /**
-   * 将旧版 electron-store(config.json) 迁移到 kv 表。
-   * 仅在 kv 当前为空时执行，避免覆盖已存在的新版本数据。
-   */
   migrateFromElectronStore(userDataPath) {
     var _a2, _b;
     const result = this.db.exec("SELECT COUNT(*) as count FROM kv");
@@ -7103,126 +7180,7 @@ const _SqliteStore = class _SqliteStore {
       console.warn("Failed to migrate electron-store data:", error);
     }
   }
-  /**
-   * 尝试读取旧版 MEMORY.md 内容。
-   * 按候选路径顺序查找，命中后立即返回。
-   */
-  tryReadLegacyMemoryText() {
-    const candidates = [
-      path$7.join(process.cwd(), "MEMORY.md"),
-      path$7.join(require$$0$1.app.getAppPath(), "MEMORY.md"),
-      path$7.join(process.cwd(), "memory.md"),
-      path$7.join(require$$0$1.app.getAppPath(), "memory.md")
-    ];
-    for (const candidate of candidates) {
-      try {
-        if (fs$a.existsSync(candidate) && fs$a.statSync(candidate).isFile()) {
-          return fs$a.readFileSync(candidate, "utf8");
-        }
-      } catch {
-      }
-    }
-    return "";
-  }
-  /**
-   * 从旧版 MEMORY.md 文本中提取可迁移条目。
-   *
-   * 处理规则：
-   * 1. 去掉代码块内容。
-   * 2. 仅提取 markdown 列表项。
-   * 3. 过滤空值、极短值、(empty) 伪值。
-   * 4. 忽略重复项，并限制最大条目数。
-   */
-  parseLegacyMemoryEntries(raw) {
-    const normalized = raw.replace(/```[\s\S]*?```/g, " ");
-    const lines = normalized.split(/\r?\n/);
-    const entries = [];
-    const seen = /* @__PURE__ */ new Set();
-    for (const line of lines) {
-      const match = line.trim().match(/^-+\s*(?:\[[^\]]+\]\s*)?(.+)$/);
-      if (!(match == null ? void 0 : match[1])) continue;
-      const text = match[1].replace(/\s+/g, " ").trim();
-      if (!text || text.length < 6) continue;
-      if (/^\(empty\)$/i.test(text)) continue;
-      const key = text.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      entries.push(text.length > 360 ? `${text.slice(0, 359)}...` : text);
-    }
-    return entries.slice(0, 200);
-  }
-  /**
-   * 将 sql.js 内存数据库导出并写回磁盘文件。
-   * 当前为整库覆盖写入模式，简单稳定但在大库下写放大更明显。
-   */
-  save() {
-    const data = this.db.export();
-    const buffer = Buffer.from(data);
-    fs$a.writeFileSync(this.dbPath, buffer);
-  }
-  /**
-   * 从 kv 表读取并反序列化指定 key 的值。
-   * 如果值不存在或 JSON 解析失败，返回 undefined。
-   */
-  get(key) {
-    var _a2;
-    const result = this.db.exec("SELECT value FROM kv WHERE key = ?", [key]);
-    if (!((_a2 = result[0]) == null ? void 0 : _a2.values[0])) return void 0;
-    const value = result[0].values[0][0];
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.warn(`Failed to parse store value for ${key}`, error);
-      return void 0;
-    }
-  }
-  /**
-   * 写入 kv 值（UPSERT）。
-   * 写入后立即落盘，并派发 change 事件（包含 old/new 值）。
-   */
-  set(key, value) {
-    const oldValue = this.get(key);
-    const now = Date.now();
-    this.db.run(
-      `
-      INSERT INTO kv (key, value, updated_at)
-      VALUES (?, ?, ?)
-      ON CONFLICT(key) DO UPDATE SET
-        value = excluded.value,
-        updated_at = excluded.updated_at
-    `,
-      [key, JSON.stringify(value), now]
-    );
-    this.save();
-    this.emitter.emit("change", {
-      key,
-      newValue: value,
-      oldValue
-    });
-  }
-  /**
-   * 删除 kv 值并派发 change 事件。
-   */
-  delete(key) {
-    const oldValue = this.get(key);
-    this.db.run("DELETE FROM kv WHERE key = ?", [key]);
-    this.save();
-    this.emitter.emit("change", {
-      key,
-      newValue: void 0,
-      oldValue
-    });
-  }
-  // Expose database for cowork operations
-  getDatabase() {
-    return this.db;
-  }
-  // Expose save method for external use (e.g., CoworkStore)
-  getSaveFunction() {
-    return () => this.save();
-  }
 };
-// 进程级 sql.js 初始化缓存，避免重复加载 wasm。
 __publicField(_SqliteStore, "sqlPromise", null);
 let SqliteStore = _SqliteStore;
 const byteToHex = [];
@@ -11537,6 +11495,139 @@ function setAutoLaunchEnabled(enabled) {
     throw error;
   }
 }
+class McpStore {
+  constructor(db, saveDb) {
+    __publicField(this, "db");
+    __publicField(this, "saveDb");
+    this.db = db;
+    this.saveDb = saveDb;
+  }
+  deserializeRow(values) {
+    const row = {
+      id: values[0],
+      name: values[1],
+      description: values[2],
+      enabled: values[3],
+      transport_type: values[4],
+      config_json: values[5],
+      created_at: values[6],
+      updated_at: values[7]
+    };
+    let config = {};
+    try {
+      config = JSON.parse(row.config_json);
+    } catch {
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      enabled: row.enabled === 1,
+      transportType: row.transport_type,
+      command: config.command,
+      args: config.args,
+      env: config.env,
+      url: config.url,
+      headers: config.headers,
+      isBuiltIn: config.isBuiltIn === true,
+      githubUrl: config.githubUrl,
+      registryId: config.registryId,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+  serializeConfig(data) {
+    const config = {};
+    if (data.command !== void 0) config.command = data.command;
+    if (data.args !== void 0) config.args = data.args;
+    if (data.env !== void 0 && Object.keys(data.env).length > 0) config.env = data.env;
+    if (data.url !== void 0) config.url = data.url;
+    if (data.headers !== void 0 && Object.keys(data.headers).length > 0) config.headers = data.headers;
+    if (data.isBuiltIn) config.isBuiltIn = true;
+    if (data.githubUrl) config.githubUrl = data.githubUrl;
+    if (data.registryId) config.registryId = data.registryId;
+    return JSON.stringify(config);
+  }
+  listServers() {
+    const result = this.db.exec(
+      "SELECT id, name, description, enabled, transport_type, config_json, created_at, updated_at FROM mcp_servers ORDER BY created_at ASC"
+    );
+    if (!result[0]) return [];
+    return result[0].values.map((row) => this.deserializeRow(row));
+  }
+  getServer(id) {
+    var _a2;
+    const result = this.db.exec(
+      "SELECT id, name, description, enabled, transport_type, config_json, created_at, updated_at FROM mcp_servers WHERE id = ?",
+      [id]
+    );
+    if (!((_a2 = result[0]) == null ? void 0 : _a2.values[0])) return null;
+    return this.deserializeRow(result[0].values[0]);
+  }
+  createServer(data) {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    const configJson = this.serializeConfig(data);
+    this.db.run(
+      `INSERT INTO mcp_servers (id, name, description, enabled, transport_type, config_json, created_at, updated_at)
+       VALUES (?, ?, ?, 1, ?, ?, ?, ?)`,
+      [id, data.name, data.description, data.transportType, configJson, now, now]
+    );
+    this.saveDb();
+    return this.getServer(id);
+  }
+  updateServer(id, data) {
+    const existing = this.getServer(id);
+    if (!existing) return null;
+    const now = Date.now();
+    const merged = {
+      name: data.name ?? existing.name,
+      description: data.description ?? existing.description,
+      transportType: data.transportType ?? existing.transportType,
+      command: data.command !== void 0 ? data.command : existing.command,
+      args: data.args !== void 0 ? data.args : existing.args,
+      env: data.env !== void 0 ? data.env : existing.env,
+      url: data.url !== void 0 ? data.url : existing.url,
+      headers: data.headers !== void 0 ? data.headers : existing.headers,
+      isBuiltIn: data.isBuiltIn !== void 0 ? data.isBuiltIn : existing.isBuiltIn,
+      githubUrl: data.githubUrl !== void 0 ? data.githubUrl : existing.githubUrl,
+      registryId: data.registryId !== void 0 ? data.registryId : existing.registryId
+    };
+    const configJson = this.serializeConfig(merged);
+    this.db.run(`UPDATE mcp_servers SET name = ?, description = ?, transport_type = ?, config_json = ?, updated_at = ? WHERE id = ?`, [
+      merged.name,
+      merged.description,
+      merged.transportType,
+      configJson,
+      now,
+      id
+    ]);
+    this.saveDb();
+    return this.getServer(id);
+  }
+  deleteServer(id) {
+    const existing = this.getServer(id);
+    if (!existing) return false;
+    this.db.run("DELETE FROM mcp_servers WHERE id = ?", [id]);
+    this.saveDb();
+    return true;
+  }
+  setEnabled(id, enabled) {
+    const existing = this.getServer(id);
+    if (!existing) return false;
+    const now = Date.now();
+    this.db.run("UPDATE mcp_servers SET enabled = ?, updated_at = ? WHERE id = ?", [enabled ? 1 : 0, now, id]);
+    this.saveDb();
+    return true;
+  }
+  getEnabledServers() {
+    const result = this.db.exec(
+      "SELECT id, name, description, enabled, transport_type, config_json, created_at, updated_at FROM mcp_servers WHERE enabled = 1 ORDER BY created_at ASC"
+    );
+    if (!result[0]) return [];
+    return result[0].values.map((row) => this.deserializeRow(row));
+  }
+}
 require$$0$1.app.name = APP_NAME;
 require$$0$1.app.setName(APP_NAME);
 const INVALID_FILE_NAME_PATTERN = /[<>:"/\\|?*\u0000-\u001F]/g;
@@ -11637,6 +11728,7 @@ const getAppIconPath = () => {
 let mainWindow = null;
 const gotTheLock = isDev ? true : require$$0$1.app.requestSingleInstanceLock();
 let store = null;
+let mcpStore = null;
 let coworkStore = null;
 let skillManager = null;
 let storeInitPromise = null;
@@ -11668,6 +11760,13 @@ const getCoworkStore = () => {
     }
   }
   return coworkStore;
+};
+const getMcpStore = () => {
+  if (!mcpStore) {
+    const sqliteStore = getStore();
+    mcpStore = new McpStore(sqliteStore.getDatabase(), sqliteStore.getSaveFunction());
+  }
+  return mcpStore;
 };
 const getSkillManager = () => {
   if (!skillManager) {
@@ -11702,6 +11801,93 @@ if (!gotTheLock) {
   });
   require$$0$1.ipcMain.handle("window:isMaximized", () => {
     return (mainWindow == null ? void 0 : mainWindow.isMaximized()) ?? false;
+  });
+  require$$0$1.ipcMain.handle(
+    "mcp:create",
+    (_event, data) => {
+      try {
+        getMcpStore().createServer(data);
+        const servers = getMcpStore().listServers();
+        return { success: true, servers };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Failed to create MCP server" };
+      }
+    }
+  );
+  require$$0$1.ipcMain.handle("mcp:delete", (_event, id) => {
+    try {
+      getMcpStore().deleteServer(id);
+      const servers = getMcpStore().listServers();
+      return { success: true, servers };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to delete MCP server" };
+    }
+  });
+  require$$0$1.ipcMain.handle(
+    "mcp:update",
+    (_event, id, data) => {
+      try {
+        getMcpStore().updateServer(id, data);
+        const servers = getMcpStore().listServers();
+        return { success: true, servers };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Failed to update MCP server" };
+      }
+    }
+  );
+  require$$0$1.ipcMain.handle("mcp:list", () => {
+    try {
+      const servers = getMcpStore().listServers();
+      return { success: true, servers };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to list MCP servers" };
+    }
+  });
+  require$$0$1.ipcMain.handle("mcp:setEnabled", (_event, options) => {
+    try {
+      getMcpStore().setEnabled(options.id, options.enabled);
+      const servers = getMcpStore().listServers();
+      return { success: true, servers };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to update MCP server" };
+    }
+  });
+  require$$0$1.ipcMain.handle("mcp:fetchMarketplace", async () => {
+    var _a2;
+    const url = require$$0$1.app.isPackaged ? "https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/mcp-marketplace" : "https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/mcp-marketplace";
+    try {
+      const https2 = await import("https");
+      const data = await new Promise((resolve, reject) => {
+        const req = https2.get(url, { timeout: 1e4 }, (res) => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode}`));
+            res.resume();
+            return;
+          }
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk) => {
+            body += chunk;
+          });
+          res.on("end", () => resolve(body));
+          res.on("error", reject);
+        });
+        req.on("error", reject);
+        req.on("timeout", () => {
+          req.destroy();
+          reject(new Error("Request timeout"));
+        });
+      });
+      const json2 = JSON.parse(data);
+      const value = (_a2 = json2 == null ? void 0 : json2.data) == null ? void 0 : _a2.value;
+      if (!value) {
+        return { success: false, error: "Invalid response: missing data.value" };
+      }
+      const marketplace = typeof value === "string" ? JSON.parse(value) : value;
+      return { success: true, data: marketplace };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Failed to fetch marketplace" };
+    }
   });
   require$$0$1.ipcMain.handle("skills:list", () => {
     try {

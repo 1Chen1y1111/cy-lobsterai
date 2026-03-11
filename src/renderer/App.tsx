@@ -95,8 +95,34 @@ const App: React.FC = () => {
     setIsSidebarCollapsed((prev) => !prev)
   }, [])
 
+  const handleNewChat = useCallback(() => {
+    // const shouldClearInput = mainView === 'cowork' || !!currentSessionId
+    // coworkService.clearSession()
+    // dispatch(clearSelection())
+    // setMainView('cowork')
+    // window.setTimeout(() => {
+    //   window.dispatchEvent(
+    //     new CustomEvent('cowork:focus-input', {
+    //       detail: { clear: shouldClearInput }
+    //     })
+    //   )
+    // }, 0)
+  }, [dispatch, mainView])
+
+  const handleShowScheduledTasks = useCallback(() => {
+    setMainView('scheduledTasks')
+  }, [])
+
   const handleShowSkills = useCallback(() => {
     setMainView('skills')
+  }, [])
+
+  const handleShowMcp = useCallback(() => {
+    setMainView('mcp')
+  }, [])
+
+  const handleShowCowork = useCallback(() => {
+    setMainView('cowork')
   }, [])
 
   const isOverlayActive = showSettings || showUpdateModal
@@ -158,7 +184,11 @@ const App: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           activeView={mainView}
+          onNewChat={handleNewChat}
+          onShowMcp={handleShowMcp}
+          onShowScheduledTasks={handleShowScheduledTasks}
           onShowSkills={handleShowSkills}
+          onShowCowork={handleShowCowork}
           onShowSettings={handleShowSettings}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}

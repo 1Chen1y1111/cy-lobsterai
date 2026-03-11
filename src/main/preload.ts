@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('electron', {
     set: (key: string, value: any) => ipcRenderer.invoke('store:set', key, value),
     remove: (key: string) => ipcRenderer.invoke('store:remove', key)
   },
+  mcp: {
+    list: () => ipcRenderer.invoke('mcp:list'),
+    create: (data: any) => ipcRenderer.invoke('mcp:create', data),
+    update: (id: string, data: any) => ipcRenderer.invoke('mcp:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('mcp:delete', id),
+    setEnabled: (options: { id: string; enabled: boolean }) => ipcRenderer.invoke('mcp:setEnabled', options),
+    fetchMarketplace: () => ipcRenderer.invoke('mcp:fetchMarketplace')
+  },
   skills: {
     list: () => ipcRenderer.invoke('skills:list'),
     setEnabled: (options: { id: string; enabled: boolean }) => ipcRenderer.invoke('skills:setEnabled', options),

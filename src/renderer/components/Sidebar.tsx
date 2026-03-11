@@ -4,15 +4,19 @@ import SidebarToggleIcon from './icons/SidebarToggleIcon'
 import ComposeIcon from './icons/ComposeIcon'
 import SettingsIcon from './icons/SettingsIcon'
 import { useState } from 'react'
+import ConnectorIcon from './icons/ConnectorIcon'
+import PuzzleIcon from './icons/PuzzleIcon'
+import SearchIcon from './icons/SearchIcon'
 
 interface SidebarProps {
   onShowSettings: () => void
   onShowLogin?: () => void
   activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'mcp'
   onShowSkills: () => void
-  onShowCowork?: () => void
-  onShowScheduledTasks?: () => void
-  onNewChat?: () => void
+  onShowCowork: () => void
+  onShowScheduledTasks: () => void
+  onShowMcp: () => void
+  onNewChat: () => void
   isCollapsed: boolean
   onToggleCollapse: () => void
   updateBadge?: React.ReactNode
@@ -24,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onShowSkills,
   onShowCowork,
   onShowScheduledTasks,
+  onShowMcp,
   onNewChat,
   isCollapsed,
   onToggleCollapse,
@@ -55,24 +60,35 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onNewChat}
-            className="w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20 transition-colors"
+            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+              activeView === 'cowork'
+                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
+                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+            }`}
           >
             <ComposeIcon className="h-4 w-4" />
             {i18nService.t('newChat')}
           </button>
-
           <button
             type="button"
+            onClick={() => {
+              onShowCowork()
+              setIsSearchOpen(true)
+            }}
             className="w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
           >
-            <MagnifyingGlassIcon className="h-4 w-4" />
+            <SearchIcon className="h-4 w-4" />
             {i18nService.t('search')}
           </button>
           <button
             type="button"
+            onClick={() => {
+              setIsSearchOpen(false)
+              onShowScheduledTasks()
+            }}
             className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
               activeView === 'scheduledTasks'
-                ? 'dark:text-claude-darkText text-claude-text dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover'
+                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
                 : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
             }`}
           >
@@ -87,12 +103,27 @@ const Sidebar: React.FC<SidebarProps> = ({
             }}
             className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
               activeView === 'skills'
-                ? 'dark:text-claude-darkText text-claude-text dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover'
+                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
                 : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
             }`}
           >
-            <PuzzlePieceIcon className="h-4 w-4" />
+            <PuzzleIcon className="h-4 w-4" />
             {i18nService.t('skills')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSearchOpen(false)
+              onShowMcp()
+            }}
+            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+              activeView === 'mcp'
+                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
+                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+            }`}
+          >
+            <ConnectorIcon className="h-4 w-4" />
+            {i18nService.t('mcpServers')}
           </button>
         </div>
       </div>
