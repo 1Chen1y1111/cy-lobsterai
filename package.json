@@ -116,6 +116,11 @@
     "yazl": "^3.3.1",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "@electron/osx-sign": {
+      "isbinaryfile": "^5.0.0"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
     "@types/dompurify": "^3.0.5",
