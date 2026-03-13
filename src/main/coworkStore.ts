@@ -876,7 +876,6 @@ export class CoworkStore {
     }
 
     const workingDirRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['workingDirectory']);
-    const executionModeRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['executionMode']);
     const agentEngineRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['agentEngine']);
     const memoryEnabledRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['memoryEnabled']);
     const memoryImplicitUpdateEnabledRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['memoryImplicitUpdateEnabled']);
@@ -884,14 +883,12 @@ export class CoworkStore {
     const memoryGuardLevelRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['memoryGuardLevel']);
     const memoryUserMemoriesMaxItemsRow = this.getOne<ConfigRow>('SELECT value FROM cowork_config WHERE key = ?', ['memoryUserMemoriesMaxItems']);
 
-    const normalizedExecutionMode =
-      executionModeRow?.value === 'container' ? 'local' : (executionModeRow?.value as CoworkExecutionMode);
     const normalizedAgentEngine = normalizeCoworkAgentEngineValue(agentEngineRow?.value);
 
     return {
       workingDirectory: workingDirRow?.value || getDefaultWorkingDirectory(),
       systemPrompt: getDefaultSystemPrompt(),
-      executionMode: normalizedExecutionMode || 'local',
+      executionMode: 'local' as CoworkExecutionMode,
       agentEngine: normalizedAgentEngine,
       memoryEnabled: parseBooleanConfig(memoryEnabledRow?.value, DEFAULT_MEMORY_ENABLED),
       memoryImplicitUpdateEnabled: parseBooleanConfig(

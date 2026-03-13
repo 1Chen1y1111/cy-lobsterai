@@ -14,10 +14,9 @@ export type McpBridgeConfig = {
   tools: McpToolManifestEntry[];
 };
 
-const mapExecutionModeToSandboxMode = (mode: CoworkExecutionMode): 'off' | 'non-main' | 'all' => {
-  if (mode === 'local') return 'off';
-  if (mode === 'sandbox') return 'all';
-  return 'non-main';
+const mapExecutionModeToSandboxMode = (_mode: CoworkExecutionMode): 'off' | 'non-main' | 'all' => {
+  // Sandbox mode disabled — always run locally
+  return 'off';
 };
 
 const mapApiTypeToOpenClawApi = (apiType: 'anthropic' | 'openai' | undefined): 'anthropic-messages' | 'openai-completions' => {
