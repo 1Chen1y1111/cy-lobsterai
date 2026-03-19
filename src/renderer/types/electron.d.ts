@@ -227,6 +227,25 @@ interface IElectronAPI {
     onRunUpdate: (callback: (data: any) => void) => () => void
   }
 
+  /* 即时通讯 API */
+  im: {
+    getConfig: () => Promise<{ success: boolean; config?: IMGatewayConfig; error?: string }>
+    setConfig: (config: Partial<IMGatewayConfig>) => Promise<{ success: boolean; error?: string }>
+    startGateway: (
+      platform: 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom'
+    ) => Promise<{ success: boolean; error?: string }>
+    stopGateway: (
+      platform: 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom'
+    ) => Promise<{ success: boolean; error?: string }>
+    testGateway: (
+      platform: 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom',
+      configOverride?: Partial<IMGatewayConfig>
+    ) => Promise<{ success: boolean; result?: IMConnectivityTestResult; error?: string }>
+    getStatus: () => Promise<{ success: boolean; status?: IMGatewayStatus; error?: string }>
+    onStatusChange: (callback: (status: IMGatewayStatus) => void) => () => void
+    onMessageReceived: (callback: (message: IMMessage) => void) => () => void
+  }
+
   /** 读取 API 配置 */
   getApiConfig: () => Promise<CoworkApiConfig | null>
   /** 校验 API 配置可用性 */

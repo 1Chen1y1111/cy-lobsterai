@@ -16,6 +16,9 @@ const translations: Record<LanguageType, Record<string, string>> = {
     inDevelopment: '正在开发中',
     edit: '编辑',
     delete: '删除',
+    hide: '隐藏',
+    show: '显示',
+    clear: '清除',
 
     // 设置
     settings: '设置',
@@ -645,6 +648,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     nimQChatServerIdsPlaceholder: '留空自动发现所有已加入的服务器',
     nimQChatServerIdsHint: '指定要订阅的服务器 ID，多个用逗号分隔。留空则自动订阅所有已加入的服务器。',
     xiaomifengClientIdPlaceholder: '小蜜蜂助理Client ID',
+    wecomBotIdPlaceholder: '企业微信机器人ID',
 
     // 通用设置
     autoLaunch: '开机自启动',
@@ -794,6 +798,9 @@ const translations: Record<LanguageType, Record<string, string>> = {
     inDevelopment: 'In development',
     edit: 'Edit',
     delete: 'Delete',
+    hide: 'Hide',
+    show: 'Show',
+    clear: 'Clear',
 
     // Settings
     settings: 'Settings',
@@ -1429,6 +1436,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     nimQChatServerIdsPlaceholder: 'Leave empty to auto-discover all joined servers',
     nimQChatServerIdsHint: 'Specify server IDs to subscribe, separated by commas. Leave empty to auto-subscribe all joined servers.',
     xiaomifengClientIdPlaceholder: 'Netease Bee IM Client ID',
+    wecomBotIdPlaceholder: 'WeCom Bot ID',
 
     // General Settings
     autoLaunch: 'Launch at Login',

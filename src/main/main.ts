@@ -16,6 +16,8 @@ import { getCurrentApiConfig, resolveCurrentApiConfig, setStoreGetter } from './
 import { generateSessionTitle, probeCoworkModelReadiness } from './libs/coworkUtil'
 import { saveCoworkApiConfig } from './libs/coworkConfigStore'
 import { CoworkRunner } from './libs/coworkRunner'
+import { IMGatewayManager } from './im/imGatewayManager'
+import { IMGatewayConfig, IMPlatform } from './im/types'
 
 // 设置应用程序名称
 app.name = APP_NAME
@@ -360,6 +362,8 @@ let coworkRunner: CoworkRunner | null = null
 let skillManager: SkillManager | null = null
 // 全局单例：MCP 配置存储实例。
 let mcpStore: McpStore | null = null
+// 全局单例：IM 网关管理器实例。
+let imGatewayManager: IMGatewayManager | null = null
 // 存储初始化 Promise（避免并发重复初始化）。
 let storeInitPromise: Promise<SqliteStore> | null = null
 
@@ -522,6 +526,81 @@ const getSkillManager = () => {
   return skillManager
 }
 
+const getIMGatewayManager = () => {
+  if (!imGatewayManager) {
+    const sqliteStore = getStore()
+
+    // Get Cowork dependencies for IM Cowork mode
+    const runner = getCoworkRunner()
+    const store = getCoworkStore()
+
+    imGatewayManager = new IMGatewayManager(sqliteStore.getDatabase(), sqliteStore.getSaveFunction(), {
+      coworkRunner: runner,
+      coworkStore: store
+    })
+
+    // Initialize with LLM config provider
+    imGatewayManager.initialize({
+      getLLMConfig: async () => {
+        const appConfig = sqliteStore.get<any>('app_config')
+        if (!appConfig) return null
+
+        // Find first enabled provider
+        const providers = appConfig.providers || {}
+        for (const [providerName, providerConfig] of Object.entries(providers) as [string, any][]) {
+          if (providerConfig.enabled && providerConfig.apiKey) {
+            const model = providerConfig.models?.[0]?.id
+            return {
+              apiKey: providerConfig.apiKey,
+              baseUrl: providerConfig.baseUrl,
+              model: model,
+              provider: providerName
+            }
+          }
+        }
+
+        // Fallback to legacy api config
+        if (appConfig.api?.key) {
+          return {
+            apiKey: appConfig.api.key,
+            baseUrl: appConfig.api.baseUrl,
+            model: appConfig.model?.defaultModel
+          }
+        }
+
+        return null
+      },
+      getSkillsPrompt: async () => {
+        return getSkillManager().buildAutoRoutingPrompt()
+      }
+    })
+
+    // Forward IM events to renderer
+    imGatewayManager.on('statusChange', (status) => {
+      const windows = BrowserWindow.getAllWindows()
+      windows.forEach((win) => {
+        if (!win.isDestroyed()) {
+          win.webContents.send('im:status:change', status)
+        }
+      })
+    })
+
+    imGatewayManager.on('message', (message) => {
+      const windows = BrowserWindow.getAllWindows()
+      windows.forEach((win) => {
+        if (!win.isDestroyed()) {
+          win.webContents.send('im:message:received', message)
+        }
+      })
+    })
+
+    imGatewayManager.on('error', ({ platform, error }) => {
+      console.error(`[IM Gateway] ${platform} error:`, error)
+    })
+  }
+  return imGatewayManager
+}
+
 /* ------------------- 定时任务模块 ------------------- */
 // const getScheduledTaskStore = () => {
 //   if (!scheduledTaskStore) {
@@ -548,6 +627,19 @@ if (!gotTheLock) {
   // 删除通用键值存储项。
   ipcMain.handle('store:remove', (_event, key) => {
     getStore().delete(key)
+  })
+
+  /* ------------------- Network status IPC 处理 ------------------- */
+  // 先移除所有已存在的监听器，以避免重复注册。
+  ipcMain.removeAllListeners('network:status-change')
+
+  ipcMain.on('network:status-change', (_event, status: 'online' | 'offline') => {
+    console.log(`[Main] Network status changed: ${status}`)
+
+    if (status === 'online' && imGatewayManager) {
+      console.log('[Main] Network restored, reconnecting IM gateways...')
+      imGatewayManager.reconnectAllDisconnected()
+    }
   })
 
   /* ------------------- 窗口控制 IPC 处理 ------------------- */
@@ -1382,6 +1474,85 @@ if (!gotTheLock) {
       }
     }
   )
+
+  /* ------------------- IM Gateway IPC Handlers ------------------- */
+  ipcMain.handle('im:config:get', async () => {
+    try {
+      const config = getIMGatewayManager().getConfig()
+      return { success: true, config }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get IM config'
+      }
+    }
+  })
+
+  ipcMain.handle('im:config:set', async (_event, config: Partial<IMGatewayConfig>) => {
+    try {
+      getIMGatewayManager().setConfig(config)
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to set IM config'
+      }
+    }
+  })
+
+  ipcMain.handle('im:gateway:start', async (_event, platform: IMPlatform) => {
+    try {
+      // Persist enabled state
+      const manager = getIMGatewayManager()
+      manager.setConfig({ [platform]: { enabled: true } })
+      await manager.startGateway(platform)
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to start gateway'
+      }
+    }
+  })
+
+  ipcMain.handle('im:gateway:stop', async (_event, platform: IMPlatform) => {
+    try {
+      // Persist disabled state
+      const manager = getIMGatewayManager()
+      manager.setConfig({ [platform]: { enabled: false } })
+      await manager.stopGateway(platform)
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to stop gateway'
+      }
+    }
+  })
+
+  ipcMain.handle('im:gateway:test', async (_event, platform: IMPlatform, configOverride?: Partial<IMGatewayConfig>) => {
+    try {
+      const result = await getIMGatewayManager().testGateway(platform, configOverride)
+      return { success: true, result }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to test gateway connectivity'
+      }
+    }
+  })
+
+  ipcMain.handle('im:status:get', async () => {
+    try {
+      const status = getIMGatewayManager().getStatus()
+      return { success: true, status }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get IM status'
+      }
+    }
+  })
 
   /* ------------------- Shell IPC 处理 ------------------- */
   // 打开文件/文件夹。

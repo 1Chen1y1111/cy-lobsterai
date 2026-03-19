@@ -225,6 +225,34 @@ contextBridge.exposeInMainWorld('electron', {
     openFolder: () => ipcRenderer.invoke('log:openFolder'),
     exportZip: () => ipcRenderer.invoke('log:exportZip')
   },
+  im: {
+    // Configuration
+    getConfig: () => ipcRenderer.invoke('im:config:get'),
+    setConfig: (config: any) => ipcRenderer.invoke('im:config:set', config),
+
+    // Gateway control
+    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom') =>
+      ipcRenderer.invoke('im:gateway:start', platform),
+    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom') =>
+      ipcRenderer.invoke('im:gateway:stop', platform),
+    testGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom', configOverride?: any) =>
+      ipcRenderer.invoke('im:gateway:test', platform, configOverride),
+
+    // Status
+    getStatus: () => ipcRenderer.invoke('im:status:get'),
+
+    // Event listeners
+    onStatusChange: (callback: (status: any) => void) => {
+      const handler = (_event: any, status: any) => callback(status)
+      ipcRenderer.on('im:status:change', handler)
+      return () => ipcRenderer.removeListener('im:status:change', handler)
+    },
+    onMessageReceived: (callback: (message: any) => void) => {
+      const handler = (_event: any, message: any) => callback(message)
+      ipcRenderer.on('im:message:received', handler)
+      return () => ipcRenderer.removeListener('im:message:received', handler)
+    }
+  },
   scheduledTasks: {
     // Task CRUD
     list: () => ipcRenderer.invoke('scheduledTask:list'),

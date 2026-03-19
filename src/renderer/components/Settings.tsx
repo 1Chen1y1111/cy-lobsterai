@@ -24,6 +24,7 @@ import CoworkMemorySettings from './cowork/CoworkMemorySettings'
 import CoworkSandboxSettings from './cowork/CoworkSandboxSettings'
 import ShortcutsSettings from './shortcuts/ShortcutsSettings'
 import AboutSettings from './about/AboutSettings'
+import ImSettings from './im/IMSettings'
 import { themeService } from '@/services/theme'
 import { configService } from '@/services/config'
 
@@ -214,31 +215,35 @@ const Settings: React.FC<SettingsProps> = ({ initialTab, notice, onClose }) => {
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
             <div className="px-6 py-4 flex-1 overflow-y-auto">
-              <div className={activeTab === 'general' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'general' ? 'block h-full' : 'hidden'}>
                 <GeneralSettings ref={generalSettingsRef} language={language} setLanguage={setLanguage} setError={setError} />
               </div>
 
-              <div className={activeTab === 'model' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'model' ? 'block h-full' : 'hidden'}>
                 <ModelSettings ref={modelSettingsRef} language={language} setError={setError} setNoticeMessage={setNoticeMessage} />
               </div>
 
-              <div className={activeTab === 'email' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'email' ? 'block h-full' : 'hidden'}>
                 <EmailSkillSettings />
               </div>
 
-              <div className={activeTab === 'coworkMemory' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'im' ? 'block h-full' : 'hidden'}>
+                <ImSettings />
+              </div>
+
+              <div className={activeTab === 'coworkMemory' ? 'block h-full' : 'hidden'}>
                 <CoworkMemorySettings ref={coworkMemorySettingsRef} activeTab={activeTab} setError={setError} />
               </div>
 
-              <div className={activeTab === 'coworkSandbox' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'coworkSandbox' ? 'block h-full' : 'hidden'}>
                 <CoworkSandboxSettings ref={coworkSandboxSettingsRef} />
               </div>
 
-              <div className={activeTab === 'shortcuts' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'shortcuts' ? 'block h-full' : 'hidden'}>
                 <ShortcutsSettings ref={shortcutsSettingsRef} />
               </div>
 
-              <div className={activeTab === 'about' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'about' ? 'block h-full' : 'hidden'}>
                 <AboutSettings language={language} setError={setError} setNoticeMessage={setNoticeMessage} />
               </div>
             </div>

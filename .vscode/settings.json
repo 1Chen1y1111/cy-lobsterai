@@ -6,8 +6,10 @@
     "Cwds",
     "cylobsterai",
     "deepseek",
+    "dingding",
     "dingtalk",
     "Emscripten",
+    "feishu",
     "generativelanguage",
     "Kimi",
     "lobsterai",
@@ -19,6 +21,8 @@
     "uuidv",
     "Virtio",
     "Volcengine",
+    "wecom",
+    "xiaomifeng",
     "Zhipu"
   ]
 }
