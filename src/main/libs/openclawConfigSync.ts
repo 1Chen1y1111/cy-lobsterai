@@ -965,13 +965,13 @@ export class OpenClawConfigSync {
     const apiResolution = resolveRawApiConfig();
     // Provider API Key — always set so stale openclaw.json with
     // ${LOBSTER_PROVIDER_API_KEY} placeholder doesn't crash the gateway.
-    env.LOBSTER_PROVIDER_API_KEY = apiResolution.config?.apiKey || '';
+    // OpenClaw treats empty string as "missing", so use a non-empty placeholder.
+    env.LOBSTER_PROVIDER_API_KEY = apiResolution.config?.apiKey || 'unconfigured';
 
-    // MCP Bridge Secret
+    // MCP Bridge Secret — always set so stale openclaw.json with
+    // ${LOBSTER_MCP_BRIDGE_SECRET} placeholder doesn't crash the gateway.
     const mcpBridgeCfg = this.getMcpBridgeConfig?.();
-    if (mcpBridgeCfg?.secret) {
-      env.LOBSTER_MCP_BRIDGE_SECRET = mcpBridgeCfg.secret;
-    }
+    env.LOBSTER_MCP_BRIDGE_SECRET = mcpBridgeCfg?.secret || 'unconfigured';
 
     // Telegram
     const tgConfig = this.getTelegramOpenClawConfig?.();
@@ -1024,10 +1024,10 @@ export class OpenClawConfigSync {
     if (popoConfig?.enabled && popoConfig.token) {
       env.LOBSTER_POPO_TOKEN = popoConfig.token;
     } else if (popoConfig?.enabled) {
-      // Provide empty fallback so stale openclaw.json files that still
+      // Provide non-empty fallback so stale openclaw.json files that still
       // contain ${LOBSTER_POPO_TOKEN} from a previous webhook config
       // don't crash the gateway with MissingEnvVarError.
-      env.LOBSTER_POPO_TOKEN = '';
+      env.LOBSTER_POPO_TOKEN = 'unconfigured';
     }
 
     // NIM
