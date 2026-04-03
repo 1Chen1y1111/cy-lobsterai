@@ -31,4 +31,28 @@ describe('resolveAgentModelSelection', () => {
     expect(result.selectedModel?.id).toBe('gpt-4o');
     expect(result.usesFallback).toBe(true);
   });
+
+  test('uses fallback model outside openclaw without marking fallback mode', () => {
+    const result = resolveAgentModelSelection({
+      agentModel: 'claude-sonnet-4',
+      availableModels: models,
+      fallbackModel: models[0],
+      engine: 'yd_cowork',
+    });
+
+    expect(result.selectedModel?.id).toBe('gpt-4o');
+    expect(result.usesFallback).toBe(false);
+  });
+
+  test('marks invalid explicit model as fallback to global model', () => {
+    const result = resolveAgentModelSelection({
+      agentModel: 'deleted-model',
+      availableModels: models,
+      fallbackModel: models[0],
+      engine: 'openclaw',
+    });
+
+    expect(result.selectedModel?.id).toBe('gpt-4o');
+    expect(result.usesFallback).toBe(true);
+  });
 });

@@ -9,6 +9,7 @@ import Tooltip from '../ui/Tooltip';
 import FolderSelectorPopover from './FolderSelectorPopover';
 import { SkillsButton, ActiveSkillBadge } from '../skills';
 import { i18nService } from '../../services/i18n';
+import { agentService } from '../../services/agent';
 import { skillService } from '../../services/skill';
 import { RootState } from '../../store';
 import { setDraftPrompt, setDraftAttachments, clearDraftAttachments, type DraftAttachment } from '../../store/slices/coworkSlice';
@@ -16,6 +17,7 @@ import { setSkills, toggleActiveSkill } from '../../store/slices/skillSlice';
 import { Skill } from '../../types/skill';
 import { CoworkImageAttachment } from '../../types/cowork';
 import { getCompactFolderName } from '../../utils/path';
+import { resolveAgentModelSelection } from './agentModelSelection';
 
 // CoworkAttachment is aliased from the Redux-persisted DraftAttachment type
 // so that attachment state survives view switches (cowork ↔ skills, etc.)
@@ -115,6 +117,11 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     const draftKey = sessionId || '__home__';
     const draftPrompt = useSelector((state: RootState) => state.cowork.draftPrompts[draftKey] || '');
     const attachments = useSelector((state: RootState) => state.cowork.draftAttachments[draftKey] || []) as CoworkAttachment[];
+    const currentAgentId = useSelector((state: RootState) => state.agent.currentAgentId);
+    const agents = useSelector((state: RootState) => state.agent.agents);
+    const coworkAgentEngine = useSelector((state: RootState) => state.cowork.config.agentEngine);
+    const availableModels = useSelector((state: RootState) => state.model.availableModels);
+    const globalSelectedModel = useSelector((state: RootState) => state.model.selectedModel);
     const [value, setValue] = useState(draftPrompt);
     const [showFolderMenu, setShowFolderMenu] = useState(false);
     const [showFolderRequiredWarning, setShowFolderRequiredWarning] = useState(false);
@@ -155,6 +162,13 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
 
   const activeSkillIds = useSelector((state: RootState) => state.skill.activeSkillIds);
   const skills = useSelector((state: RootState) => state.skill.skills);
+  const currentAgent = agents.find((agent) => agent.id === currentAgentId);
+  const { selectedModel: agentSelectedModel, usesFallback: agentModelUsesFallback } = resolveAgentModelSelection({
+    agentModel: currentAgent?.model ?? '',
+    availableModels,
+    fallbackModel: globalSelectedModel,
+    engine: coworkAgentEngine,
+  });
 
   const isLarge = size === 'large';
   const minHeight = isLarge ? 60 : 24;
@@ -712,7 +726,28 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                     />
                   </>
                 )}
-                {showModelSelector && !remoteManaged && <ModelSelector dropdownDirection="up" />}
+                {showModelSelector && !remoteManaged && (
+                  <div className="flex flex-col items-start gap-1">
+                    <ModelSelector
+                      dropdownDirection="up"
+                      value={coworkAgentEngine === 'openclaw' ? agentSelectedModel : undefined}
+                      onChange={coworkAgentEngine === 'openclaw'
+                        ? async (nextModel) => {
+                            if (!currentAgent) return;
+                            const confirmed = window.confirm(i18nService.t('agentModelChangeWarning'));
+                            if (!confirmed) return;
+                            await agentService.updateAgent(currentAgent.id, { model: nextModel?.id ?? '' });
+                          }
+                        : undefined}
+                      defaultLabel={i18nService.t('agentModelUseGlobalDefault')}
+                    />
+                    {coworkAgentEngine === 'openclaw' && agentModelUsesFallback && (
+                      <span className="max-w-60 text-[11px] leading-4 text-secondary/70">
+                        {i18nService.t('agentModelFallbackHint')}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {!remoteManaged && (
                   <button
                     type="button"
