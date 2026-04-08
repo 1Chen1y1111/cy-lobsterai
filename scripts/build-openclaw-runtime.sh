@@ -133,12 +133,11 @@ corepack enable >/dev/null 2>&1 || true
 pnpm install --frozen-lockfile
 pnpm build
 pnpm ui:build
-if ! pnpm release:check; then
-  echo "[openclaw-runtime] release:check failed, running pnpm plugins:sync and retrying..."
-  echo "[openclaw-runtime] NOTE: plugins:sync may modify files in OPENCLAW_SRC ($OPENCLAW_SRC)."
-  pnpm plugins:sync
-  pnpm release:check
-fi
+# Skip release:check — it validates the openclaw npm package for publishing and
+# is not relevant for LobsterAI embedded runtime builds.  On Windows it also
+# fails due to spawnSync/execFileSync not finding npm without shell:true, and
+# npm pack producing truncated tarballs.
+echo "[openclaw-runtime] Skipping release:check (not needed for embedded builds)"
 
 echo "[2/7] Packing npm tarball"
 # Skip prepack rebuild — build and ui:build already ran in step [1/7].

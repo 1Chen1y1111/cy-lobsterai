@@ -312,6 +312,35 @@ for (const plugin of plugins) {
 
 log(`All ${plugins.length} plugin(s) installed successfully.`);
 
+// --- Post-install: clean up any stale openclaw SDK stubs ---
+// Previous versions of this script created a shared openclaw stub at
+// extensions/node_modules/openclaw/ to help plugins resolve openclaw/plugin-sdk/*
+// imports.  This is no longer needed: the gateway's jiti loader builds an alias
+// map (226 entries) that maps every openclaw/plugin-sdk/<subpath> import directly
+// to the runtime's dist/plugin-sdk/<subpath>.js.  The stub actually *breaks*
+// loading because its copied plugin-sdk files import sibling dist/ chunks
+// (e.g. ../errors-Bs2h5H8p.js) that were never copied into the stub.
+// See https://github.com/openclaw/openclaw/issues/52885
+{
+  const sharedStubDir = path.join(runtimeExtensionsDir, 'node_modules', 'openclaw');
+  if (fs.existsSync(sharedStubDir)) {
+    fs.rmSync(sharedStubDir, { recursive: true, force: true });
+    log('Removed stale shared openclaw SDK stub at extensions/node_modules/openclaw/');
+  }
+
+  // Also clean up per-plugin stubs from even older approach
+  for (const plugin of plugins) {
+    const perPluginStub = path.join(runtimeExtensionsDir, plugin.id, 'node_modules', 'openclaw');
+    try {
+      const stat = fs.lstatSync(perPluginStub);
+      if (stat.isSymbolicLink() || stat.isDirectory()) {
+        fs.rmSync(perPluginStub, { recursive: true, force: true });
+        log(`Removed old per-plugin stub: ${plugin.id}/node_modules/openclaw`);
+      }
+    } catch { /* doesn't exist */ }
+  }
+}
+
 // --- Post-install patch: openclaw-weixin gatewayMethods ---
 // The openclaw-weixin plugin defines loginWithQrStart/loginWithQrWait in its
 // gateway adapter but does not declare gatewayMethods on the channel plugin
@@ -335,23 +364,4 @@ if (fs.existsSync(weixinChannelPath)) {
   }
 }
 
-// --- Post-install patch: openclaw-weixin CHANNEL_VERSION ---
-// Replace the dynamic readChannelVersion() call with a hardcoded version string
-// to avoid runtime resolution issues when the plugin is bundled outside its
-// original npm package context.
-const weixinApiPath = path.join(runtimeExtensionsDir, 'openclaw-weixin', 'src', 'api', 'api.ts');
-if (fs.existsSync(weixinApiPath)) {
-  let apiSrc = fs.readFileSync(weixinApiPath, 'utf8');
-  const versionBefore = 'const CHANNEL_VERSION = readChannelVersion();';
-  const versionAfter = 'const CHANNEL_VERSION = "1.0.3";';
-  if (apiSrc.includes(versionBefore)) {
-    apiSrc = apiSrc.replace(versionBefore, versionAfter);
-    fs.writeFileSync(weixinApiPath, apiSrc);
-    log('Patched openclaw-weixin/src/api/api.ts: replaced readChannelVersion() with hardcoded "1.0.3"');
-  } else if (apiSrc.includes(versionAfter)) {
-    log('openclaw-weixin/src/api/api.ts already has hardcoded CHANNEL_VERSION, skipping patch');
-  } else {
-    log('WARNING: could not find CHANNEL_VERSION assignment in openclaw-weixin/src/api/api.ts, skipping patch');
-  }
-}
 

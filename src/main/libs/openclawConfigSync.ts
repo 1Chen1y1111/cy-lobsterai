@@ -1316,9 +1316,12 @@ export class OpenClawConfigSync {
     }
 
     // Sync Weixin OpenClaw channel config (via openclaw-weixin plugin)
-    // Always write the channel entry — use enabled:false when disabled so the
-    // Gateway stops the channel instead of falling back to plugin defaults.
-    const weixinChannelEnabled = !!(weixinConfig?.enabled);
+    // The channel must always be enabled so that the gateway registers
+    // web.login.start / web.login.wait gateway methods — these are needed
+    // to initiate QR login before the user has ever connected.  Without
+    // enabled:true the gateway skips the channel entirely and
+    // resolveWebLoginProvider() returns null.
+    const weixinChannelEnabled = true;
     const weixinChannel: Record<string, unknown> = {
       enabled: weixinChannelEnabled,
       ...(weixinConfig?.accountId ? { accountId: weixinConfig.accountId } : {}),
