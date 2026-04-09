@@ -1713,6 +1713,24 @@ export class OpenClawConfigSync {
       env.LOBSTER_POPO_TOKEN = 'unconfigured';
     }
 
+    // Email credentials
+    const emailConfig = this.getEmailOpenClawConfig?.();
+    if (emailConfig?.instances) {
+      for (const inst of emailConfig.instances) {
+        if (!inst.enabled || !inst.email) continue;
+
+        const envSuffix = inst.instanceId.replace(/^email-/, '').toUpperCase();
+
+        if (inst.transport === 'imap' && inst.password) {
+          env[`LOBSTER_EMAIL_${envSuffix}_PASSWORD`] = inst.password;
+        }
+
+        if (inst.transport === 'ws' && inst.apiKey) {
+          env[`LOBSTER_EMAIL_${envSuffix}_APIKEY`] = inst.apiKey;
+        }
+      }
+    }
+
     // NIM
     const nimConfig = this.getNimConfig();
     if (nimConfig?.enabled && nimConfig.token) {
