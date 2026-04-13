@@ -110,6 +110,8 @@ type ActiveTurn = {
   sessionKey: string;
   runId: string;
   turnToken: number;
+  /** Timestamp when this turn was created (for abort diagnostics). */
+  startedAtMs: number;
   knownRunIds: Set<string>;
   assistantMessageId: string | null;
   committedAssistantText: string;
@@ -1235,6 +1237,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       toolUseMessageIdByToolCallId: new Map(),
       toolResultMessageIdByToolCallId: new Map(),
       toolResultTextByToolCallId: new Map(),
+      startedAtMs: Date.now(),
       stopRequested: false,
       pendingUserSync: false,
       bufferedChatPayloads: [],
@@ -2425,6 +2428,18 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
 
     if (state === 'aborted') {
+      const elapsedSec = ((Date.now() - turn.startedAtMs) / 1000).toFixed(1);
+      console.warn(
+        `[AbortDiag] chat aborted event received`,
+        `sessionId=${sessionId}`,
+        `runId=${turn.runId}`,
+        `sessionKey=${turn.sessionKey}`,
+        `elapsed=${elapsedSec}s`,
+        `stopReason=${(chatPayload as Record<string, unknown>).stopReason ?? 'unknown'}`,
+        `stopRequested=${turn.stopRequested}`,
+        `manuallyStoppedSession=${this.manuallyStoppedSessions.has(sessionId)}`,
+        `payload=${JSON.stringify(chatPayload).slice(0, 500)}`,
+      );
       this.handleChatAborted(sessionId, turn);
       return;
     }
@@ -2819,10 +2834,18 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   private handleChatAborted(sessionId: string, turn: ActiveTurn): void {
+    const elapsedSec = ((Date.now() - turn.startedAtMs) / 1000).toFixed(1);
     this.store.updateSession(sessionId, { status: 'idle' });
     if (!turn.stopRequested && !this.manuallyStoppedSessions.has(sessionId)) {
       // The run was aborted without user request — most likely a timeout.
       // Add a visible hint so the user knows the task was interrupted.
+      console.warn(
+        `[AbortDiag] showing timeout hint to user`,
+        `sessionId=${sessionId}`,
+        `runId=${turn.runId}`,
+        `elapsed=${elapsedSec}s`,
+        `turnToken=${turn.turnToken}`,
+      );
       const hintMessage = this.store.addMessage(sessionId, {
         type: 'assistant',
         content: t('taskTimedOut'),
@@ -3770,9 +3793,14 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     turn.timeoutTimer = setTimeout(() => {
       const currentTurn = this.activeTurns.get(sessionId);
       if (!currentTurn || currentTurn.turnToken !== turn.turnToken) return;
+      const elapsedSec = ((Date.now() - currentTurn.startedAtMs) / 1000).toFixed(1);
       console.warn(
-        `[OpenClawRuntime] Client-side timeout watchdog fired for session ${sessionId}, `
-        + `runId=${currentTurn.runId} after ${timeoutMs}ms — gateway did not deliver abort event`,
+        `[AbortDiag] client-side timeout watchdog fired`,
+        `sessionId=${sessionId}`,
+        `runId=${currentTurn.runId}`,
+        `elapsed=${elapsedSec}s`,
+        `watchdogMs=${timeoutMs}`,
+        `— gateway did not deliver abort event`,
       );
       this.handleChatAborted(sessionId, currentTurn);
     }, timeoutMs);
@@ -3882,6 +3910,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       toolUseMessageIdByToolCallId: new Map(),
       toolResultMessageIdByToolCallId: new Map(),
       toolResultTextByToolCallId: new Map(),
+      startedAtMs: Date.now(),
       stopRequested: false,
       pendingUserSync: !!isChannel,
       bufferedChatPayloads: [],
