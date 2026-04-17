@@ -1187,7 +1187,7 @@ export class OpenClawConfigSync {
               },
             }
           : {};
-      })(),
+      })())
     };
 
     // Sync MCP Bridge config into the plugin's own config section

@@ -17,7 +17,7 @@ import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
 import { RootState } from '../../store';
 import { clearError,setDingTalkConfig, setDingTalkInstanceConfig, setDiscordConfig, setEmailInstanceConfig, setFeishuConfig, setFeishuInstanceConfig, setNeteaseBeeChanConfig, setNimConfig, setPopoConfig, setQQConfig, setQQInstanceConfig, setTelegramOpenClawConfig, setWecomConfig, setWecomInstanceConfig, setWeixinConfig } from '../../store/slices/imSlice';
-import type { DiscordOpenClawConfig, EmailInstanceConfig,IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig, PopoOpenClawConfig, TelegramOpenClawConfig, WecomOpenClawConfig } from '../../types/im';
+import type { DiscordOpenClawConfig, EmailInstanceConfig,IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig, PopoOpenClawConfig, TelegramOpenClawConfig } from '../../types/im';
 import { MAX_DINGTALK_INSTANCES, MAX_EMAIL_INSTANCES,MAX_FEISHU_INSTANCES, MAX_QQ_INSTANCES, MAX_WECOM_INSTANCES } from '../../types/im';
 import { getVisibleIMPlatforms } from '../../utils/regionFilter';
 import Modal from '../common/Modal';
