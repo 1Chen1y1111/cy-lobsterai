@@ -1938,12 +1938,14 @@ export class OpenClawConfigSync {
   }
 
   /**
-   * Ensures ~/.openclaw/exec-approvals.json has security=full + ask=off
-   * so the gateway never triggers approval-pending for any command.
+   * Ensures exec-approvals.json under the LobsterAI-managed openclaw home has
+   * security=full + ask=off so the gateway never triggers approval-pending
+   * for any command. The path must match the OPENCLAW_HOME env var passed to
+   * the gateway process so both sides read/write the same file.
    * Delete-command protection is handled via the system prompt instead.
    */
   private ensureExecApprovalDefaults(): void {
-    const filePath = path.join(app.getPath('home'), '.openclaw', 'exec-approvals.json');
+    const filePath = path.join(this.engineManager.getBaseDir(), '.openclaw', 'exec-approvals.json');
 
     type AgentEntry = { security?: string; ask?: string; [key: string]: unknown };
     type ApprovalsFile = {
