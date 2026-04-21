@@ -1309,10 +1309,32 @@ export class SkillManager {
     }
 
     try {
+      // Build allowlist of bundled skill IDs from skills.config.json so
+      // user-added skill folders that happen to sit in the bundled root
+      // (e.g. restored by the installer's AppData backup) are not synced
+      // to user data. Falls back to the legacy "sync everything" behavior
+      // if the config is missing or malformed.
+      let bundledIds: Set<string> | null = null;
+      try {
+        const configPath = path.join(bundledRoot, SKILLS_CONFIG_FILE);
+        if (fs.existsSync(configPath)) {
+          const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          if (parsed?.defaults && typeof parsed.defaults === 'object') {
+            bundledIds = new Set(Object.keys(parsed.defaults));
+          }
+        }
+      } catch (error) {
+        console.warn('[skills] Failed to parse skills.config.json for sync filter:', error);
+      }
+
       const bundledSkillDirs = listSkillDirs(bundledRoot);
       console.log('[skills] syncBundledSkillsToUserData: found', bundledSkillDirs.length, 'bundled skills');
       bundledSkillDirs.forEach((dir) => {
         const id = path.basename(dir);
+        if (bundledIds && !bundledIds.has(id)) {
+          console.log(`[skills] syncBundledSkillsToUserData: skipping non-bundled "${id}"`);
+          return;
+        }
         const targetDir = path.join(userRoot, id);
         const targetExists = fs.existsSync(targetDir);
 
